@@ -33,3 +33,7 @@ You can find the code for rendering trails in layers.js, along with other option
 ## Background
 
 The project was inspired by my sister's love of geology and the great enjoyment I got from working with a student on [this tutorial](https://tylerxhobbs.com/essays/2020/flow-fields) by Tyler Hobbes. In the tutorial, you create flow fields with a special kind of computer generated data called [perlin noise](https://en.wikipedia.org/wiki/Perlin_noise). I asked if perlin noise is used to model geographies, why can't geographical data be used as perlin noise?
+
+## Future Directions
+
+- Try lazy computing the height, slope and aspect, rather than precomputing everything on the GPU.
