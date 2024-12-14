@@ -114,21 +114,8 @@ function fillText(
  *     coordinates.
  */
 function trailsLayer(topo, trails) {
-  // ## TRAIL NAMES ##
-  const ts = 16 * 1.5;
-  textSize(ts);
-  textFont("Courier");
-  fill(p.yellow);
-
-  Object.entries(trails).forEach(([name, coords]) => {
-    const mid = floor(coords.length / 2);
-    const [x, y] = coords[mid];
-    name.split(" ").join("\n");
-    text(name.split(" ").join("\n"), x, y);
-  });
-
   // ## TRAIL LINES ##
-  const slopeScale = chroma.scale([p.yellow, "red"]);
+  const slopeScale = chroma.scale([p.JuniperBark9, p.ochre]);
   Object.values(trails).forEach((coords) => {
     coords.forEach(([x, y], i) => {
       if (x > topo.width || y > topo.height) return;
@@ -145,5 +132,18 @@ function trailsLayer(topo, trails) {
         1.5
       );
     });
+  });
+
+  // ## TRAIL NAMES ##
+  const ts = 16 * 1.0;
+  textSize(ts);
+  textFont("Courier");
+  fill(p.yellow);
+
+  Object.entries(trails).forEach(([name, coords]) => {
+    const mid = floor(coords.length / 2);
+    const [x, y] = coords[mid];
+    name.split(" ").join("\n");
+    text(name.split(" ").join("\n"), x, y);
   });
 }
