@@ -1,52 +1,40 @@
-function textsLayer(topo) {
+function textsLayer(
+  topo,
+  textSize,
+  text,
+  bbox = undefined,
+  margin = 0,
+  heightRange = [0.2, 0.7]
+) {
   textFont("Courier");
+  /**
+   * Determines whether a word should be placed at a given position. Allows wrapping
+   * around terrain. Checks that the height at the word is within heightRange,
+   * and that the x position is not too close to the right edge of the image.
+   * @param {Object} topo - The topographic data containing pixel information as well as summary info on the map.
+   * @param {number} x - The x coordinate of the word.
+   * @param {number} y - The y coordinate of the word.
+   * @param {number} wordWidth - The width of the word.
+   * @returns {boolean} - Whether the word is visible or not.
+   */
   const predicate = (topo, x, y, wordWidth) => {
     const translate = (percentOfHeight) =>
       topo.max - percentOfHeight * topo.magnitude;
     const pix1 = topo.pixels[y]?.[x];
     const pix2 = topo.pixels[y]?.[Math.floor(x + wordWidth)];
-    if (x + wordWidth + 80 > topo.width) return;
-    if (!pix1 || !pix2) return;
+    if (x + wordWidth + margin > topo.width) return false;
+    if (!pix1 || !pix2) return false;
     const [h1] = pix1;
     const [h2] = pix2;
 
-    const [hmax, hmin] = [0.43, 0.7].map(translate);
-    return random() > 0.2 && h1 < hmax && h1 > hmin && h2 < hmax && h2 > hmin;
+    const [hmax, hmin] = heightRange.map(translate);
+    return h1 < hmax && h1 > hmin && h2 < hmax && h2 > hmin;
   };
   textAlign(CENTER, CENTER);
   const alpha = 128;
 
   fill(...res(chroma(p.aquamarine).darken(2)), alpha);
-  fillText(
-    topo,
-    texts.HalfMountain + "\n" + texts.netherlands,
-    alpha,
-    16 * 2,
-
-    predicate,
-    [0, 0, width / 3, height]
-  );
-  fillText(
-    topo,
-    texts.sangaha + "\n" + texts.mangala,
-    alpha,
-    16 * 2,
-
-    predicate,
-    [(2 * width) / 3, 0, width, height]
-  );
-}
-function mountainLayer(bounds, zoom) {
-  textSize(32 * 1.5);
-  textFont("Copperplate-Light");
-  textAlign(CENTER, CENTER);
-  LOCATIONS.forEach((loc) => {
-    const pt = latLngToScreenPoint(bounds, loc, zoom);
-
-    textFont(loc.font || "Copperplate-Light");
-    fill(res(chroma.scale(["#FCD94E", loc.col])(0.7)));
-    text(loc.name, pt.x, pt.y);
-  });
+  fillText(topo, text, alpha, textSize, predicate, bbox);
 }
 
 function fillText(
@@ -66,7 +54,7 @@ function fillText(
   let word = words.pop() + " ";
   let wordWidth;
   while (word && y < bbox[3] - margin) {
-    wordWidth = Math.ceil(textWidth(word)) + 10;
+    wordWidth = Math.ceil(textWidth(word + " "));
     [x, y] = [Math.floor(x), Math.round(y)];
     if (pred(topo, x, y, wordWidth)) {
       word.split("").forEach((char) => {
@@ -99,6 +87,19 @@ function fillText(
       x = bbox[0] + margin;
     }
   }
+}
+
+function mountainLayer(bounds, zoom) {
+  textSize(32 * 1.5);
+  textFont("Copperplate-Light");
+  textAlign(CENTER, CENTER);
+  LOCATIONS.forEach((loc) => {
+    const pt = latLngToScreenPoint(bounds, loc, zoom);
+
+    textFont(loc.font || "Copperplate-Light");
+    fill(res(chroma.scale(["#FCD94E", loc.col])(0.7)));
+    text(loc.name, pt.x, pt.y);
+  });
 }
 
 /**

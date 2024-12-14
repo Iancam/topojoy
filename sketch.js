@@ -51,13 +51,13 @@ async function setup() {
     );
   };
 
-  // times(0.2 * curveCount, genCurve(topo)).forEach(colorAndDrawCurve(topo));
-  // textsLayer(topo);
+  times(0.2 * curveCount, genCurve(topo)).forEach(colorAndDrawCurve(topo));
+  textsLayer(topo, 16, texts.HalfMountain + "\n" + texts.netherlands);
   // mountainLayer(bounds.box, zoom);
   // times(0.4 * curveCount, genCurve(topo)).forEach(colorAndDrawCurve(topo));
   // getTrails comes from trails.js
   const trails = await getTrails(TRAILS_SHP_FILE, bounds);
-  times(curveCount, genCurve(topo)).forEach(colorAndDrawCurve(topo));
+  times(0.8 * curveCount, genCurve(topo)).forEach(colorAndDrawCurve(topo));
   trailsLayer(topo, trails);
 }
 
