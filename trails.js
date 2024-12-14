@@ -38,20 +38,22 @@ const isNamedTrail = ({ properties }) =>
   properties.name !== "";
 
 const exclude = [
-  "Cut-Off",
-  "Twin Peak",
-  "Cutoff",
-  "Lake Fork",
-  "Powderhorn",
-  "East Mineral Creek",
-  "Halfmoon",
-  "San Luis",
-  "Plateau",
-  "Whee",
-  "Machin",
-  "Wason",
+  "Canyon",
+  "Eileen",
+  "Ute",
+  "East Ute",
+  "East Creek",
+  "Cunningham",
+  "Rincon",
+  "Pole",
+  "Horse Route",
+  "View Trail",
+  "Vis Trail",
+  "Bear Creek",
+  "Whitehead",
+  "Piedra",
 ];
-const excludeList = ({ properties: name }) =>
+const excludeList = ({ properties: { name } }) =>
   !exclude.some((drop) => name.includes(drop));
 
 const screenCoordListToObj = (obj, { name, coords }) => {
