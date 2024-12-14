@@ -1,7 +1,8 @@
 p5.disableFriendlyErrors = true;
 
-const MAP_NAME = "snowMesa";
+const MAP_NAME = "emeraldLakes";
 const TRAILS_SHP_FILE = "COTrails/Trails_COTREX02192019-wgs84.shp";
+
 async function setup() {
   // Load the output of the topojoy tool
   // https://github.com/Iancam/topojoy
@@ -18,19 +19,46 @@ async function setup() {
     [x0, y0],
     zoom
   );
-  createCanvas(canvas.width, canvas.height);
-  const curveCount = 2 * (3 / 6) * 100000;
 
-  background(p.darkness);
+  createCanvas(canvas.width, canvas.height);
+
+  const curveStepCount = 20;
+  const curveStepLength = 2;
+  const curvePixelCount = curveStepCount * curveStepLength;
+
+  const curveCount = (1 / curvePixelCount) * (canvas.width * canvas.height);
+  background(p.JuniperBark8);
+
+  const genCurve = (topo) => () => {
+    const angleTransforms = [
+      (aspect) => aspect + 180,
+      (aspect) => aspect,
+      (aspect) => aspect + 90,
+      (aspect) => aspect - 90,
+    ];
+
+    return makeCurve(
+      floor(random(0, topo.width - 1)),
+      floor(random(0, topo.height - 1)),
+      curveStepCount,
+      curveStepLength,
+      topo,
+      {
+        angleTransform: random([angleTransforms[0], angleTransforms[1]]),
+        // angleTransform: random([angleTransforms[3], angleTransforms[2]]),
+        // angleTransform: random(angleTransforms), // make it gridlike
+      }
+    );
+  };
 
   // times(0.2 * curveCount, genCurve(topo)).forEach(colorAndDrawCurve(topo));
   // textsLayer(topo);
-  // mountainLayer(dims.bounds);
+  // mountainLayer(bounds.box, zoom);
   // times(0.4 * curveCount, genCurve(topo)).forEach(colorAndDrawCurve(topo));
   // getTrails comes from trails.js
   const trails = await getTrails(TRAILS_SHP_FILE, bounds);
+  times(curveCount, genCurve(topo)).forEach(colorAndDrawCurve(topo));
   trailsLayer(topo, trails);
-  times(0.4 * curveCount, genCurve(topo)).forEach(colorAndDrawCurve(topo));
 }
 
 /**
@@ -70,7 +98,7 @@ function makeCurve(
       lerpAngle(
         lastAspect,
         options.angleTransform(aspect1, [height, slope, aspect1]),
-        0.7
+        0.9
       )
     );
     if (!aspect1) {
@@ -92,18 +120,6 @@ function drawCurve(curve, weight) {
   curve.forEach(([x, y]) => curveVertex(x, y));
   endShape();
 }
-
-const genCurve = (topo) => () =>
-  makeCurve(
-    floor(random(0, topo.width - 1)),
-    floor(random(0, topo.height - 1)),
-    random(8, 12),
-    8,
-    topo,
-    {
-      angleTransform: random([(aspect) => aspect + 180, (aspect) => aspect]),
-    }
-  );
 
 const colorAndDrawCurve = (topo) => (c) => {
   const col = color(colorAt(c[0], topo));
