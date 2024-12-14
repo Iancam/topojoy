@@ -103,3 +103,17 @@ function windowForEach(array, windowSize, callback, step = 1) {
   }
   return ret;
 }
+
+function weightedRandom(items, weights) {
+  let totalWeight = weights.reduce((a, b) => a + b, 0);
+
+  let random = Math.random() * totalWeight;
+  let currentWeight = 0;
+
+  for (let i = 0; i < items.length; i++) {
+    currentWeight += weights[i];
+    if (random < currentWeight) {
+      return items[i];
+    }
+  }
+}
