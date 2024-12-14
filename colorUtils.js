@@ -1,17 +1,40 @@
 // color palette
 const p = {
   orange: "#ed9228",
-  aquamarine: "aquamarine",
+  aquamarine: "#7FFFD4",
   white: "#A8FFFF", //"#F2EBDC",
   bgBlue: "#004E63", //"#273240"
-  fgBlue: "teal",
+  fgBlue: "#008080",
   sienna: "#8C5332",
   darkness: "#273240",
   brown: "brown",
   siennaBright: "#BF805C",
   yellow: "#FCD94E",
   ochre: "#D38614",
+  JuniperBark1: "#DFEBF2",
+  JuniperBark2: "#D8E8F2",
+  JuniperBark3: "#F2D9BB",
+  JuniperBark4: "#BFA995",
+  JuniperBark5: "#A69B8D",
+  JuniperBark6: "#8C7764",
+  JuniperBark7: "#6A6E73",
+  JuniperBark8: "#594D43",
+  JuniperBark9: "#59372A",
+  JuniperBark10: "#0D0D0D",
+
+  Lowland1: "#a8d5ba", // Light Green
+  Lowland2: "#85bda6", // Mid Green
 };
+//   MidElev1: "#659cad", // Teal
+//   MidElev2: "#4686a6", // Deep Blue
+//   Highland1: "#5b5d7a", // Slate Blue
+//   Highland2: "#423d59", // Dark Violet
+//   Snow: "#ffffff", // Pure White
+//   Rock: "#8b5e34", // Rock Brown
+//   Soil: "#6f4a2f", // Dark Earth Brown
+//   Shadow: "#3d3d3d", // Shadow Gray
+// };
+
 /**
  * A factory that returns a function which generates random heights for a pixel on a topographic map.
  *
@@ -68,32 +91,32 @@ const colorAt = ([x, y], topo) => {
    */
   const colorPlan = [
     // lower elevations
-    [randHeight(1.1, 7), () => random([p.orange, p.aquamarine])],
-    [randHeight(0.9, 15), p.sienna],
-    [randHeight(0.8, 15), () => random([p.orange, p.siennaBright, p.sienna])],
+    [
+      randHeight(0.7, 25),
+      () => random([p.JuniperBark9, p.JuniperBark8, p.JuniperBark10]),
+    ],
     //  middle elevations
     [
       randHeight(0.6, 10),
+      () => res(chroma.scale([p.JuniperBark3, p.JuniperBark9])(aspect / 360)),
+    ],
+    [
+      randHeight(0.3, 15),
       () =>
-        shortestAngle(aspect, 270) < 30
-          ? res(chroma.scale([p.bgBlue, "yellow"])(slope / 70))
-          : p.fgBlue,
+        darken(
+          random([
+            p.JuniperBark4,
+            p.JuniperBark5,
+            p.JuniperBark6,
+            p.JuniperBark7,
+          ]),
+          0.5
+        ),
     ],
-    [randHeight(0.65, 5), () => random(["#53C1EB", p.fgBlue, p.darkness])],
-    [randHeight(0.3, 15), darken(p.fgBlue, 1)],
-    //high elevations
-    [randHeight(0.3, 10), p.white],
-    [
-      randHeight(0.1, 10),
-      () => random([p.white, p.siennaBright, p.aquamarine]),
-    ],
-    [
-      randHeight(0.1, 10),
-      () => random([p.white, p.siennaBright, p.aquamarine]),
-    ],
+    // higher elevations
     [
       () => Infinity,
-      () => random([p.white, p.siennaBright, p.aquamarine, "pink"]),
+      () => weightedRandom([p.JuniperBark1, p.JuniperBark3, "pink"], [5, 5, 1]),
     ],
   ];
 
