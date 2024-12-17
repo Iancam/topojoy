@@ -3,10 +3,9 @@ function textsLayer(
   textSize,
   text,
   bbox = undefined,
-  margin = 0,
-  heightRange = [0.2, 0.7]
+  margin = 40,
+  heightRange = [0.3, 0.7]
 ) {
-  textFont("Courier");
   /**
    * Determines whether a word should be placed at a given position. Allows wrapping
    * around terrain. Checks that the height at the word is within heightRange,
@@ -30,19 +29,19 @@ function textsLayer(
     const [hmax, hmin] = heightRange.map(translate);
     return h1 < hmax && h1 > hmin && h2 < hmax && h2 > hmin;
   };
+  textFont("Courier");
   textAlign(CENTER, CENTER);
-  const alpha = 128;
 
-  fill(...res(chroma(p.aquamarine).darken(2)), alpha);
-  fillText(topo, text, alpha, textSize, predicate, bbox);
+  const alpha = 200;
+  fillText(topo, text, alpha, predicate, textSize, bbox);
 }
 
 function fillText(
   topo,
   inpText,
   alpha,
+  predicate = () => true,
   size,
-  pred,
   bbox = [0, 0, width, height],
   margin = 40
 ) {
@@ -56,21 +55,20 @@ function fillText(
   while (word && y < bbox[3] - margin) {
     wordWidth = Math.ceil(textWidth(word + " "));
     [x, y] = [Math.floor(x), Math.round(y)];
-    if (pred(topo, x, y, wordWidth)) {
+    if (!predicate(topo, x, y, wordWidth)) {
       word.split("").forEach((char) => {
         const pixel = topo.pixels[y][x];
         if (!pixel) return;
-        const [h, s, aspect] = pixel;
+        const [h, s, aspect, shade] = pixel;
         const vert = Math.abs(aspect > 90 ? aspect - 180 : aspect) % 180;
         const brightness = vert / 90;
         const col = color(
-          res(chroma(colorAt([x, y], topo)).brighten((brightness * s) / 70))
+          res(chroma(colorAt([x, y], topo)).mix("black", shade))
         );
         col.setAlpha(alpha);
         fill(col);
         push();
         const jitter = random(-s * 0.01, s * 0.01);
-        console.log(jitter);
         translate(x + jitter, y + jitter);
         rotate(radians(aspect / 45));
         text(char, 0, 0);
@@ -81,7 +79,6 @@ function fillText(
       // text(word, x, y);
       word = words.length ? words.pop() + " " : undefined;
     } else x += wordWidth;
-
     if (x > bbox[2] - margin - wordWidth) {
       y += size;
       x = bbox[0] + margin;
@@ -89,17 +86,35 @@ function fillText(
   }
 }
 
-function mountainLayer(bounds, zoom) {
-  textSize(32 * 1.5);
-  textFont("Copperplate-Light");
+function mountainLayer(peaks, font, labelSize, mountainLabelColor, keepList) {
+  textSize(labelSize);
   textAlign(CENTER, CENTER);
-  LOCATIONS.forEach((loc) => {
-    const pt = latLngToScreenPoint(bounds, loc, zoom);
+  textFont(font);
+  fill(mountainLabelColor);
+  let bboxes = [];
+  for (const name of keepList || []) {
+    const bbox = font.textBounds(name, peaks[name][0][0], peaks[name][0][1]);
+    bboxes.push(bbox);
+    text(name, peaks[name][0][0], peaks[name][0][1]);
+  }
+  Object.entries(peaks).forEach(([name, [pt]]) => {
+    const bbox = font.textBounds(name, pt[0], pt[1]);
+    let skip = false;
+    for (const box of bboxes) {
+      if (collision(bbox, box)) {
+        console.log(name);
 
-    textFont(loc.font || "Copperplate-Light");
-    fill(res(chroma.scale(["#FCD94E", loc.col])(0.7)));
-    text(loc.name, pt.x, pt.y);
+        skip = true;
+        break;
+      }
+    }
+
+    if (!skip) {
+      bboxes.push(bbox);
+      text(name, pt[0], pt[1]);
+    }
   });
+  console.log(bboxes);
 }
 
 /**
@@ -114,9 +129,9 @@ function mountainLayer(bounds, zoom) {
  *     key is the name of the trail and each value is a list of xy
  *     coordinates.
  */
-function trailsLayer(topo, trails) {
+function trailsLayer(topo, trails, ts, textColor, trailColors) {
   // ## TRAIL LINES ##
-  const slopeScale = chroma.scale([p.JuniperBark9, p.ochre]);
+  const slopeScale = chroma.scale(trailColors);
   Object.values(trails).forEach((coords) => {
     coords.forEach(([x, y], i) => {
       if (x > topo.width || y > topo.height) return;
@@ -136,10 +151,9 @@ function trailsLayer(topo, trails) {
   });
 
   // ## TRAIL NAMES ##
-  const ts = 16 * 1.0;
   textSize(ts);
   textFont("Courier");
-  fill(p.yellow);
+  fill(textColor);
 
   Object.entries(trails).forEach(([name, coords]) => {
     const mid = floor(coords.length / 2);
