@@ -58,6 +58,15 @@ const randsFactory = (topo) => (percentOfHeight, gaussDistTightness) => () =>
 const res = (c) => c._rgb.slice(0, 3);
 const brighten = (c, v) => res(chroma(c).brighten(v));
 const darken = (c, v) => res(chroma(c).darken(v));
+function getContrastRatio(color1, color2) {
+  const luminance1 = chroma(color1).luminance();
+  const luminance2 = chroma(color2).luminance();
+
+  const brighter = Math.max(luminance1, luminance2);
+  const darker = Math.min(luminance1, luminance2);
+
+  return (brighter + 0.05) / (darker + 0.05);
+}
 
 /**
  * Determines the color for a specific pixel on a topographic map based on its height, slope, and aspect.
@@ -67,7 +76,7 @@ const darken = (c, v) => res(chroma(c).darken(v));
  * @returns {string} - The color assigned to the pixel as a hexadecimal or named color.
  */
 const colorAt = ([x, y], topo) => {
-  const [height, slope, aspect] = topo.pixels[y][x];
+  const [height, slope, aspect, shade] = topo.pixels[y][x];
   // const vert = Math.abs(aspect > 90 ? aspect - 180 : aspect) % 180;
   // const brightness = vert / 90;
   const randHeight = randsFactory(topo);
