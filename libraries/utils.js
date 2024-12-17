@@ -104,6 +104,7 @@ function windowForEach(array, windowSize, callback, step = 1) {
   return ret;
 }
 
+// #### Random functions
 function weightedRandom(items, weights) {
   let totalWeight = weights.reduce((a, b) => a + b, 0);
 
@@ -115,5 +116,38 @@ function weightedRandom(items, weights) {
     if (random < currentWeight) {
       return items[i];
     }
+  }
+}
+
+function randomChoiceWithoutReplacement(arr) {
+  if (arr.length === 0) {
+    return undefined; // Return undefined if the array is empty
+  }
+
+  const randomIndex = Math.floor(Math.random() * arr.length);
+  const chosenItem = arr.splice(randomIndex, 1)[0]; // Remove the chosen item from the array
+  return chosenItem;
+}
+
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+// #### Bounding box Functions
+function collision(rect1, rect2) {
+  // Check if the rectangles are colliding
+  if (
+    rect1.x < rect2.x + rect2.w &&
+    rect1.x + rect1.w > rect2.x &&
+    rect1.y < rect2.y + rect2.h &&
+    rect1.y + rect1.h > rect2.y
+  ) {
+    return true;
+  } else {
+    return false;
   }
 }
