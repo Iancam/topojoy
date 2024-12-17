@@ -1,7 +1,12 @@
 p5.disableFriendlyErrors = true;
 
-const MAP_NAME = "emeraldLakes";
+const MAP_NAME = "emeraldLakesBiggest";
 const TRAILS_SHP_FILE = "COTrails/Trails_COTREX02192019-wgs84.shp";
+let copperplateLight;
+
+function preload() {
+  copperplateLight = loadFont("/assets/Copperplate Light.ttf");
+}
 
 async function setup() {
   // Load the output of the topojoy tool
@@ -10,15 +15,41 @@ async function setup() {
   const bounds = await response.json();
   const {
     box: [x0, y0, x1, y1],
+    latLngbox,
     width,
     height,
     zoom,
   } = bounds;
+
+  const geoJSON = await getGeoJSONFromOSM(latLngbox);
+
   const { topo, canvas } = await processImage(
     MAP_NAME + ".png",
     [x0, y0],
     zoom
   );
+
+  const exclude = [
+    "Canyon",
+    "Eileen",
+    "Ute",
+    "East Ute",
+    "East Creek",
+    "Cunningham",
+    "Rincon",
+    "Pole",
+    "Horse Route",
+    "View Trail",
+    "Vis Trail",
+    "Bear Creek",
+    "Whitehead",
+    "Piedra",
+    "Buckeye",
+    "Endlich Mesa Spur",
+    "Skyline",
+  ];
+
+  const keepList = ["Vestal Peak", "Jagged Mountain", "Sunlight Peak"];
 
   createCanvas(canvas.width, canvas.height);
 
@@ -27,6 +58,11 @@ async function setup() {
   const curvePixelCount = curveStepCount * curveStepLength;
 
   const curveCount = (1 / curvePixelCount) * (canvas.width * canvas.height);
+
+  const backgroundTextSize = 2 * 16;
+  const trailTextSize = 2 * 32;
+  const mountainLabelSize = 2 * 16;
+  const mountainLabelColor = p.Lowland2;
   background(p.JuniperBark8);
 
   const genCurve = (topo) => () => {
@@ -51,14 +87,34 @@ async function setup() {
     );
   };
 
-  times(0.2 * curveCount, genCurve(topo)).forEach(colorAndDrawCurve(topo));
-  textsLayer(topo, 16, texts.HalfMountain + "\n" + texts.netherlands);
+  // times(0.2 * curveCount, genCurve(topo)).forEach(colorAndDrawCurve(topo));
+
   // mountainLayer(bounds.box, zoom);
   // times(0.4 * curveCount, genCurve(topo)).forEach(colorAndDrawCurve(topo));
   // getTrails comes from trails.js
-  const trails = await getTrails(TRAILS_SHP_FILE, bounds);
-  times(0.8 * curveCount, genCurve(topo)).forEach(colorAndDrawCurve(topo));
-  trailsLayer(topo, trails);
+  const trails = await getTrails(exclude, bounds, geoJSON);
+  const mountains = await getMountainFeatures(bounds, geoJSON);
+
+  // times(0.8 * curveCount, genCurve(topo)).forEach(colorAndDrawCurve(topo));
+  textsLayer(
+    topo,
+    backgroundTextSize,
+    shuffle(texts.poems.split("---")).join("\n"),
+    (bbox = [
+      (1 / 5) * canvas.width,
+      (1 / 5) * canvas.height,
+      (4 / 5) * canvas.width,
+      (4 / 5) * canvas.height,
+    ])
+  );
+  trailsLayer(topo, trails, trailTextSize, p.yellow, [p.JuniperBark9, p.ochre]);
+  mountainLayer(
+    mountains,
+    copperplateLight,
+    mountainLabelSize,
+    mountainLabelColor,
+    keepList
+  );
 }
 
 /**
@@ -162,6 +218,12 @@ async function processImage(url, [tileX, tileY], zoom) {
   ctx.drawImage(img, 0, 0);
   const pixels = ctx.getImageData(0, 0, img.width, img.height);
   const { lat } = tilenum_to_lonlat(tileX, tileY, zoom);
-  const topo = processPixels(pixels, getMetersPerPixelAtLatitude(lat, 14));
+  const topo = processPixels(
+    pixels,
+    getMetersPerPixelAtLatitude(lat, 14),
+    45,
+    45,
+    2
+  );
   return { topo, canvas };
 }
