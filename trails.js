@@ -1,6 +1,10 @@
 const featuresToScreenCoords =
   (zoom, box) =>
-  ({ properties, geometry: { coordinates } }) => {
+  ({ properties, geometry }) => {
+    let { coordinates } = geometry;
+    if (typeof coordinates[0] === "number") {
+      coordinates = [coordinates];
+    }
     const imageCoords = coordinates
       .map((coord) => pointToTileFraction(...coord, zoom))
       .filter(([x, y]) => {
@@ -24,43 +28,89 @@ const isNamedTrail = ({ properties }) =>
   properties.surface === "dirt" &&
   properties.name !== "";
 
-const exclude = [
-  "Canyon",
-  "Eileen",
-  "Ute",
-  "East Ute",
-  "East Creek",
-  "Cunningham",
-  "Rincon",
-  "Pole",
-  "Horse Route",
-  "View Trail",
-  "Vis Trail",
-  "Bear Creek",
-  "Whitehead",
-  "Piedra",
-];
-const excludeList = ({ properties: { name } }) =>
-  !exclude.some((drop) => name.includes(drop));
+const excludeList =
+  (exclude) =>
+  ({ properties: { name } }) =>
+    !exclude.some((drop) => name.includes(drop));
 
 const screenCoordListToObj = (obj, { name, coords }) => {
   obj[name] = obj[name] ? [...obj[name], ...coords] : coords;
   return obj;
 };
 
-async function getTrails(shapefilePath, { box, zoom }) {
-  const shp = new ShpToGeoJson({
-    remotePath: shapefilePath,
-  });
-  await shp.load();
-  let geoJSON = shp.getGeoJson();
-
+async function getTrails(exclude, { box, zoom }, geoJSON) {
   const trails = geoJSON.features
     .filter(isNamedTrail)
-    .filter(excludeList)
+    .filter(excludeList(exclude))
     .map(featuresToScreenCoords(zoom, box))
     .filter(({ coords }) => coords.length > 0)
     .reduce(screenCoordListToObj, {});
 
   return trails;
+}
+
+function getWaterFeatures(geoJSON) {
+  return geoJSON.features.filter(({ properties }) => properties.waterway);
+}
+
+function getMountainFeatures({ box, zoom }, geoJSON) {
+  console.log(geoJSON);
+  return geoJSON.features
+    .filter(({ properties }) => (properties.natural = "peak"))
+    .map(featuresToScreenCoords(zoom, box))
+    .reduce(screenCoordListToObj, {});
+}
+
+async function getGeoJSONFromShapefile(shapefilePath, { box, zoom }) {
+  const shp = new ShpToGeoJson({
+    remotePath: shapefilePath,
+  });
+  await shp.load();
+  let geoJSON = shp.getGeoJson();
+  return geoJSON;
+}
+
+async function getGeoJSONFromOSM(latLongBox) {
+  const hiking = `
+  way["highway"="trail"](${latLongBox.join(",")});
+  way["highway"="path"](${latLongBox.join(",")});
+  way["highway"="footway"](${latLongBox.join(",")});
+  way["highway"="track"](${latLongBox.join(",")});
+  nwr["route"="hiking"](${latLongBox.join(",")});
+  `;
+
+  const water = `
+  way["waterway"="river"](${latLongBox.join(",")});
+  way["waterway"="stream"](${latLongBox.join(",")});
+  way["natural"="water"](${latLongBox.join(",")});
+  `;
+  const mountains = `
+  node["natural"="peak"](${latLongBox.join(",")});
+  node["natural"="mountain"](${latLongBox.join(",")});
+  node["natural"="volcano"](${latLongBox.join(",")});
+  node["natural"="ridge"](${latLongBox.join(",")});
+  `;
+  const query = `
+  [out:json];
+(
+  ${mountains}
+  
+);
+out body(${latLongBox.join(",")});
+>;
+out skel qt;
+`;
+
+  const osm = await fetch("https://overpass-api.de/api/interpreter", {
+    method: "POST",
+    // The body contains the query
+    // to understand the query language see "The Programmatic Query Language" on
+    // https://wiki.openstreetmap.org/wiki/Overpass_API#The_Programmatic_Query_Language_(OverpassQL)
+    body: "data=" + encodeURIComponent(query),
+  })
+    .then((data) => data.json())
+    .catch((err) => console.log(err));
+
+  const geoJSON = osmtogeojson(osm);
+  return geoJSON;
 }
