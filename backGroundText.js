@@ -14,136 +14,80 @@ But because the wise show regard
 for these bonds of fellowship,
 they achieve greatness
 and are praised.`,
-  mangala: `Many devas and human beings
-give thought to protection,
-desiring well-being.
-Tell, then, the highest protection.
-The Buddha:
-Not consorting with fools,
-consorting with the wise,
-paying homage to those worthy of homage:
-	This is the highest protection.
+  poems: `
+Remember the Juniper tree,
+Gray and dead through
+so many branches and yet, 
+bent and ever exposed to its ending, 
+a green thread curls skyward still.
+---
+But that, like the rain, or like the scratched disks and the unbroken video cassettes and the flapper girls of the 20s, you will be precious for a moment, just long enough for a handful of sunrises over the mountains and a few cups of coffee at your favorite cafe. You will hold hands, skip down a cinder grey alleyway and come out the other side alone, again and again. And the snow that rests bright in the lashes of your eyes and the patches of golden grass, reaching through the summer commute, they will be as tears in rain, they will be found wanting. 
+ 
+Here then, stand. Here, take up this thing, your voice, your word. Set your heart on this promise, that time will not find you in her spider silk trap;  
+---
+That distant sunlight
+Out beyond the fog,
+The sandstone spire,
+And our consternation and laughter, mist and wind
 
-Living in a civilized land,
-having made merit in the past,
-directing oneself rightly:
-	This is the highest protection.
+The unobscured sunlight
+Staged shimmering there
+As the waves travelled the long way 
+to the shore
+---
+Sunset like blood on the canyon walls between the aquamarine trees 
+Leaves like gold filigree in the grass
+---
+On the drive home through the traffic i captured pigeons in the same palette as the highway, rising in transcendent formation above a quarantine of golden grass.
+---
+To be ever beside you in this
+Though we are separated by the miles 
+And the commitments
+And the pain
+---
+If your soul is real and writ in mine, mine in yours,
+then may we no longer
+Chase meager scraps
+Of laughter and flesh as they recede and recede.
 
-Broad knowledge, skill,
-well-mastered discipline,
-well-spoken words:
-	This is the highest protection.
+Let us make a refuge in ourselves
+A Light House
+And take as our guide that radiance
+Which has marked a path of safety
+Upon the oceans of the mind,
+Against all the encroaching darkness.
+---
+On the bench in the Live Oak shade, above the noise of busy men, there the grass is matted down in paths drawn over animal threads, and the scar death upon the sky has not yet been struck down by busy men
+---
+In my heart there is friendship
+though the flutter here
+Is so often the sound of distance
 
-Support for one's parents,
-assistance to one's wife and children,
-consistency in one's work:
-	This is the highest protection.
+Be careful, be careful, be careful My dear
+A poem is not shelter and the soil
+Is yet so dry.
 
-Giving, living in rectitude,
-assistance to one's relatives,
-deeds that are blameless:
-	This is the highest protection.
+Even where it rains
+These razors cut down seedlings
+Impatient, vengeful of butterflies and roses
 
-Avoiding, abstaining from evil;
-refraining from intoxicants,
-being heedful of the qualities of the mind:
-	This is the highest protection.
+In my heart there is a stone,
+And the solidity there
+is more than a treacherous conviction
 
-Respect, humility,
-contentment, gratitude,
-hearing the Dhamma on timely occasions:
-	This is the highest protection.
+Be patient, be patient, be patient my friend
+Ever affirmed by effort
+this will shelter
+this will hold.
 
-Patience, compliance,
-seeing contemplatives,
-discussing the Dhamma on timely occasions:
-	This is the highest protection.
-
-Austerity, celibacy,
-seeing the Noble Truths,
-realizing Unbinding:
-	This is the highest protection.
-
-A mind that, when touched
-by the ways of the world,
-is unshaken, sorrowless, dustless, at rest:
-	This is the highest protection.
-
-Everywhere undefeated
-when acting in this way,
-people go everywhere in well-being:
-	This is their highest protection.`,
-
-  netherlands: `High on this mountain
-The clouds down below
-I'm feeling so strong and alive
-From this rocky perch
-I'll continue to search
-For the wind
-And the snow
-And the sky
-I want a lover
-I want some friends
-And I want to live in the sun
-And I want to do all the things that I
-Never have done.
-Sunny bright mornings
-And pale moonlit nights
-Keep me from feeling alone
-Now, I'm learning to fly
-And this freedom is like
-Nothing that I've ever known
-I've seen the bottom
-And I've been on top
-But mostly I've lived in between
-And where do you go
-When you get to the end of
-Your dream?
-Off in the nether lands
-I heard a sound
-Like the beating of heavenly wings
-And deep in my brain
-I can hear a refrain
-Of my soul as she rises and sings
-Anthems to glory and
-Anthems to love and
-Hymns filled with early delight
-Like the songs that the darkness
-Composes to worship the light.
-Once in a vision
-I came on some woods
-And stood at a fork in the road
-My choices were clear
-Yet I froze with the fear
-Of not knowing which way to go
-One road was simple
-Acceptance of life
-The other road offered sweet peace
-When I made my decision
-My vision became my release.`,
-
-  HalfMountain: `Now the wind is still
-In a moment it will be raging
-Now my soul is young
-In a moment it will be aging.
-And high above the pines
-I wrote several lines
-And left them in a bottle
-For you to find.
-Now the dream is rising
-In a moment it will be past
-This breath is my first
-It will all too soon be my last.
-And on a windy coast
-I made several toasts
-To you and me and the sea
-And no one heard.
-Now the wind is still
-In a moment it will be raging
-Now my soul is young
-In a moment it will be aging.
-And high above the pines
-I wrote several lines
-And left them in a bottle
-For you to find.`,
+Even struck by knives
+Sparks shattering in the dark
+this will shelter
+This will hold.
+---
+Time and again, however well we know the landscape of love,
+And the small churchyard with the lamenting names,
+And the terrifyingly silent abyss where all others end,
+Time and again we go two together beneath the old trees,
+And lay down between the flowers, face to face with the sky`,
 };
