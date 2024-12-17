@@ -43,14 +43,14 @@ const slope = gpu
    * height, slope and aspect angle in degrees
    */
 
-  .createKernel(function (hArray, metersPerPixel) {
+  .createKernel(function (hArray, metersPerPixel, sunAz, sunEl, vert) {
     const { x, y } = this.thread;
     const height = hArray[y][x];
 
-    const eleN = hArray[y][x - 1];
-    const eleS = hArray[y][x + 1];
-    const eleE = hArray[y + 1][x];
-    const eleW = hArray[y - 1][x];
+    const eleN = vert * hArray[y][x - 1];
+    const eleS = vert * hArray[y][x + 1];
+    const eleE = vert * hArray[y + 1][x];
+    const eleW = vert * hArray[y - 1][x];
     const d = 3 * metersPerPixel;
     const dzdx = (eleE - eleW) / d;
     const dzdy = (eleN - eleS) / d;
@@ -59,7 +59,16 @@ const slope = gpu
       d !== 0 // counterclockwise from east
         ? (Math.atan2(dzdy, dzdx) * (180 / Math.PI) + 180) % 360
         : (90 * (d > 0 ? 1 : -1) + 180) % 360;
-    return [height, slope, aspect];
+
+    const El = (Math.PI / 180) * sunEl;
+    const Az = (Math.PI / 180) * sunAz;
+
+    const cosIncidence =
+      Math.sin(El) * Math.cos(slope) +
+      Math.cos(El) * Math.sin(slope) * Math.cos(Az - aspect);
+
+    const shade = 255 * cosIncidence;
+    return [height, slope, aspect, cosIncidence];
   })
   .setDynamicOutput(true);
 const extrema_y = gpu
@@ -96,6 +105,7 @@ function toHmap(image, metersPerPixel) {
     heights,
     metersPerPixel
   );
+
   const render = gpu
     .createKernel(function (slArray) {
       const { x, y } = this.thread;
@@ -116,6 +126,9 @@ function toHmap(image, metersPerPixel) {
  * those values across the image.
  * @param {width, height, data} image
  * @param {number} metersPerPixel meters per pixel
+ * @param {number} sunAz sun azimuth
+ * @param {number} sunEl sun elevation
+ * @param {number} vert vertical exaggeration
  * @returns {
  *  min: number,
  *  max:number,
@@ -125,17 +138,21 @@ function toHmap(image, metersPerPixel) {
  *  height: number
  * } heightmap
  */
-function processPixels(image, metersPerPixel) {
+function processPixels(image, metersPerPixel, sunAz, sunEl, vert) {
   const { width, height, data } = image;
-  console.log(height, height / 4);
-
   // 139, 988,-3395
   const step = height / N_SLICES;
   const slices = times(N_SLICES, (i) =>
     data.slice(i * step * width * 4, (i + 1) * step * width * N_SLICES)
   ).map((data) => {
     const htex = toHeights.setOutput([width, step])(data, width);
-    const pixels = slope.setOutput([width, step])(htex, metersPerPixel);
+    const pixels = slope.setOutput([width, step])(
+      htex,
+      metersPerPixel,
+      sunAz,
+      sunEl,
+      vert
+    );
     const extremay = extrema_y.setOutput([step])(htex, step);
     const extrema = extremay.reduce(([min, max], [mi, ma]) => {
       return [mi < min ? mi : min, ma > max ? ma : max];
