@@ -3,9 +3,10 @@ p5.disableFriendlyErrors = true;
 const MAP_NAME = "emeraldLakesBiggest";
 const TRAILS_SHP_FILE = "COTrails/Trails_COTREX02192019-wgs84.shp";
 let copperplateLight;
-
+let courier;
 function preload() {
   copperplateLight = loadFont("/assets/Copperplate Light.ttf");
+  courier = loadFont("/assets/CourierPrime-Regular.ttf");
 }
 
 async function setup() {
@@ -49,20 +50,30 @@ async function setup() {
     "Skyline",
   ];
 
-  const keepList = ["Vestal Peak", "Jagged Mountain", "Sunlight Peak"];
+  const keepList = [
+    "Vestal Peak",
+    "Jagged Mountain",
+    "Sunlight Peak",
+    "Arrow Peak",
+    "Trinity Peaks",
+    "Leviathan Peak",
+    "Windom Peak",
+    "Endlich Mesa",
+    "Mount Oso",
+  ];
 
   createCanvas(canvas.width, canvas.height);
 
   const curveStepCount = 20;
-  const curveStepLength = 2;
+  const curveStepLength = 5;
   const curvePixelCount = curveStepCount * curveStepLength;
 
   const curveCount = (1 / curvePixelCount) * (canvas.width * canvas.height);
 
   const backgroundTextSize = 2 * 16;
-  const trailTextSize = 2 * 32;
-  const mountainLabelSize = 2 * 16;
-  const mountainLabelColor = p.Lowland2;
+  const trailTextSize = 3 * 16;
+  const mountainLabelSize = 3 * 16;
+  const mountainLabelColor = "black";
   background(p.JuniperBark8);
 
   const genCurve = (topo) => () => {
@@ -87,33 +98,33 @@ async function setup() {
     );
   };
 
-  // times(0.2 * curveCount, genCurve(topo)).forEach(colorAndDrawCurve(topo));
+  const mountains = getMountainFeatures(bounds, geoJSON);
+  const waterFeatures = getWaterFeatures(bounds, geoJSON);
+  const trails = getTrails(bounds, geoJSON, exclude, []);
 
-  // mountainLayer(bounds.box, zoom);
-  // times(0.4 * curveCount, genCurve(topo)).forEach(colorAndDrawCurve(topo));
-  // getTrails comes from trails.js
-  const trails = await getTrails(exclude, bounds, geoJSON);
-  const mountains = await getMountainFeatures(bounds, geoJSON);
-
-  // times(0.8 * curveCount, genCurve(topo)).forEach(colorAndDrawCurve(topo));
+  times(0.8 * curveCount, genCurve(topo)).forEach(colorAndDrawCurve(topo));
   textsLayer(
     topo,
     backgroundTextSize,
     shuffle(texts.poems.split("---")).join("\n"),
     (bbox = [
-      (1 / 5) * canvas.width,
-      (1 / 5) * canvas.height,
-      (4 / 5) * canvas.width,
-      (4 / 5) * canvas.height,
+      (1 / 7) * canvas.width,
+      (1 / 7) * canvas.height,
+      (6 / 7) * canvas.width,
+      (6 / 7) * canvas.height,
     ])
   );
   trailsLayer(topo, trails, trailTextSize, p.yellow, [p.JuniperBark9, p.ochre]);
+
+  drawLines(topo, waterFeatures, [p.bgBlue, p.aquamarine]);
+
   mountainLayer(
     mountains,
-    copperplateLight,
+    courier,
     mountainLabelSize,
     mountainLabelColor,
-    keepList
+    keepList,
+    true
   );
 }
 
