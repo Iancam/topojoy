@@ -19,14 +19,14 @@ const featuresToScreenCoords =
       ]);
     const coords = _.uniqBy(imageCoords, JSON.stringify);
 
-    return { name: properties.name, coords };
+    return { ...properties, coords };
   };
 
 // #### edit here to only include certain features ####
 const isNamedTrail = ({ properties }) =>
   properties.type === "Trail" &&
   properties.surface === "dirt" &&
-  properties.name !== "";
+  properties.name;
 
 const excludeList =
   (exclude) =>
@@ -38,25 +38,30 @@ const screenCoordListToObj = (obj, { name, coords }) => {
   return obj;
 };
 
-async function getTrails(exclude, { box, zoom }, geoJSON) {
+function getTrails({ box, zoom }, geoJSON, exclude, include) {
   const trails = geoJSON.features
-    .filter(isNamedTrail)
-    .filter(excludeList(exclude))
+    .filter(
+      ({ properties }) =>
+        !properties.waterway && !(properties.natural === "peak")
+    )
+    // .filter(excludeList(exclude))
     .map(featuresToScreenCoords(zoom, box))
-    .filter(({ coords }) => coords.length > 0)
-    .reduce(screenCoordListToObj, {});
+    .filter(({ coords }) => coords.length > 0);
+  // .reduce(screenCoordListToObj, {});
 
   return trails;
 }
 
-function getWaterFeatures(geoJSON) {
-  return geoJSON.features.filter(({ properties }) => properties.waterway);
+function getWaterFeatures({ box, zoom }, geoJSON) {
+  return geoJSON.features
+    .filter(({ properties }) => properties.waterway)
+    .map(featuresToScreenCoords(zoom, box))
+    .reduce(screenCoordListToObj, {});
 }
 
 function getMountainFeatures({ box, zoom }, geoJSON) {
-  console.log(geoJSON);
   return geoJSON.features
-    .filter(({ properties }) => (properties.natural = "peak"))
+    .filter(({ properties }) => properties.natural === "peak")
     .map(featuresToScreenCoords(zoom, box))
     .reduce(screenCoordListToObj, {});
 }
@@ -81,8 +86,8 @@ async function getGeoJSONFromOSM(latLongBox) {
 
   const water = `
   way["waterway"="river"](${latLongBox.join(",")});
-  way["waterway"="stream"](${latLongBox.join(",")});
-  way["natural"="water"](${latLongBox.join(",")});
+  // way["waterway"="stream"](${latLongBox.join(",")});
+  // way["natural"="water"](${latLongBox.join(",")});
   `;
   const mountains = `
   node["natural"="peak"](${latLongBox.join(",")});
@@ -93,6 +98,8 @@ async function getGeoJSONFromOSM(latLongBox) {
   const query = `
   [out:json];
 (
+  ${hiking}
+  ${water}
   ${mountains}
   
 );
