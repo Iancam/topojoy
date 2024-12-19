@@ -15,6 +15,75 @@ for these bonds of fellowship,
 they achieve greatness
 and are praised.`,
   poems: `
+Out of the night that covers me,
+    Black as the pit from pole to pole,
+I thank whatever gods may be
+    For my unconquerable soul.
+
+In the fell clutch of circumstance
+    I have not winced nor cried aloud.
+Under the bludgeonings of chance
+    My head is bloody, but unbowed.
+
+Beyond this place of wrath and tears
+    Looms but the Horror of the shade,
+And yet the menace of the years
+    Finds and shall find me unafraid.
+
+It matters not how strait the gate,
+    How charged with punishments the scroll,
+I am the master of my fate,
+    I am the captain of my soul.
+—--
+Time and again, however well we know the landscape of love
+And the churchyard with the lamenting names
+And the terrifyingly silent abyss where all others end
+Time and again we go, two together
+Beneath the old trees and lay down between the flowers,
+Face to face with the sky
+
+—--
+A noiseless patient spider,
+I mark'd where on a little promontory it stood isolated,
+Mark'd how to explore the vacant vast surrounding,
+It launch'd forth filament, filament, filament, out of itself,
+Ever unreeling them, ever tirelessly speeding them.
+
+And you O my soul where you stand,
+Surrounded, detached, in measureless oceans of space,
+Ceaselessly musing, venturing, throwing, seeking the spheres to connect them,
+Till the bridge you will need be form'd, till the ductile anchor hold,
+Till the gossamer thread you fling catch somewhere, O my soul.
+---
+Regard him as one who
+points out
+treasure,
+the wise one who
+seeing your faults
+rebukes you.
+Stay with this sort of sage.
+For the one who stays
+with a sage of this sort,
+things get better,
+not worse.
+Let him admonish, instruct,
+deflect you
+away from poor manners.
+To the good, he's endearing;
+to the bad, he's not.
+---
+Don't associate with bad friends.
+Don't associate with the low.
+Associate with admirable friends.
+Associate with the best.
+---
+They're addicted to heedlessness
+-dullards, fools-
+while one who is wise
+cherishes heedfulness
+as his highest wealth.
+`,
+  poemsPersonal: `
 Remember the Juniper tree,
 Gray and dead through
 so many branches and yet, 
