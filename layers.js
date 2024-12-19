@@ -33,15 +33,15 @@ function textsLayer(
   textAlign(CENTER, CENTER);
 
   const alpha = 200;
-  fillText(topo, text, alpha, predicate, textSize, bbox);
+  fillText(topo, text, alpha, textSize, predicate, bbox);
 }
 
 function fillText(
   topo,
   inpText,
   alpha,
-  predicate = () => true,
   size,
+  predicate = () => true,
   bbox = [0, 0, width, height],
   margin = 40
 ) {
@@ -86,24 +86,60 @@ function fillText(
   }
 }
 
-function mountainLayer(peaks, font, labelSize, mountainLabelColor, keepList) {
+function mountainLayer(
+  peaks,
+  font,
+  labelSize,
+  mountainLabelColor,
+  keepList = [],
+  drop = false
+) {
+  const peaksObj = Object.entries(peaks)
+    .filter(([name]) => (drop ? keepList.includes(name) : true))
+    .map(([name, [pt]]) => {
+      return [name, pt];
+    })
+    .reduce((obj, [name, pt]) => {
+      obj[name] = pt;
+      return obj;
+    }, {});
+
   textSize(labelSize);
   textAlign(CENTER, CENTER);
-  textFont(font);
   fill(mountainLabelColor);
+  textFont("Courier");
+  textStyle(BOLD);
+  Object.values(peaks).forEach(([pt]) => {
+    text("\u{26F0}", pt[0], pt[1]);
+  });
+
+  textFont(font);
+  noStroke();
+
+  textStyle(NORMAL);
+  placeWithoutCollision(peaksObj, font, keepList);
+}
+
+/**
+ * Draws labels at their specified points, avoiding collisions with previous labels that have been drawn.
+ * @param {Object} labels - A dictionary of labels with their corresponding points.
+ * @param {Object} font - p5.Font object used to calculate bounding box of text
+ * @param {Array<string>} keepList - List of labels to always keep, even if they collide with other labels.
+ * @returns {void}
+ */
+const placeWithoutCollision = (labels, font, keepList) => {
   let bboxes = [];
   for (const name of keepList || []) {
-    const bbox = font.textBounds(name, peaks[name][0][0], peaks[name][0][1]);
+    const bbox = font.textBounds(name, labels[name][0], labels[name][1]);
     bboxes.push(bbox);
-    text(name, peaks[name][0][0], peaks[name][0][1]);
+    text(name, labels[name][0], labels[name][1]);
   }
-  Object.entries(peaks).forEach(([name, [pt]]) => {
+
+  Object.entries(labels).forEach(([name, pt]) => {
     const bbox = font.textBounds(name, pt[0], pt[1]);
     let skip = false;
     for (const box of bboxes) {
       if (collision(bbox, box)) {
-        console.log(name);
-
         skip = true;
         break;
       }
@@ -114,7 +150,45 @@ function mountainLayer(peaks, font, labelSize, mountainLabelColor, keepList) {
       text(name, pt[0], pt[1]);
     }
   });
-  console.log(bboxes);
+};
+
+/**
+ * Given a topology `topo`, a collection of coordinates `lines` and
+ * a color palette `lineColors`, this function renders the lines on
+ * the canvas.  The lines are rendered in a gradient of colors,
+ * depending on the slope of the terrain at each point.
+ *
+ * @param {Object} topo - A topology object, as returned by `processImage`.
+ * @param {Array<Object>|Object} lines - A collection of coordinates, where
+ *     each element is either an object with a `coords` key containing an
+ *     array of xy coordinates, or a plain array of xy coordinates.
+ * @param {Array<string>} lineColors - An array of colors to use for the
+ *     gradient.  The colors should be in the format `#rrggbb`.
+ * @returns {void}
+ */
+function drawLines(topo, lines, lineColors, weight = 1.5) {
+  const slopeScale = chroma.scale(lineColors);
+  let Lines = Array.isArray(lines)
+    ? lines.map(({ coords }) => coords)
+    : Object.values(lines);
+
+  Lines.forEach((coords) => {
+    coords.forEach(([x, y], i) => {
+      if (x > topo.width || y > topo.height) return;
+      const [, slope] = topo.pixels[y][x];
+      stroke(...res(slopeScale(slope / 60)), 255);
+
+      drawCurve(
+        makeCurve(x, y, abs(randomGaussian(8, 3)), 4, topo, {
+          angleTransform: (() => {
+            let counter = i;
+            return (a) => getAngle([x, y], coords[counter++] || [0, 0]);
+          })(),
+        }),
+        weight
+      );
+    });
+  });
 }
 
 /**
@@ -129,36 +203,29 @@ function mountainLayer(peaks, font, labelSize, mountainLabelColor, keepList) {
  *     key is the name of the trail and each value is a list of xy
  *     coordinates.
  */
-function trailsLayer(topo, trails, ts, textColor, trailColors) {
+function trailsLayer(topo, trails, ts, textColor, trailColors, keepList = []) {
   // ## TRAIL LINES ##
-  const slopeScale = chroma.scale(trailColors);
-  Object.values(trails).forEach((coords) => {
-    coords.forEach(([x, y], i) => {
-      if (x > topo.width || y > topo.height) return;
-      const [, slope] = topo.pixels[y][x];
-      stroke(...res(slopeScale(slope / 60)), 155);
-
-      drawCurve(
-        makeCurve(x, y, abs(randomGaussian(8, 3)), 4, topo, {
-          angleTransform: (() => {
-            let counter = i;
-            return (a) => getAngle([x, y], coords[counter++] || [0, 0]);
-          })(),
-        }),
-        1.5
-      );
-    });
-  });
-
+  drawLines(topo, trails, trailColors, 3);
+  strokeWeight(1);
   // ## TRAIL NAMES ##
   textSize(ts);
-  textFont("Courier");
+  textFont(courier);
   fill(textColor);
+  let names = [];
+  let labels = {};
+  trails.forEach(({ name, coords }) => {
+    if (!name) return;
+    if (names.includes(name)) return;
+    names.push(name);
 
-  Object.entries(trails).forEach(([name, coords]) => {
     const mid = floor(coords.length / 2);
-    const [x, y] = coords[mid];
-    name.split(" ").join("\n");
-    text(name.split(" ").join("\n"), x, y);
+    const pt = coords[mid];
+    labels[name.split(" ").join("\n")] = pt;
   });
+
+  placeWithoutCollision(
+    labels,
+    courier,
+    keepList.map((name) => name.split(" ").join("\n"))
+  );
 }
