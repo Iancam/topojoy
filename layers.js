@@ -166,7 +166,7 @@ const placeWithoutCollision = (labels, font, keepList) => {
  *     gradient.  The colors should be in the format `#rrggbb`.
  * @returns {void}
  */
-function drawLines(topo, lines, lineColors, weight = 1.5) {
+function drawLines(topo, lines, lineColors, weight = 1.5, curveLength = 16) {
   const slopeScale = chroma.scale(lineColors);
   let Lines = Array.isArray(lines)
     ? lines.map(({ coords }) => coords)
@@ -179,7 +179,7 @@ function drawLines(topo, lines, lineColors, weight = 1.5) {
       stroke(...res(slopeScale(slope / 60)), 255);
 
       drawCurve(
-        makeCurve(x, y, abs(randomGaussian(8, 3)), 4, topo, {
+        makeCurve(x, y, abs(randomGaussian(curveLength, 8)), 4, topo, {
           angleTransform: (() => {
             let counter = i;
             return (a) => getAngle([x, y], coords[counter++] || [0, 0]);
