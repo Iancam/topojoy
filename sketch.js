@@ -1,7 +1,6 @@
 p5.disableFriendlyErrors = true;
 
 const MAP_NAME = "emeraldLakesBiggest";
-const TRAILS_SHP_FILE = "COTrails/Trails_COTREX02192019-wgs84.shp";
 let copperplateLight;
 let courier;
 function preload() {
@@ -12,7 +11,7 @@ function preload() {
 async function setup() {
   // Load the output of the topojoy tool
   // https://github.com/Iancam/topojoy
-  const response = await fetch(MAP_NAME + "Bounds.json");
+  const response = await fetch("data/" + MAP_NAME + "Bounds.json");
   const bounds = await response.json();
   const {
     box: [x0, y0, x1, y1],
@@ -25,7 +24,7 @@ async function setup() {
   const geoJSON = await getGeoJSONFromOSM(latLngbox);
 
   const { topo, canvas } = await processImage(
-    MAP_NAME + ".png",
+    "data/" + MAP_NAME + ".png",
     [x0, y0],
     zoom
   );
