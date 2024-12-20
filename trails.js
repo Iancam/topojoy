@@ -1,32 +1,25 @@
-const featuresToScreenCoords =
-  (zoom, box) =>
-  ({ properties, geometry }) => {
-    let { coordinates } = geometry;
-    if (typeof coordinates[0] === "number") {
-      coordinates = [coordinates];
-    }
-    const imageCoords = coordinates
-      .map((coord) => pointToTileFraction(...coord, zoom))
-      .filter(([x, y]) => {
-        const inBounds =
-          x < box[2] + 1 && y < box[3] + 1 && x > box[0] && y > box[1];
-        // if (inBounds) console.log(x, y, ...box);
-        return inBounds;
-      })
-      .map(([x, y]) => [
-        Math.floor(256 * (x - box[0])),
-        Math.floor(256 * (y - box[1])),
-      ]);
-    const coords = _.uniqBy(imageCoords, JSON.stringify);
+const featuresToScreenCoords = (zoom, box) => (feature) => {
+  const { properties, geometry } = feature;
+  let { coordinates } = geometry;
+  if (typeof coordinates[0] === "number") {
+    coordinates = [coordinates];
+  }
+  const imageCoords = coordinates
+    .map((coord) => pointToTileFraction(...coord, zoom))
+    .filter(([x, y]) => {
+      const inBounds =
+        x < box[2] + 1 && y < box[3] + 1 && x > box[0] && y > box[1];
+      // if (inBounds) console.log(x, y, ...box);
+      return inBounds;
+    })
+    .map(([x, y]) => [
+      Math.floor(256 * (x - box[0])),
+      Math.floor(256 * (y - box[1])),
+    ]);
+  const coords = _.uniqBy(imageCoords, JSON.stringify);
 
-    return { ...properties, coords };
-  };
-
-// #### edit here to only include certain features ####
-const isNamedTrail = ({ properties }) =>
-  properties.type === "Trail" &&
-  properties.surface === "dirt" &&
-  properties.name;
+  return { ...properties, coords };
+};
 
 const excludeList =
   (exclude) =>
@@ -38,13 +31,31 @@ const screenCoordListToObj = (obj, { name, coords }) => {
   return obj;
 };
 
+const makeDenser = (feature) => {
+  const denser = turf.lineChunk(feature, 0.5);
+  const asOne = denser.features.reduce(
+    (bigFeature, feature) => {
+      const { coordinates } = feature.geometry;
+      bigFeature.geometry.coordinates.push(coordinates);
+      return bigFeature;
+    },
+    {
+      properties: feature.properties,
+      id: feature.id,
+      geometry: { type: "LineString", coordinates: [] },
+    }
+  );
+  asOne.geometry.coordinates = asOne.geometry.coordinates.flat();
+  return asOne;
+};
+
 function getTrails({ box, zoom }, geoJSON, exclude, include) {
   const trails = geoJSON.features
     .filter(
       ({ properties }) =>
         !properties.waterway && !(properties.natural === "peak")
     )
-    // .filter(excludeList(exclude))
+    .map(makeDenser)
     .map(featuresToScreenCoords(zoom, box))
     .filter(({ coords }) => coords.length > 0);
   // .reduce(screenCoordListToObj, {});
@@ -55,6 +66,7 @@ function getTrails({ box, zoom }, geoJSON, exclude, include) {
 function getWaterFeatures({ box, zoom }, geoJSON) {
   return geoJSON.features
     .filter(({ properties }) => properties.waterway)
+    .map(makeDenser)
     .map(featuresToScreenCoords(zoom, box))
     .reduce(screenCoordListToObj, {});
 }
