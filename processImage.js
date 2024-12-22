@@ -72,11 +72,11 @@ const slope = gpu
   })
   .setDynamicOutput(true);
 const extrema_y = gpu
-  .createKernel(function (hArray, height) {
+  .createKernel(function (hArray, width) {
     let min = Infinity;
     let max = -Infinity;
-    for (let i = 0; i < height; i++) {
-      const h = hArray[this.thread.x][i];
+    for (let i = 0; i < width; i++) {
+      const h = hArray[this.thread.y][i];
       if (h < min) min = h;
       if (h > max) max = h;
     }
@@ -146,6 +146,8 @@ function processPixels(image, metersPerPixel, sunAz, sunEl, vert) {
     data.slice(i * step * width * 4, (i + 1) * step * width * N_SLICES)
   ).map((data) => {
     const htex = toHeights.setOutput([width, step])(data, width);
+    console.log(htex);
+
     const pixels = slope.setOutput([width, step])(
       htex,
       metersPerPixel,
@@ -153,14 +155,25 @@ function processPixels(image, metersPerPixel, sunAz, sunEl, vert) {
       sunEl,
       vert
     );
-    const extremay = extrema_y.setOutput([step])(htex, step);
+    const extremay = extrema_y.setOutput([step])(htex, width);
+
     const extrema = extremay.reduce(([min, max], [mi, ma]) => {
       return [mi < min ? mi : min, ma > max ? ma : max];
     });
+
+    let min = Infinity;
+    let max = -Infinity;
+    for (let i = 0; i < step; i++) {
+      for (let j = 0; j < width; j++) {
+        const h = pixels[i][j][0];
+        if (h < min) min = h;
+        if (h > max) max = h;
+      }
+    }
     return {
-      min: extrema[0],
-      max: extrema[1],
-      magnitude: extrema[1] - extrema[0],
+      min,
+      max,
+      magnitude: max - min,
       pixels,
       width,
       height,
