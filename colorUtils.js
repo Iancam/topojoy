@@ -51,7 +51,7 @@ const p = {
  */
 const randsFactory = (topo) => (percentOfHeight, gaussDistTightness) => () =>
   randomGaussian(
-    topo.max - percentOfHeight * topo.magnitude,
+    topo.min + percentOfHeight * topo.magnitude,
     topo.magnitude / gaussDistTightness
   );
 
@@ -75,64 +75,25 @@ function getContrastRatio(color1, color2) {
  * @param {Array<Array<number>>} topo.pixels - A 2D array where each element represents [height, slope, aspect] of a pixel.
  * @returns {string} - The color assigned to the pixel as a hexadecimal or named color.
  */
-const colorAt = ([x, y], topo) => {
-  const [height, slope, aspect, shade] = topo.pixels[y][x];
-  // const vert = Math.abs(aspect > 90 ? aspect - 180 : aspect) % 180;
-  // const brightness = vert / 90;
+const colorAtFactory = (colorPlanData, topo) => {
   const randHeight = randsFactory(topo);
-  /*
-   * colorPlan is an array of tuples, where each tuple represents a "rule"
-   * for determining the color of a pixel. The first element of the tuple
-   * is a function that returns a height value, and the second element is the
-   * color to use if the pixel's height is less than that value. Each rule is
-   * applied in order, and the first rule that matches determines the color.
-   * The rules are defined so that the color will change as the height increases.
-   *
-   * Confusingly, higher numbers to randHeight's first argument represent lower
-   * elevations.
-   *
-   * To make your own colorPlan, begin with a rule for very low elevations, that
-   * always returns Infinity.
-   * Then, above it, add rules for elevations you want to highlight. I split mine
-   * into low, middle, and high elevations. Begin with simple rules, like always
-   * returning the same base color, then expand.
-   *
-   */
-  const colorPlan = [
-    // lower elevations
-    [
-      randHeight(0.7, 25),
-      () => random([p.JuniperBark9, p.JuniperBark8, p.JuniperBark10]),
-    ],
-    //  middle elevations
-    [
-      randHeight(0.6, 10),
-      () => res(chroma.scale([p.JuniperBark3, p.JuniperBark9])(aspect / 360)),
-    ],
-    [
-      randHeight(0.3, 15),
-      () =>
-        darken(
-          random([
-            p.JuniperBark4,
-            p.JuniperBark5,
-            p.JuniperBark6,
-            p.JuniperBark7,
-          ]),
-          0.5
-        ),
-    ],
-    // higher elevations
-    [
-      () => Infinity,
-      () => weightedRandom([p.JuniperBark1, p.JuniperBark3, "pink"], [5, 5, 1]),
-    ],
-  ];
+  colorPlan = colorPlanData.map(({ height, spread, colors }) => {
+    spread = spread || 25;
 
-  for (let [compHeight, clar] of colorPlan) {
-    if (height < compHeight()) {
-      const color = typeof clar === "function" ? clar() : clar;
-      return color;
+    if (Array.isArray(colors)) colorFunc = () => random(colors);
+    // else if (typeof colors === "function")
+    return [
+      height === Infinity ? () => Infinity : randHeight(height, spread),
+      colorFunc,
+    ];
+  });
+  return ([x, y]) => {
+    const [height, slope, aspect, shade] = topo.pixels[y][x];
+    for (let [compHeight, clar] of colorPlan) {
+      if (height < compHeight()) {
+        const color = typeof clar === "function" ? clar() : clar;
+        return color;
+      }
     }
-  }
+  };
 };

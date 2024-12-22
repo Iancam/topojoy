@@ -1,6 +1,6 @@
 p5.disableFriendlyErrors = true;
 
-const MAP_NAME = "emeraldLakesBiggest";
+const MAP_NAME = "sawtooth";
 let copperplateLight;
 let courier;
 function preload() {
@@ -21,59 +21,97 @@ async function setup() {
     zoom,
   } = bounds;
 
-  const geoJSON = await getGeoJSONFromOSM(latLngbox);
-
   const { topo, canvas } = await processImage(
     "data/" + MAP_NAME + ".png",
     [x0, y0],
     zoom
   );
 
-  const exclude = [
-    "Canyon",
-    "Eileen",
-    "Ute",
-    "East Ute",
-    "East Creek",
-    "Cunningham",
-    "Rincon",
-    "Pole",
-    "Horse Route",
-    "View Trail",
-    "Vis Trail",
-    "Bear Creek",
-    "Whitehead",
-    "Piedra",
-    "Buckeye",
-    "Endlich Mesa Spur",
-    "Skyline",
-  ];
+  const basePixelSize = Math.sqrt(width * height);
+  const config = {
+    curve: {
+      stepCount: 20,
+      stepLength: 5,
+      countScalar: 1,
+    },
+    trail: {
+      colorRange: [p.JuniperBark9, p.ochre],
+      textColor: p.yellow,
+      textSize: 3 * basePixelSize,
+      stepLength: 4,
+      stepCount: 8,
+      weight: 1.5,
+    },
+    river: {
+      colorRange: [p.bgBlue, p.aquamarine],
+      stepLength: 4,
+      stepCount: 8,
+      weight: 1.5,
+      streams: true,
+    },
+    backgroundText: {
+      font: "Courier",
+      textSize: 3 * basePixelSize,
+      bbox: [
+        (1 / 7) * canvas.width,
+        (1 / 7) * canvas.height,
+        (6 / 7) * canvas.width,
+        (6 / 7) * canvas.height,
+      ],
+      text: shuffle(texts.poems.split("---")).join("\n"),
+      elevationRange: [0.7, 1],
+    },
+    mountain: {
+      labelSize: 3 * basePixelSize,
+      labelColor: "black",
+      iconSize: 3 * basePixelSize,
+      iconColor: "black",
+      keepList: [],
+      // [
+      //   "Vestal Peak",
+      //   "Jagged Mountain",
+      //   "Sunlight Peak",
+      //   "Arrow Peak",
+      //   "Trinity Peaks",
+      //   "Leviathan Peak",
+      //   "Windom Peak",
+      //   "Endlich Mesa",
+      //   "Mount Oso",
+      // ],
+    },
+    colorPlan: [
+      {
+        height: 0.3,
+        colors: [p.JuniperBark9, p.JuniperBark8, p.JuniperBark10],
+      },
+      { height: 0.4, colors: [p.JuniperBark3, p.JuniperBark9] },
+      {
+        height: 0.7,
+        colors: [
+          p.JuniperBark4,
+          p.JuniperBark5,
+          p.JuniperBark6,
+          p.JuniperBark7,
+        ],
+      },
+      { height: Infinity, colors: [p.JuniperBark1, p.JuniperBark3, "pink"] },
+    ],
+    background: p.JuniperBark8,
+    crossHatch: false,
+  };
 
-  const keepList = [
-    "Vestal Peak",
-    "Jagged Mountain",
-    "Sunlight Peak",
-    "Arrow Peak",
-    "Trinity Peaks",
-    "Leviathan Peak",
-    "Windom Peak",
-    "Endlich Mesa",
-    "Mount Oso",
-  ];
+  const geoJSON = await getGeoJSONFromOSM(latLngbox, {
+    streams: config.river.streams,
+  });
+
+  const curvePixelCount = config.curve.stepCount * config.curve.stepLength;
+  const curveCount =
+    (config.curve.countScalar / curvePixelCount) *
+    (canvas.width * canvas.height);
+  const colorAt = colorAtFactory(config.colorPlan, topo);
 
   createCanvas(canvas.width, canvas.height);
-
-  const curveStepCount = 20;
-  const curveStepLength = 5;
-  const curvePixelCount = curveStepCount * curveStepLength;
-
-  const curveCount = (1 / curvePixelCount) * (canvas.width * canvas.height);
-
-  const backgroundTextSize = 2 * 16;
-  const trailTextSize = 3 * 16;
-  const mountainLabelSize = 3 * 16;
-  const mountainLabelColor = "black";
-  background(p.JuniperBark8);
+  background(config.background);
 
   const genCurve = (topo) => () => {
     const angleTransforms = [
@@ -86,11 +124,13 @@ async function setup() {
     return makeCurve(
       floor(random(0, topo.width - 1)),
       floor(random(0, topo.height - 1)),
-      curveStepCount,
-      curveStepLength,
+      config.curve.stepCount,
+      config.curve.stepLength,
       topo,
       {
-        angleTransform: random([angleTransforms[0], angleTransforms[1]]),
+        angleTransform: config.crossHatch
+          ? random(angleTransforms)
+          : random([angleTransforms[0], angleTransforms[1]]),
         // angleTransform: random([angleTransforms[3], angleTransforms[2]]),
         // angleTransform: random(angleTransforms), // make it gridlike
       }
@@ -99,32 +139,15 @@ async function setup() {
 
   const mountains = getMountainFeatures(bounds, geoJSON);
   const waterFeatures = getWaterFeatures(bounds, geoJSON);
-  const trails = getTrails(bounds, geoJSON, exclude, []);
+  const trails = getTrails(bounds, geoJSON);
 
-  times(0.8 * curveCount, genCurve(topo)).forEach(colorAndDrawCurve(topo));
-  textsLayer(
-    topo,
-    backgroundTextSize,
-    shuffle(texts.poems.split("---")).join("\n"),
-    (bbox = [
-      (1 / 7) * canvas.width,
-      (1 / 7) * canvas.height,
-      (6 / 7) * canvas.width,
-      (6 / 7) * canvas.height,
-    ])
-  );
-  trailsLayer(topo, trails, trailTextSize, p.yellow, [p.JuniperBark9, p.ochre]);
+  times(0.8 * curveCount, genCurve(topo)).forEach(colorAndDrawCurve(colorAt));
+  textsLayer(topo, colorAt, config.backgroundText);
+  trailsLayer(topo, trails, config.trail);
 
-  drawLines(topo, waterFeatures, [p.bgBlue, p.aquamarine]);
+  drawLines(topo, waterFeatures, config.river);
 
-  mountainLayer(
-    mountains,
-    courier,
-    mountainLabelSize,
-    mountainLabelColor,
-    keepList,
-    true
-  );
+  mountainLayer(mountains, courier, config.mountain);
 }
 
 /**
@@ -187,8 +210,8 @@ function drawCurve(curve, weight) {
   endShape();
 }
 
-const colorAndDrawCurve = (topo) => (c) => {
-  const col = color(colorAt(c[0], topo));
+const colorAndDrawCurve = (colorAt) => (c) => {
+  const col = color(colorAt(c[0]));
   col.setAlpha(128);
   stroke(col);
   drawCurve(c, 1.8);
@@ -233,7 +256,7 @@ async function processImage(url, [tileX, tileY], zoom) {
     getMetersPerPixelAtLatitude(lat, 14),
     45,
     45,
-    2
+    1
   );
   return { topo, canvas };
 }
