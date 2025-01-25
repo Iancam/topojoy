@@ -1,8 +1,33 @@
+import chroma from "chroma-js";
+import _ from "lodash";
+import { randomGaussian, times, weightedRandom } from "./libraries/utils";
+function luminanceContrastRatio(color1, color2) {
+  const luminance1 = chroma(color1).luminance();
+  const luminance2 = chroma(color2).luminance();
+
+  const brighter = Math.max(luminance1, luminance2);
+  const darker = Math.min(luminance1, luminance2);
+
+  return (brighter + 0.05) / (darker + 0.05);
+}
+
+function hueDistance(color1, color2) {
+  const hue1 = chroma(color1).lch()[2];
+  const hue2 = chroma(color2).lch()[2];
+
+  let diff = Math.abs(hue1 - hue2);
+  // Consider the shorter arc around the color wheel
+  if (diff > 180) {
+    diff = 360 - diff;
+  }
+
+  return diff;
+}
+
 // color palette
-const p = {
+export const p = {
   orange: "#ed9228",
   aquamarine: "#7FFFD4",
-  white: "#A8FFFF", //"#F2EBDC",
   bgBlue: "#004E63", //"#273240"
   fgBlue: "#008080",
   sienna: "#8C5332",
@@ -11,6 +36,16 @@ const p = {
   siennaBright: "#BF805C",
   yellow: "#FCD94E",
   ochre: "#D38614",
+
+  white: "#A8FFFF", //"#F2EBDC",
+  white2: "#DFEBF2",
+  f1: "#014040",
+  f2: "#02735E",
+  f3: "#03A678",
+  f4: "#F27405",
+  f5: "#731702",
+  f6: "#2323FF",
+  f7: "#04D9FF",
   JuniperBark1: "#DFEBF2",
   JuniperBark2: "#D8E8F2",
   JuniperBark3: "#F2D9BB",
@@ -22,18 +57,97 @@ const p = {
   JuniperBark9: "#59372A",
   JuniperBark10: "#0D0D0D",
 
+  lhk1: "#730217",
+  lhk2: "#D9ADD6",
+  lhk3: "#8F6CD9",
+  lhk4: "#BFAA69",
+  lhk5: "#678096",
+
   Lowland1: "#a8d5ba", // Light Green
   Lowland2: "#85bda6", // Mid Green
 };
-//   MidElev1: "#659cad", // Teal
-//   MidElev2: "#4686a6", // Deep Blue
-//   Highland1: "#5b5d7a", // Slate Blue
-//   Highland2: "#423d59", // Dark Violet
-//   Snow: "#ffffff", // Pure White
-//   Rock: "#8b5e34", // Rock Brown
-//   Soil: "#6f4a2f", // Dark Earth Brown
-//   Shadow: "#3d3d3d", // Shadow Gray
-// };
+
+export const colorScales = {
+  mint: [
+    "#e4f1e1",
+    "#b4d9cc",
+    "#89c0b6",
+    "#63a6a0",
+    "#448c8a",
+    "#287274",
+    "#0d585f",
+  ].reverse(),
+  sunset: [
+    "#fcde9c",
+    "#faa476",
+    "#f0746e",
+    "#e34f6f",
+    "#dc3977",
+    "#b9257a",
+    "#7c1d6f",
+  ].reverse(),
+  burg: [
+    "#ffc6c4",
+    "#f4a3a8",
+    "#e38191",
+    "#cc607d",
+    "#ad466c",
+    "#8b3058",
+    "#672044",
+  ].reverse(),
+};
+
+export const colorScaleToWeightedPlan = (scale, weight = 1, spread = 25) => {
+  if (!scale) throw new Error("Missing color scale");
+  if (scale.length === 0) throw new Error("Empty color scale");
+  const heightStep = 1 / scale.length;
+
+  return scale.map((color, i) => {
+    return {
+      height: (i + 1) * heightStep === 1 ? Infinity : (i + 1) * heightStep,
+      colors: [color],
+      weight,
+      spread,
+    };
+  });
+};
+
+/**
+ * Plans are composable. Each rule has weight and a set of colors.
+ * Colors can be functions, allowing composition of rules
+ *
+ */
+export function mixWeightedPlans(plan1, plan2, weight = 1) {
+  const mergeWeightedRules = ([rule1, rule2]) => {
+    const w1 = rule1.weight / rule1.colors.length;
+    const rule1ColorWeights = times(rule1.colors.length, () => w1);
+    const w2 = rule2.weight / rule2.colors.length;
+    const rule2ColorWeights = times(rule2.colors.length, () => w2);
+
+    return {
+      height: rule1.height || rule2.height,
+      spread: rule1.spread || rule2.spread,
+      weight,
+      colors: () => {
+        const color = weightedRandom(
+          rule1.colors.concat(rule2.colors),
+          rule1ColorWeights.concat(rule2ColorWeights)
+        );
+        if (typeof color === "function") return color();
+        return color;
+      },
+    };
+  };
+
+  if (plan2.length === 1) {
+    const plan2Expanded = times(plan1.length, () => plan2[0]);
+    return _.zip(plan1, plan2Expanded).map(mergeWeightedRules);
+  }
+
+  if (plan1.length !== plan2.length)
+    throw new Error("Plans must be the same length");
+  return _.zip(plan1, plan2).map(mergeWeightedRules);
+}
 
 /**
  * A factory that returns a function which generates random heights for a pixel on a topographic map.
@@ -55,18 +169,9 @@ const randsFactory = (topo) => (percentOfHeight, gaussDistTightness) => () =>
     topo.magnitude / gaussDistTightness
   );
 
-const res = (c) => c._rgb.slice(0, 3);
-const brighten = (c, v) => res(chroma(c).brighten(v));
-const darken = (c, v) => res(chroma(c).darken(v));
-function getContrastRatio(color1, color2) {
-  const luminance1 = chroma(color1).luminance();
-  const luminance2 = chroma(color2).luminance();
-
-  const brighter = Math.max(luminance1, luminance2);
-  const darker = Math.min(luminance1, luminance2);
-
-  return (brighter + 0.05) / (darker + 0.05);
-}
+export const res = (c) => c._rgb.slice(0, 3);
+export const brighten = (c, v) => res(chroma(c).brighten(v));
+export const darken = (c, v) => res(chroma(c).darken(v));
 
 /**
  * Determines the color for a specific pixel on a topographic map based on its height, slope, and aspect.
@@ -75,12 +180,11 @@ function getContrastRatio(color1, color2) {
  * @param {Array<Array<number>>} topo.pixels - A 2D array where each element represents [height, slope, aspect] of a pixel.
  * @returns {string} - The color assigned to the pixel as a hexadecimal or named color.
  */
-const colorAtFactory = (colorPlanData, topo) => {
+export const colorAtFactory = (colorPlanData, topo) => {
   const randHeight = randsFactory(topo);
   colorPlan = colorPlanData.map(({ height, spread, colors }) => {
     spread = spread || 25;
-
-    if (Array.isArray(colors)) colorFunc = () => random(colors);
+    const colorFunc = Array.isArray(colors) ? () => random(colors) : colors;
     // else if (typeof colors === "function")
     return [
       height === Infinity ? () => Infinity : randHeight(height, spread),
@@ -92,8 +196,12 @@ const colorAtFactory = (colorPlanData, topo) => {
     for (let [compHeight, clar] of colorPlan) {
       if (height < compHeight()) {
         const color = typeof clar === "function" ? clar() : clar;
+        if (!color) {
+          console.log("no color found", { clar, height });
+        }
         return color;
       }
     }
+    console.log("no color found", { height, colorPlan });
   };
 };

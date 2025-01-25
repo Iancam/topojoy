@@ -1,3 +1,4 @@
+import { times } from "./libraries/utils";
 const N_SLICES = 4;
 
 function initGPU() {
@@ -138,7 +139,7 @@ function toHmap(image, metersPerPixel) {
  *  height: number
  * } heightmap
  */
-function processPixels(image, metersPerPixel, sunAz, sunEl, vert) {
+export function processPixels(image, metersPerPixel, sunAz, sunEl, vert) {
   const { width, height, data } = image;
   // 139, 988,-3395
   const step = height / N_SLICES;
@@ -146,7 +147,6 @@ function processPixels(image, metersPerPixel, sunAz, sunEl, vert) {
     data.slice(i * step * width * 4, (i + 1) * step * width * N_SLICES)
   ).map((data) => {
     const htex = toHeights.setOutput([width, step])(data, width);
-    console.log(htex);
 
     const pixels = slope.setOutput([width, step])(
       htex,

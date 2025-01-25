@@ -1,7 +1,7 @@
 // utils.js;
 
 // #### Tile Functions
-const tilenum_to_lonlat = function (x, y, zoom) {
+export const tilenum_to_lonlat = function (x, y, zoom) {
   const n_tiles = Math.pow(2, zoom);
   const lon_rad = ((x / n_tiles) * 2 - 1) * Math.PI;
   const merc_lat = (1 - (y / n_tiles) * 2) * Math.PI;
@@ -9,8 +9,9 @@ const tilenum_to_lonlat = function (x, y, zoom) {
 
   return { lon: (lon_rad * 180) / Math.PI, lat: (lat_rad * 180) / Math.PI };
 };
-lon2tile = (lon, zoom) => Math.floor(((lon + 180) / 360) * Math.pow(2, zoom));
-lat2tile = (lat, zoom) =>
+export const lon2tile = (lon, zoom) =>
+  Math.floor(((lon + 180) / 360) * Math.pow(2, zoom));
+export const lat2tile = (lat, zoom) =>
   Math.floor(
     ((1 -
       Math.log(
@@ -21,7 +22,7 @@ lat2tile = (lat, zoom) =>
       Math.pow(2, zoom)
   );
 
-function getMetersPerPixelAtLatitude(latitude, zoom) {
+export function getMetersPerPixelAtLatitude(latitude, zoom) {
   const earthCircumference = 40075016.686; // meters
   const mapSize = 256 * Math.pow(2, zoom); // pixels
   const metersPerPixel =
@@ -29,7 +30,7 @@ function getMetersPerPixelAtLatitude(latitude, zoom) {
   return metersPerPixel;
 }
 
-function pointToTileFraction(lon, lat, z) {
+export function pointToTileFraction(lon, lat, z) {
   var d2r = Math.PI / 180,
     r2d = 180 / Math.PI;
   var sin = Math.sin(lat * d2r),
@@ -43,7 +44,7 @@ function pointToTileFraction(lon, lat, z) {
   return [x, y, z];
 }
 
-function latLngToScreenPoint(bounds, location, zoom) {
+export function latLngToScreenPoint(bounds, location, zoom) {
   const [x0, y0] = bounds;
   const { lat, long } = location;
   let [x, y] = pointToTileFraction(lat, long, zoom);
@@ -53,15 +54,16 @@ function latLngToScreenPoint(bounds, location, zoom) {
 
 // #### Math Functions
 
-function shortestAngle(start, end) {
+export function shortestAngle(start, end) {
   return ((((end - start) % 360) + 540) % 360) - 180;
 }
-function lerpAngle(start, end, ratio) {
+export function lerpAngle(start, end, ratio) {
   return start + ((shortestAngle(start, end) * ratio) % 360);
 }
-const scaledH = (topo) => (height) => (height - topo.min) / topo.magnitude;
+export const scaledH = (topo) => (height) =>
+  (height - topo.min) / topo.magnitude;
 
-function times(num, func) {
+export function times(num, func) {
   let ret = [];
   for (let i = 0; i < num; i++) {
     ret.push(func(i));
@@ -69,7 +71,7 @@ function times(num, func) {
   return ret;
 }
 
-function dotProd(v1, v2) {
+export function dotProd(v1, v2) {
   let ret = 0;
   for (let i = 0; i < v1.length; i++) {
     ret += v1[i] * v2[i];
@@ -77,7 +79,7 @@ function dotProd(v1, v2) {
   return ret;
 }
 
-function magnitude(v) {
+export function magnitude(v) {
   let ret = 0;
   for (let i = 0; i < v.length; i++) {
     ret += v[i] * v[i];
@@ -85,18 +87,27 @@ function magnitude(v) {
   return Math.sqrt(ret);
 }
 
-function getAngle(v1, v2) {
+export function getAngle(v1, v2) {
   return (Math.atan2(v2[1] - v1[1], v2[0] - v1[0]) * 180) / Math.PI;
 }
 
-function aline(x, y, length, angle) {
+export function degreesToRadians(degrees) {
+  return degrees * (Math.PI / 180);
+}
+
+export function radiansToDegrees(radians) {
+  return radians * (180 / Math.PI);
+}
+
+export function aline(x, y, length, angle) {
   line(x, y, x + length * cos(angle), y + length * sin(angle));
 }
 
-const vert = (angle) => Math.min(...[90, -90].map((v) => Math.abs(angle - v)));
+export const vert = (angle) =>
+  Math.min(...[90, -90].map((v) => Math.abs(angle - v)));
 
 // #### Array Functions
-function windowForEach(array, windowSize, callback, step = 1) {
+export function windowForEach(array, windowSize, callback, step = 1) {
   let ret = [];
   for (let i = windowSize; i <= array.length; i += step) {
     ret.push(callback(array.slice(i - windowSize, i)));
@@ -105,7 +116,7 @@ function windowForEach(array, windowSize, callback, step = 1) {
 }
 
 // #### Random functions
-function weightedRandom(items, weights) {
+export function weightedRandom(items, weights) {
   let totalWeight = weights.reduce((a, b) => a + b, 0);
 
   let random = Math.random() * totalWeight;
@@ -119,7 +130,7 @@ function weightedRandom(items, weights) {
   }
 }
 
-function randomChoiceWithoutReplacement(arr) {
+export function randomChoiceWithoutReplacement(arr) {
   if (arr.length === 0) {
     return undefined; // Return undefined if the array is empty
   }
@@ -129,7 +140,7 @@ function randomChoiceWithoutReplacement(arr) {
   return chosenItem;
 }
 
-function shuffle(array) {
+export function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [array[i], array[j]] = [array[j], array[i]];
@@ -137,8 +148,17 @@ function shuffle(array) {
   return array;
 }
 
+export function randomGaussian(mean = 0, stdDev = 1) {
+  let u = 0,
+    v = 0;
+  while (u === 0) u = Math.random(); //Converting [0,1) to (0,1)
+  while (v === 0) v = Math.random();
+  let num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+  return num * stdDev + mean;
+}
+
 // #### Bounding box Functions
-function collision(rect1, rect2) {
+export function collision(rect1, rect2) {
   // Check if the rectangles are colliding
   if (
     rect1.x < rect2.x + rect2.w &&

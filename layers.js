@@ -1,14 +1,71 @@
-function textsLayer(
+import {
+  degreesToRadians,
+  radiansToDegrees,
+  lerpAngle,
+  randomGaussian,
+  getAngle,
+  collision,
+} from "./libraries/utils";
+
+import { res } from "./colorUtils";
+
+import chroma from "chroma-js";
+
+export function makeCurve(
+  x,
+  y,
+  length,
+  step_length,
   topo,
-  textSize,
-  text,
-  bbox = undefined,
-  margin = 40,
-  heightRange = [0.3, 0.7]
+  options = { angleTransform: (a) => a }
 ) {
+  let curvePoints = [[x, y, topo.pixels[y][x][2]]];
+  let last = (array) => array[array.length - 1];
+  for (let i = 0; i < length; i++) {
+    const [height, slope, aspect1] = topo.pixels[y]?.[x] || [
+      undefined,
+      undefined,
+      undefined,
+    ];
+    const [, , lastAspect] = last(curvePoints);
+    const heightScalar = 1; //- scaledH(topo)(height);
+    const aspect = degreesToRadians(
+      lerpAngle(
+        lastAspect,
+        options.angleTransform(aspect1, [height, slope, aspect1]),
+        0.9
+      )
+    );
+    if (!aspect1) {
+      break;
+    }
+    const x_step = heightScalar * step_length * Math.cos(aspect);
+    const y_step = heightScalar * step_length * Math.sin(aspect);
+    x = Math.floor(x + x_step);
+    y = Math.floor(y + y_step);
+    curvePoints.push([x, y, radiansToDegrees(aspect)]);
+  }
+  return curvePoints;
+}
+
+export function drawCurve(sketch, curve, weight) {
+  sketch.noFill();
+  sketch.strokeWeight(weight);
+  sketch.beginShape();
+  curve.forEach(([x, y]) => sketch.curveVertex(x, y));
+  sketch.endShape();
+}
+
+export function textsLayer(
+  sketch,
+  topo,
+  colorAt,
+  { textSize, text, font, alpha, bbox, margin, elevationRange }
+) {
+  bbox = bbox || [0, 0, topo.width, topo.height];
   /**
    * Determines whether a word should be placed at a given position. Allows wrapping
-   * around terrain. Checks that the height at the word is within heightRange,
+   * around terrain. Checks that the height at the word is within elevationRange,
    * and that the x position is not too close to the right edge of the image.
    * @param {Object} topo - The topographic data containing pixel information as well as summary info on the map.
    * @param {number} x - The x coordinate of the word.
@@ -18,62 +75,73 @@ function textsLayer(
    */
   const predicate = (topo, x, y, wordWidth) => {
     const translate = (percentOfHeight) =>
-      topo.max - percentOfHeight * topo.magnitude;
+      topo.min + percentOfHeight * topo.magnitude;
     const pix1 = topo.pixels[y]?.[x];
     const pix2 = topo.pixels[y]?.[Math.floor(x + wordWidth)];
-    if (x + wordWidth + margin > topo.width) return false;
+    if (
+      x + wordWidth + margin > bbox[2] ||
+      y + margin > bbox[3] ||
+      x < bbox[0] ||
+      y < bbox[1]
+    )
+      return false;
     if (!pix1 || !pix2) return false;
     const [h1] = pix1;
     const [h2] = pix2;
 
-    const [hmax, hmin] = heightRange.map(translate);
-    return h1 < hmax && h1 > hmin && h2 < hmax && h2 > hmin;
-  };
-  textFont("Courier");
-  textAlign(CENTER, CENTER);
+    const [hmin, hmax] = elevationRange.map(translate);
+    const test = h1 < hmax && h1 > hmin && h2 < hmax && h2 > hmin;
 
-  const alpha = 200;
-  fillText(topo, text, alpha, textSize, predicate, bbox);
+    return test;
+  };
+
+  sketch.textFont(font);
+  sketch.textAlign(sketch.CENTER, sketch.CENTER);
+  fillText(sketch, topo, text, alpha, textSize, colorAt, predicate, bbox);
 }
 
 function fillText(
+  sketch,
   topo,
   inpText,
   alpha,
   size,
+  colorAt,
   predicate = () => true,
   bbox = [0, 0, width, height],
   margin = 40
 ) {
-  textSize(size);
-  noStroke();
+  sketch.textSize(size);
+  sketch.noStroke();
   let words = inpText.split(/\s/).reverse();
   let y = bbox[1] + margin;
   let x = bbox[0] + margin;
   let word = words.pop() + " ";
   let wordWidth;
+
   while (word && y < bbox[3] - margin) {
-    wordWidth = Math.ceil(textWidth(word + " "));
+    wordWidth = Math.ceil(sketch.textWidth(word + " "));
     [x, y] = [Math.floor(x), Math.round(y)];
-    if (!predicate(topo, x, y, wordWidth)) {
+    if (predicate(topo, x, y, wordWidth)) {
       word.split("").forEach((char) => {
         const pixel = topo.pixels[y][x];
         if (!pixel) return;
         const [h, s, aspect, shade] = pixel;
-        const vert = Math.abs(aspect > 90 ? aspect - 180 : aspect) % 180;
-        const brightness = vert / 90;
-        const col = color(
-          res(chroma(colorAt([x, y], topo)).mix("black", shade))
-        );
+        const c = colorAt([x, y]);
+
+        const col = sketch.color(res(chroma(c).mix("black", shade)));
+
         col.setAlpha(alpha);
-        fill(col);
-        push();
-        const jitter = random(-s * 0.01, s * 0.01);
-        translate(x + jitter, y + jitter);
-        rotate(radians(aspect / 45));
-        text(char, 0, 0);
-        pop();
-        const charLen = textWidth(char);
+
+        sketch.push();
+
+        sketch.fill(col);
+        const jitter = sketch.random(-s * 0.01, s * 0.01);
+        sketch.translate(x + jitter, y + jitter);
+        sketch.rotate(degreesToRadians(aspect / 45));
+        sketch.text(char, 0, 0);
+        sketch.pop();
+        const charLen = sketch.textWidth(char);
         x += Math.ceil(charLen);
       });
       // text(word, x, y);
@@ -86,13 +154,18 @@ function fillText(
   }
 }
 
-function mountainLayer(
+export function mountainLayer(
+  sketch,
   peaks,
   font,
-  labelSize,
-  mountainLabelColor,
-  keepList = [],
-  drop = false
+  { labelSize, labelColor, keepList, drop, iconColor, iconSize } = {
+    labelSize: 20,
+    labelColor: "black",
+
+    keepList: [],
+    drop: false,
+  },
+  collisionBoxes
 ) {
   const peaksObj = Object.entries(peaks)
     .filter(([name]) => (drop ? keepList.includes(name) : true))
@@ -104,20 +177,27 @@ function mountainLayer(
       return obj;
     }, {});
 
-  textSize(labelSize);
-  textAlign(CENTER, CENTER);
-  fill(mountainLabelColor);
-  textFont("Courier");
-  textStyle(BOLD);
+  sketch.textAlign(sketch.CENTER, sketch.CENTER);
+  sketch.stroke("white");
+  sketch.fill(iconColor);
+  sketch.textFont("Courier");
+  sketch.textSize(iconSize);
+  sketch.textStyle(sketch.BOLD);
   Object.values(peaks).forEach(([pt]) => {
-    text("\u{26F0}", pt[0], pt[1]);
+    sketch.text("\u{26F0}", pt[0], pt[1]);
   });
 
-  textFont(font);
-  noStroke();
-
-  textStyle(NORMAL);
-  placeWithoutCollision(peaksObj, font, keepList);
+  sketch.textFont(font);
+  sketch.fill(labelColor);
+  sketch.textSize(labelSize);
+  sketch.textStyle(sketch.NORMAL);
+  return placeWithoutCollision(
+    sketch,
+    peaksObj,
+    font,
+    keepList,
+    collisionBoxes
+  );
 }
 
 /**
@@ -127,12 +207,18 @@ function mountainLayer(
  * @param {Array<string>} keepList - List of labels to always keep, even if they collide with other labels.
  * @returns {void}
  */
-const placeWithoutCollision = (labels, font, keepList) => {
-  let bboxes = [];
+const placeWithoutCollision = (
+  sketch,
+  labels,
+  font,
+  keepList,
+  collisionBoxes
+) => {
+  let bboxes = collisionBoxes || [];
   for (const name of keepList || []) {
     const bbox = font.textBounds(name, labels[name][0], labels[name][1]);
     bboxes.push(bbox);
-    text(name, labels[name][0], labels[name][1]);
+    sketch.text(name, labels[name][0], labels[name][1]);
   }
 
   Object.entries(labels).forEach(([name, pt]) => {
@@ -147,14 +233,15 @@ const placeWithoutCollision = (labels, font, keepList) => {
 
     if (!skip) {
       bboxes.push(bbox);
-      text(name, pt[0], pt[1]);
+      sketch.text(name, pt[0], pt[1]);
     }
   });
+  return bboxes;
 };
 
 /**
  * Given a topology `topo`, a collection of coordinates `lines` and
- * a color palette `lineColors`, this function renders the lines on
+ * a color palette `colorRange`, this function renders the lines on
  * the canvas.  The lines are rendered in a gradient of colors,
  * depending on the slope of the terrain at each point.
  *
@@ -166,8 +253,13 @@ const placeWithoutCollision = (labels, font, keepList) => {
  *     gradient.  The colors should be in the format `#rrggbb`.
  * @returns {void}
  */
-function drawLines(topo, lines, lineColors, weight = 1.5, curveLength = 16) {
-  const slopeScale = chroma.scale(lineColors);
+export function drawLines(
+  sketch,
+  topo,
+  lines,
+  { colorRange, weight, curveLength }
+) {
+  const slopeScale = chroma.scale(colorRange);
   let Lines = Array.isArray(lines)
     ? lines.map(({ coords }) => coords)
     : Object.values(lines);
@@ -176,10 +268,11 @@ function drawLines(topo, lines, lineColors, weight = 1.5, curveLength = 16) {
     coords.forEach(([x, y], i) => {
       if (x > topo.width || y > topo.height) return;
       const [, slope] = topo.pixels[y][x];
-      stroke(...res(slopeScale(slope / 60)), 255);
+      sketch.stroke(...res(slopeScale(slope / 60)), 255);
 
       drawCurve(
-        makeCurve(x, y, abs(randomGaussian(curveLength, 8)), 4, topo, {
+        sketch,
+        makeCurve(x, y, sketch.abs(randomGaussian(curveLength, 8)), 4, topo, {
           angleTransform: (() => {
             let counter = i;
             return (a) => getAngle([x, y], coords[counter++] || [0, 0]);
@@ -203,29 +296,43 @@ function drawLines(topo, lines, lineColors, weight = 1.5, curveLength = 16) {
  *     key is the name of the trail and each value is a list of xy
  *     coordinates.
  */
-function trailsLayer(topo, trails, ts, textColor, trailColors, keepList = []) {
-  // ## TRAIL LINES ##
-  drawLines(topo, trails, trailColors, 3);
-  strokeWeight(1);
+export function namedLines(
+  sketch,
+  topo,
+  lineStrings,
+  { ts, textColor, weight, keepList = [], font },
+  collisionBoxes
+) {
+  sketch.strokeWeight(weight);
   // ## TRAIL NAMES ##
-  textSize(ts);
-  textFont(courier);
-  fill(textColor);
+  sketch.textSize(ts);
+  sketch.textFont(font);
+  sketch.fill(textColor);
   let names = [];
   let labels = {};
-  trails.forEach(({ name, coords }) => {
+  if (!Array.isArray(lineStrings)) {
+    lineStrings = Object.entries(lineStrings).map(([name, coords]) => ({
+      name,
+      coords,
+    }));
+  }
+
+  lineStrings.forEach(({ name, coords }) => {
+    if (name === "undefined") return;
     if (!name) return;
     if (names.includes(name)) return;
     names.push(name);
 
-    const mid = floor(coords.length / 2);
+    const mid = Math.floor(coords.length / 2);
     const pt = coords[mid];
     labels[name.split(" ").join("\n")] = pt;
   });
 
-  placeWithoutCollision(
+  return placeWithoutCollision(
+    sketch,
     labels,
-    courier,
-    keepList.map((name) => name.split(" ").join("\n"))
+    font,
+    keepList.map((name) => name.split(" ").join("\n")),
+    collisionBoxes
   );
 }

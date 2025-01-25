@@ -1,4 +1,4 @@
-const texts = {
+export const texts = {
   sangaha: `Giving, kind words, beneficial help,
 & consistency in the face of events,
 in line with what’s appropriate

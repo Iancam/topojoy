@@ -1,3 +1,6 @@
+import _ from "lodash";
+import { pointToTileFraction } from "./libraries/utils";
+
 const featuresToScreenCoords = (zoom, box) => (feature) => {
   const { properties, geometry } = feature;
   let { coordinates } = geometry;
@@ -49,13 +52,13 @@ const makeDenser = (feature) => {
   return asOne;
 };
 
-function getTrails({ box, zoom }, geoJSON, exclude, include) {
+export function getTrails({ box, zoom }, geoJSON, exclude, include) {
   const trails = geoJSON.features
     .filter(
       ({ properties }) =>
         !properties.waterway && !(properties.natural === "peak")
     )
-    .map(makeDenser)
+    // .map(makeDenser)
     .map(featuresToScreenCoords(zoom, box))
     .filter(({ coords }) => coords.length > 0);
   // .reduce(screenCoordListToObj, {});
@@ -63,17 +66,21 @@ function getTrails({ box, zoom }, geoJSON, exclude, include) {
   return trails;
 }
 
-function getWaterFeatures({ box, zoom }, geoJSON) {
-  return geoJSON.features
-    .filter(({ properties }) => properties.waterway)
-    .map(makeDenser)
-    .map(featuresToScreenCoords(zoom, box))
-    .reduce(screenCoordListToObj, {});
+export function getWaterFeatures({ box, zoom }, geoJSON) {
+  return (
+    geoJSON.features
+      .filter(({ properties }) => properties.waterway)
+      // .map(makeDenser)
+      .map(featuresToScreenCoords(zoom, box))
+      .reduce(screenCoordListToObj, {})
+  );
 }
 
-function getMountainFeatures({ box, zoom }, geoJSON) {
+export function getMountainFeatures({ box, zoom }, geoJSON) {
   return geoJSON.features
-    .filter(({ properties }) => properties.natural === "peak")
+    .filter(
+      ({ properties }) => properties.natural === "peak" && properties.name
+    )
     .map(featuresToScreenCoords(zoom, box))
     .reduce(screenCoordListToObj, {});
 }
@@ -87,7 +94,10 @@ async function getGeoJSONFromShapefile(shapefilePath, { box, zoom }) {
   return geoJSON;
 }
 
-async function getGeoJSONFromOSM(latLongBox) {
+export async function getGeoJSONFromOSM(
+  latLongBox,
+  { rivers, streams, peaks, lakes, trails }
+) {
   const hiking = `
   way["highway"="trail"](${latLongBox.join(",")});
   way["highway"="path"](${latLongBox.join(",")});
@@ -97,20 +107,20 @@ async function getGeoJSONFromOSM(latLongBox) {
   `;
 
   const water = `
-  way["waterway"="river"](${latLongBox.join(",")});
-  // way["waterway"="stream"](${latLongBox.join(",")});
-  // way["natural"="water"](${latLongBox.join(",")});
+  ${rivers ? "" : "//"} way["waterway"="river"](${latLongBox.join(",")});
+  ${streams ? "" : "//"} way["waterway"="stream"](${latLongBox.join(",")});
+  ${lakes ? "" : "//"} way["natural"="water"](${latLongBox.join(",")});
   `;
   const mountains = `
-  node["natural"="peak"](${latLongBox.join(",")});
-  node["natural"="mountain"](${latLongBox.join(",")});
-  node["natural"="volcano"](${latLongBox.join(",")});
-  node["natural"="ridge"](${latLongBox.join(",")});
+  ${peaks ? "" : "//"} node["natural"="peak"](${latLongBox.join(",")});
+  // node["natural"="mountain"](${latLongBox.join(",")});
+  // node["natural"="volcano"](${latLongBox.join(",")});
+  // node["natural"="ridge"](${latLongBox.join(",")});
   `;
   const query = `
   [out:json];
 (
-  ${hiking}
+  ${trails ? hiking : ""}
   ${water}
   ${mountains}
   
@@ -119,6 +129,9 @@ out body(${latLongBox.join(",")});
 >;
 out skel qt;
 `;
+  if (localStorage.getItem(query)) {
+    return JSON.parse(localStorage.getItem(query));
+  }
 
   const osm = await fetch("https://overpass-api.de/api/interpreter", {
     method: "POST",
@@ -131,5 +144,7 @@ out skel qt;
     .catch((err) => console.log(err));
 
   const geoJSON = osmtogeojson(osm);
+
+  localStorage.setItem(query, JSON.stringify(geoJSON));
   return geoJSON;
 }
