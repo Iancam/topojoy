@@ -1,0 +1,89 @@
+import { z } from "zod";
+
+// Base schemas for common properties
+const ColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
+
+const RangeSchema = z
+  .object({
+    min: z.number(),
+    max: z.number(),
+  })
+  .refine((data) => data.min < data.max, {
+    message: "Min must be less than max",
+  });
+
+// Feature-specific schemas
+const CurveConfigSchema = z.object({
+  stepCount: z.number().positive(),
+  stepLength: z.number().positive(),
+  countScalar: z.number().min(0).max(1),
+});
+
+const TrailConfigSchema = z.object({
+  colorRange: z.array(ColorSchema).min(2),
+  textColor: ColorSchema,
+  textSize: z.number().positive(),
+  stepLength: z.number().positive(),
+  stepCount: z.number().positive(),
+  weight: z.number().positive(),
+  show: z.boolean(),
+});
+
+const RiverConfigSchema = z.object({
+  colorRange: z.array(ColorSchema).min(2),
+  stepLength: z.number().positive(),
+  stepCount: z.number().positive(),
+  weight: z.number().positive(),
+  streams: z.boolean(),
+  textColor: ColorSchema,
+  textSize: z.number().positive(),
+  show: z.boolean(),
+});
+
+const MountainConfigSchema = z.object({
+  labelSize: z.number().positive(),
+  labelColor: ColorSchema,
+  iconSize: z.number().positive(),
+  iconColor: ColorSchema,
+  keepList: z.array(z.string()),
+  drop: z.boolean(),
+  show: z.boolean(),
+});
+
+const BackgroundTextConfigSchema = z.object({
+  font: z.string(),
+  textSize: z.number().positive(),
+  bbox: z.array(z.number().positive()).min(4).max(4),
+  alpha: z.number().positive(),
+  text: z.string(),
+  elevationRange: z.array(z.number().min(0).max(1)).min(2).max(2),
+});
+
+const TerrainConfigSchema = z.object({
+  elevationRange: RangeSchema,
+  colorPlan: z.array(
+    z.object({
+      height: z.number(),
+      colors: z.union([
+        z.array(ColorSchema),
+        z.function().returns(ColorSchema),
+      ]),
+      weight: z.number().optional(),
+      spread: z.number().optional(),
+    })
+  ),
+});
+
+// Complete map configuration schema
+export const MapConfigSchema = z.object({
+  name: z.string(),
+  version: z.string(),
+  curve: CurveConfigSchema,
+  trail: TrailConfigSchema,
+  terrain: TerrainConfigSchema,
+  river: RiverConfigSchema,
+  backgroundText: BackgroundTextConfigSchema,
+  background: ColorSchema,
+  crossHatch: z.boolean(),
+  // Add other feature schemas as needed
+});
