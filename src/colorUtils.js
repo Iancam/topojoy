@@ -1,6 +1,11 @@
 import chroma from "chroma-js";
 import _ from "lodash";
-import { randomGaussian, times, weightedRandom } from "./libraries/utils";
+import {
+  randomChoice,
+  randomGaussian,
+  times,
+  weightedRandom,
+} from "./libraries/utils";
 function luminanceContrastRatio(color1, color2) {
   const luminance1 = chroma(color1).luminance();
   const luminance2 = chroma(color2).luminance();
@@ -170,8 +175,18 @@ const randsFactory = (topo) => (percentOfHeight, gaussDistTightness) => () =>
   );
 
 export const res = (c) => c._rgb.slice(0, 3);
-export const brighten = (c, v) => res(chroma(c).brighten(v));
-export const darken = (c, v) => res(chroma(c).darken(v));
+export const brighten = (c, v) => {
+  if (Array.isArray(c)) {
+    return c.map((c) => res(chroma(c).brighten(v)));
+  }
+  return res(chroma(c).brighten(v));
+};
+export const darken = (c, v) => {
+  if (Array.isArray(c)) {
+    return c.map((c) => res(chroma(c).darken(v)));
+  }
+  return res(chroma(c).darken(v));
+};
 
 /**
  * Determines the color for a specific pixel on a topographic map based on its height, slope, and aspect.
@@ -182,9 +197,11 @@ export const darken = (c, v) => res(chroma(c).darken(v));
  */
 export const colorAtFactory = (colorPlanData, topo) => {
   const randHeight = randsFactory(topo);
-  colorPlan = colorPlanData.map(({ height, spread, colors }) => {
+  const colorPlan = colorPlanData.map(({ height, spread, colors }) => {
     spread = spread || 25;
-    const colorFunc = Array.isArray(colors) ? () => random(colors) : colors;
+    const colorFunc = Array.isArray(colors)
+      ? () => randomChoice(colors)
+      : colors;
     // else if (typeof colors === "function")
     return [
       height === Infinity ? () => Infinity : randHeight(height, spread),

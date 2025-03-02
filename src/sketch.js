@@ -32,7 +32,7 @@ import {
   getWaterFeatures,
 } from "./trails";
 
-const sketch = (sketch) => {
+export const sketch = (configFn) => (sketch) => {
   const MAP_NAME = "LHK";
   let copperplateLight;
   let courier;
@@ -62,89 +62,7 @@ const sketch = (sketch) => {
 
     const basePixelSize = Math.sqrt(width * height);
 
-    const config = {
-      name: "LHK",
-      curve: {
-        stepCount: 20,
-        stepLength: 5,
-        countScalar: 0.5,
-      },
-      trail: {
-        colorRange: [p.f4, p.f5],
-        textColor: p.orange,
-        textSize: 2 * basePixelSize,
-        stepLength: 4,
-        stepCount: 8,
-        weight: 1.5,
-        font: courier,
-        show: true,
-      },
-      river: {
-        colorRange: [p.f7, p.f6],
-        stepLength: 4,
-        stepCount: 8,
-        weight: 1.5,
-        streams: false,
-        textColor: p.f7,
-        textSize: 2 * basePixelSize,
-        font: courier,
-        show: true,
-      },
-      mountain: {
-        labelSize: 2 * basePixelSize,
-        labelColor: "yellow",
-        iconSize: 4 * basePixelSize,
-        iconColor: "black",
-        keepList: [
-          "Vestal Peak",
-          "Jagged Mountain",
-          "Sunlight Peak",
-          "Arrow Peak",
-          "Trinity Peaks",
-          "Leviathan Peak",
-          "Windom Peak",
-          "Endlich Mesa",
-          "Mount Oso",
-          "Amherst Mountain",
-        ],
-        drop: true,
-        show: true,
-      },
-      backgroundText: {
-        font: "Courier",
-        textSize: 2.5 * basePixelSize,
-        bbox: [0, 0, canvas.width, canvas.height],
-        alpha: 200,
-        text: shuffle(texts.poemsPersonal.split("---")).join("\n"),
-        elevationRange: [0.7, 1],
-      },
-      colorPlan: mixWeightedPlans(
-        colorScaleToWeightedPlan(colorScales.mint, 10),
-        [
-          {
-            colors: colorScales.sunset,
-            weight: 1,
-          },
-        ]
-      ),
-      // colorPlan: [
-      //   {
-      //     height: 0.3,
-      //     colors: [p.lhk5, p.lhk4],
-      //   },
-      //   {
-      //     height: 0.7,
-      //     colors: () =>
-      //       weightedRandom(
-      //         [p.lhk5, p.Lowland2, p.f3, brighten(p.f3, 2), p.lhk2],
-      //         [10, 10, 10, 10, 1]
-      //       ),
-      //   },
-      //   { height: Infinity, colors: [p.lhk2, p.lhk3, p.white] },
-      // ],
-      background: colorScales.mint[0],
-      crossHatch: false,
-    };
+    const config = configFn(basePixelSize, canvas);
 
     const geoJSON = await getGeoJSONFromOSM(latLngbox, {
       streams: config.river.streams,
@@ -159,7 +77,12 @@ const sketch = (sketch) => {
       (canvas.width * canvas.height);
     const colorAt = colorAtFactory(config.colorPlan, topo);
 
-    sketch.createCanvas(canvas.width, canvas.height);
+    let cnv = sketch.createCanvas(canvas.width, canvas.height);
+    cnv.style("z-index", -1);
+    cnv.style("position", "absolute");
+    cnv.style("top", 0);
+    cnv.style("left", 0);
+
     sketch.background(config.background);
 
     const genCurve = (topo) => () => {
@@ -206,27 +129,17 @@ const sketch = (sketch) => {
       sketch,
       topo,
       waterFeatures,
-      config.river,
+      { ...config.river, font: courier },
       textBoxes
     );
-    textBoxes = namedLines(sketch, topo, trails, config.trail, textBoxes);
+    textBoxes = namedLines(
+      sketch,
+      topo,
+      trails,
+      { ...config.trail, font: courier },
+      textBoxes
+    );
   };
-
-  /**
-   * Creates a curve that meanders through the terrain, with control over aspect, slope, and height of the curve.
-   * @param {number} x x-coordinate of the starting point
-   * @param {number} y y-coordinate of the starting point
-   * @param {number} length The length of the curve in steps
-   * @param {number} step_length The length of each step of the curve
-   * @param {object} topo The terrain object
-   * @param {object} options An object with an optional `angleTransform` method.
-   *  `angleTransform` takes the current aspect of the curve, and an array of [height, slope, aspect1],
-   *  and returns the new aspect of the curve.
-   *  The `angleTransform` method is called with the current aspect of the curve as the first argument,
-   *  and the array of [height, slope, aspect1] as the second argument.
-   *  The `angleTransform` method is expected to return the new aspect of the curve.
-   * @returns {Array<Array<number>>} The curve as an array of [x, y, aspect] points.
-   */
 
   const colorAndDrawCurve = (colorAt) => (c) => {
     const col1 = colorAt(c[0]);
@@ -258,7 +171,6 @@ const sketch = (sketch) => {
       image.src = url;
 
       image.onload = (ev) => {
-        // document.getElementById("sketchy").appendChild(image);
         resolve(image);
       };
     });
@@ -283,4 +195,4 @@ const sketch = (sketch) => {
 
 p5.disableFriendlyErrors = true;
 
-let mySketch = new p5(sketch);
+const mySketch = new p5(sketch);

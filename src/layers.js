@@ -10,7 +10,21 @@ import {
 import { res } from "./colorUtils";
 
 import chroma from "chroma-js";
-
+/**
+ * Creates a curve that meanders through the terrain, with control over aspect, slope, and height of the curve.
+ * @param {number} x x-coordinate of the starting point
+ * @param {number} y y-coordinate of the starting point
+ * @param {number} length The length of the curve in steps
+ * @param {number} step_length The length of each step of the curve
+ * @param {object} topo The terrain object
+ * @param {object} options An object with an optional `angleTransform` method.
+ *  `angleTransform` takes the current aspect of the curve, and an array of [height, slope, aspect1],
+ *  and returns the new aspect of the curve.
+ *  The `angleTransform` method is called with the current aspect of the curve as the first argument,
+ *  and the array of [height, slope, aspect1] as the second argument.
+ *  The `angleTransform` method is expected to return the new aspect of the curve.
+ * @returns {Array<Array<number>>} The curve as an array of [x, y, aspect] points.
+ */
 export function makeCurve(
   x,
   y,

@@ -130,6 +130,10 @@ export function weightedRandom(items, weights) {
   }
 }
 
+export function randomChoice(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 export function randomChoiceWithoutReplacement(arr) {
   if (arr.length === 0) {
     return undefined; // Return undefined if the array is empty
