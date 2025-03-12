@@ -59,12 +59,19 @@ const BackgroundTextConfigSchema = z.object({
   elevationRange: z.array(z.number().min(0).max(1)).min(2).max(2),
 });
 
-const TerrainConfigSchema = z.object({
-  elevationRange: RangeSchema,
+// Complete map configuration schema
+export const MapConfigSchema = z.object({
+  name: z.string(),
+  curve: CurveConfigSchema,
+  trail: TrailConfigSchema,
+  mountain: MountainConfigSchema,
+  river: RiverConfigSchema,
+  backgroundText: BackgroundTextConfigSchema,
   colorPlan: z.array(
     z.object({
       height: z.number(),
       colors: z.union([
+        ColorSchema,
         z.array(ColorSchema),
         z.function().returns(ColorSchema),
       ]),
@@ -72,18 +79,9 @@ const TerrainConfigSchema = z.object({
       spread: z.number().optional(),
     })
   ),
-});
-
-// Complete map configuration schema
-export const MapConfigSchema = z.object({
-  name: z.string(),
-  version: z.string(),
-  curve: CurveConfigSchema,
-  trail: TrailConfigSchema,
-  terrain: TerrainConfigSchema,
-  river: RiverConfigSchema,
-  backgroundText: BackgroundTextConfigSchema,
   background: ColorSchema,
   crossHatch: z.boolean(),
   // Add other feature schemas as needed
 });
+
+export type MapConfig = z.infer<typeof MapConfigSchema>;
