@@ -230,6 +230,7 @@ const placeWithoutCollision = (
 ) => {
   let bboxes = collisionBoxes || [];
   for (const name of keepList || []) {
+    if (!labels[name]) continue;
     const bbox = font.textBounds(name, labels[name][0], labels[name][1]);
     bboxes.push(bbox);
     sketch.text(name, labels[name][0], labels[name][1]);
