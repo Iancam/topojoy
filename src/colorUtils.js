@@ -208,13 +208,15 @@ export const colorAtFactory = (colorPlanData, topo) => {
       colorFunc,
     ];
   });
+
   return ([x, y]) => {
     const [height, slope, aspect, shade] = topo.pixels[y][x];
     for (let [compHeight, clar] of colorPlan) {
-      if (height < compHeight()) {
+      const cmpHeight = compHeight();
+      if (height < cmpHeight) {
         const color = typeof clar === "function" ? clar() : clar;
         if (!color) {
-          console.log("no color found", { clar, height });
+          console.log("no color found", { clar, height, color, cmpHeight });
         }
         return color;
       }
