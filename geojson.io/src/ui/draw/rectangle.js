@@ -117,7 +117,12 @@ const DrawRectangle = {
       this.map.fire('draw.create', {
         features: [state.rectangle.toGeoJSON()]
       });
-      localStorage.setItem('topojoy:geojson', state.rectangle.toGeoJSON());
+      console.log(state.rectangle.toGeoJSON());
+
+      localStorage.setItem(
+        'topojoy:geojson',
+        JSON.stringify(state.rectangle.toGeoJSON())
+      );
     } else {
       this.deleteFeature([state.rectangle.id], { silent: true });
       this.changeMode('simple_select', {}, { silent: true });
