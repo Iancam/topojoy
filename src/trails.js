@@ -130,6 +130,7 @@ out body(${latLongBox.join(",")});
 out skel qt;
 `;
   if (localStorage.getItem(query)) {
+    console.log("using cache");
     return JSON.parse(localStorage.getItem(query));
   }
 
@@ -145,6 +146,12 @@ out skel qt;
 
   const geoJSON = osmtogeojson(osm);
 
-  localStorage.setItem(query, JSON.stringify(geoJSON));
+  try {
+    localStorage.setItem(query, JSON.stringify(geoJSON));
+    console.log("saving cache");
+  } catch (e) {
+    console.log("unable to save cache");
+  }
+
   return geoJSON;
 }
