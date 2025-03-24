@@ -208,26 +208,38 @@ export const App = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <div>
+    <div className="flex h-screen">
+      {/* Sidebar */}
+      <div className="w-80 fixed top-0 left-0 h-full overflow-y-auto border-r bg-white p-4 flex-shrink-0">
         <form className="space-y-4">
-          <select
-            value={config}
-            onChange={(e) => setConfig(e.target.value)}
-            className="p-2 border rounded"
-          >
-            {Object.keys(configs).map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
+          <div className="bg-white pb-4 border-b mb-4">
+            <label
+              className="text-sm font-medium mb-2 block"
+              htmlFor="config-select"
+            >
+              Color Scheme
+            </label>
+            <select
+              id="config-select"
+              value={config}
+              onChange={(e) => setConfig(e.target.value)}
+              className="w-full p-2 border rounded"
+            >
+              {Object.keys(configs).map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {Object.entries(formElements).map(([key, [type, description]]) => (
             <div key={key} className="flex flex-col gap-2">
               <label className="text-sm font-medium">{key}</label>
               {renderFormElement(key, type as FormElementType, description)}
             </div>
           ))}
+
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">Color Plans</h2>
             {configs[config].colorPlan.map(
@@ -255,7 +267,11 @@ export const App = () => {
           </div>
         </form>
       </div>
-      <div ref={p5Ref} />
+
+      {/* Main Content */}
+      <div className="flex-1 ml-80 min-h-screenrelative">
+        <div ref={p5Ref} className="absolute inset-0" />
+      </div>
     </div>
   );
 };
