@@ -1,7 +1,8 @@
+import React from "react";
 import { useRef, useEffect, useState } from "react";
 import { get } from "lodash-es";
 import p5 from "p5";
-import sketch from "./sketch";
+import { sketch } from "./sketch";
 import {
   TooltipProvider,
   Tooltip,
@@ -16,20 +17,15 @@ import { Info } from "lucide-react";
 import "./index.css";
 
 // Import configs with correct paths
-import { SnowMesaConfig } from "../configs/snowMesaConfig.ts";
-import { EmeraldLakesConfig } from "../configs/emeraldLakesConfig.ts";
-import { LHKConfig } from "../configs/LHKConfig.ts";
-import { SawtoothConfig } from "../configs/sawtoothConfig.ts";
+import { SnowMesaConfig } from "./configs/snowMesaConfig.ts";
+import { EmeraldLakesConfig } from "./configs/emeraldLakesConfig.ts";
+import { LHKConfig } from "./configs/LHKConfig.ts";
+import { SawtoothConfig } from "./configs/sawtoothConfig.ts";
+import { Config } from "./types.ts";
 
 interface ColorPlan {
   height: number;
   colors: string | string[] | ((params: any) => string);
-}
-
-interface Config {
-  name: string;
-  colorPlan: ColorPlan[];
-  [key: string]: any;
 }
 
 interface Configs {
@@ -93,9 +89,10 @@ export const App = () => {
 
   useEffect(() => {
     let downstreamConfig = configs[config];
+    const geoJSON = JSON.parse(localStorage.getItem("topojoy:geojson") || "{}");
     if (!p5Ref.current) return;
 
-    const myp5 = new p5((p: any) => sketch(p, downstreamConfig), p5Ref.current);
+    const myp5 = new p5(sketch(geoJSON, 13, downstreamConfig), p5Ref.current);
     return () => {
       myp5.remove();
     };
@@ -119,7 +116,7 @@ export const App = () => {
     key: string,
     elementType: FormElementType,
     description: string
-  ): JSX.Element | null => {
+  ): React.ReactElement | null => {
     const TooltipWrapper = ({ children }: TooltipWrapperProps) => (
       <TooltipProvider>
         <Tooltip>
@@ -133,7 +130,7 @@ export const App = () => {
 
     const value = get(configs[config], key);
 
-    const cases: Record<FormElementType, JSX.Element> = {
+    const cases: Record<FormElementType, React.ReactElement> = {
       number: (
         <div className="flex items-center space-x-2">
           <Input
@@ -160,7 +157,7 @@ export const App = () => {
       list: (
         <div className="flex items-center space-x-2">
           <Input
-            value={value.join(",")}
+            value={Array.isArray(value) ? value.join(",") : ""}
             onChange={(e) =>
               handleChange(
                 key,
@@ -193,12 +190,12 @@ export const App = () => {
             min={0}
             max={1}
             step={0.01}
-            value={[value as number]}
+            value={[Number(value)]}
             onValueChange={([val]) => handleChange(key, val)}
             className="w-full"
           />
           <span className="text-sm w-12 text-right">
-            {(value as number).toFixed(2)}
+            {Number(value).toFixed(2)}
           </span>
           <TooltipWrapper>
             <Info className="h-4 w-4" />
@@ -212,22 +209,19 @@ export const App = () => {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <div className="flex flex-col gap-4">
-        <select
-          value={config}
-          onChange={(e) => setConfig(e.target.value)}
-          className="p-2 border rounded"
-        >
-          {Object.keys(configs).map((name) => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
-        </select>
-        <div ref={p5Ref} />
-      </div>
       <div>
         <form className="space-y-4">
+          <select
+            value={config}
+            onChange={(e) => setConfig(e.target.value)}
+            className="p-2 border rounded"
+          >
+            {Object.keys(configs).map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
           {Object.entries(formElements).map(([key, [type, description]]) => (
             <div key={key} className="flex flex-col gap-2">
               <label className="text-sm font-medium">{key}</label>
@@ -261,6 +255,7 @@ export const App = () => {
           </div>
         </form>
       </div>
+      <div ref={p5Ref} />
     </div>
   );
 };
