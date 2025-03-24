@@ -1,5 +1,5 @@
 import { MapConfig } from "../schema";
-import { colorScaleToWeightedPlan, mixWeightedPlans } from "../src/colorUtils";
+import { colorScaleToWeightedPlan, mixWeightedPlans } from "../colorUtils";
 
 const p = {
   orange: "#ed9228",
