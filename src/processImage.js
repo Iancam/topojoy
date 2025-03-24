@@ -144,8 +144,6 @@ export function processPixels(image, metersPerPixel, sunAz, sunEl, vert) {
       }
     }
 
-    console.log({ min, max });
-
     const pixels = slope.setOutput([width, step])(
       htex,
       metersPerPixel,
@@ -170,7 +168,6 @@ export function processPixels(image, metersPerPixel, sunAz, sunEl, vert) {
 
   const min = Math.min(...slices.map(({ min }) => min));
   const max = Math.max(...slices.map(({ max }) => max));
-  console.log({ min, max });
 
   return {
     min,
