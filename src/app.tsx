@@ -1,8 +1,7 @@
-import React from "react";
-import { useRef, useEffect, useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { get } from "lodash-es";
 import p5 from "p5";
-import { sketch } from "./sketch";
+import sketch, { sketch as sketchFactory } from "./sketch";
 import {
   TooltipProvider,
   Tooltip,
@@ -13,7 +12,7 @@ import { Input } from "./components/ui/input";
 import { Checkbox } from "./components/ui/checkbox.tsx";
 import { DualRangeSlider } from "./components/ui/dual-range-slider.tsx";
 import { Slider } from "./components/ui/slider.tsx";
-import { Info } from "lucide-react";
+import { Info, Maximize2, Minimize2 } from "lucide-react";
 import "./index.css";
 
 // Import configs with correct paths
@@ -78,8 +77,9 @@ const formElements: FormElements = {
 };
 
 export const App = () => {
+  const [config, setConfig] = useState("Original");
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const p5Ref = useRef<HTMLDivElement>(null);
-  const [config, setConfig] = useState<string>("Original");
   const [configs] = useState<Configs>({
     Original: SnowMesaConfig,
     "Juniper Bark": EmeraldLakesConfig,
@@ -91,8 +91,11 @@ export const App = () => {
     let downstreamConfig = configs[config];
     const geoJSON = JSON.parse(localStorage.getItem("topojoy:geojson") || "{}");
     if (!p5Ref.current) return;
+    const { sketch } = sketchFactory(geoJSON, 13, downstreamConfig);
 
-    const myp5 = new p5(sketch(geoJSON, 13, downstreamConfig), p5Ref.current);
+    const myp5 = new p5(sketch, p5Ref.current);
+    // p5Ref.current = myp5;
+
     return () => {
       myp5.remove();
     };
@@ -210,7 +213,11 @@ export const App = () => {
   return (
     <div className="flex h-screen">
       {/* Sidebar */}
-      <div className="w-80 fixed top-0 left-0 h-full overflow-y-auto border-r bg-white p-4 flex-shrink-0">
+      <div
+        className={`w-80 fixed top-0 left-0 h-full overflow-y-auto border-r bg-white p-4 flex-shrink-0 transition-transform duration-300 ${
+          isFullscreen ? "-translate-x-full" : "translate-x-0"
+        }`}
+      >
         <form className="space-y-4">
           <div className="bg-white pb-4 border-b mb-4">
             <label
@@ -269,8 +276,12 @@ export const App = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 ml-80 min-h-screenrelative">
-        <div ref={p5Ref} className="absolute inset-0" />
+      <div
+        className={`flex-1 relative transition-all duration-300 ${
+          isFullscreen ? "ml-0" : "ml-80"
+        }`}
+      >
+        <div ref={p5Ref} className={`absolute inset-0`} />
       </div>
     </div>
   );
