@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { get } from "lodash-es";
+import { get, keys } from "lodash-es";
 import p5 from "p5";
 import sketch, { sketch as sketchFactory } from "./sketch";
 import {
@@ -21,6 +21,7 @@ import { EmeraldLakesConfig } from "./configs/emeraldLakesConfig.ts";
 import { LHKConfig } from "./configs/LHKConfig.ts";
 import { SawtoothConfig } from "./configs/sawtoothConfig.ts";
 import { Config } from "./types.ts";
+import { MapConfig } from "./schema.ts";
 
 interface ColorPlan {
   height: number;
@@ -75,46 +76,78 @@ const formElements: FormElements = {
     false,
   ],
 };
+const configs = {
+  Original: SnowMesaConfig,
+  "Juniper Bark": EmeraldLakesConfig,
+  Mint: LHKConfig,
+  Sawtooth: SawtoothConfig,
+};
 
 export const App = () => {
   const [config, setConfig] = useState("Original");
+
+  const addHeightsToForm = (config: MapConfig, form: {}) => {
+    const heights = config.colorPlan.reduce((obj, { height }, i) => {
+      const key = `colorPlan.${i}.height`;
+      obj[key] = height;
+      return obj;
+    }, {});
+    Object.keys(form)
+      .filter((k) => k.startsWith("colorPlan"))
+      .forEach((k) => {
+        delete form[k];
+      });
+    return { ...form, ...heights };
+  };
+  const preForm = Object.entries(formElements).reduce(
+    (obj, [key, [_, __, value]]) => {
+      obj[key] = value;
+      return obj;
+    },
+    {}
+  );
+  const [form, setForm] = useState(addHeightsToForm(configs[config], preForm));
+
   const [isFullscreen, setIsFullscreen] = useState(false);
   const p5Ref = useRef<HTMLDivElement>(null);
-  const [configs] = useState<Configs>({
-    Original: SnowMesaConfig,
-    "Juniper Bark": EmeraldLakesConfig,
-    Mint: LHKConfig,
-    Sawtooth: SawtoothConfig,
-  });
 
-  useEffect(() => {
+  const renderSketch = () => {
     let downstreamConfig = configs[config];
+    for (const [key, value] of Object.entries(form)) {
+      const keys = key.split(".");
+      const lastKey = keys.pop()!;
+      let current = downstreamConfig;
+      for (const k of keys) {
+        current = current[k];
+      }
+      current[lastKey] = value;
+    }
     const geoJSON = JSON.parse(localStorage.getItem("topojoy:geojson") || "{}");
     if (!p5Ref.current) return;
     const { sketch } = sketchFactory(geoJSON, 13, downstreamConfig);
 
     const myp5 = new p5(sketch, p5Ref.current);
+    return myp5;
     // p5Ref.current = myp5;
+  };
 
+  useEffect(() => {
+    const myp5 = renderSketch();
     return () => {
       myp5.remove();
     };
   }, [config, configs]);
 
   const handleChange = (key: string, value: any) => {
-    const keys = key.split(".");
-    const lastKey = keys.pop()!;
-    let current = configs[config];
-
-    for (const k of keys) {
-      current = current[k];
-    }
-    current[lastKey] = value;
-
-    // Force re-render
-    setConfig((prev) => prev);
+    setForm({
+      ...form,
+      [key]: value,
+    });
   };
-
+  const handleConfigChange = (e) => {
+    setConfig(e.target.value);
+    setForm(addHeightsToForm(configs[e.target.value], form));
+  };
   const renderFormElement = (
     key: string,
     elementType: FormElementType,
@@ -131,7 +164,8 @@ export const App = () => {
       </TooltipProvider>
     );
 
-    const value = get(configs[config], key);
+    const value = form[key];
+    console.log(value);
 
     const cases: Record<FormElementType, React.ReactElement> = {
       number: (
@@ -218,7 +252,7 @@ export const App = () => {
           isFullscreen ? "-translate-x-full" : "translate-x-0"
         }`}
       >
-        <form className="space-y-4">
+        <form className="space-y-6 pb-16">
           <div className="bg-white pb-4 border-b mb-4">
             <label
               className="text-sm font-medium mb-2 block"
@@ -229,7 +263,7 @@ export const App = () => {
             <select
               id="config-select"
               value={config}
-              onChange={(e) => setConfig(e.target.value)}
+              onChange={handleConfigChange}
               className="w-full p-2 border rounded"
             >
               {Object.keys(configs).map((name) => (
@@ -274,7 +308,28 @@ export const App = () => {
           </div>
         </form>
       </div>
-
+      <div className="fixed bottom-0 left-0 w-80 bg-white border-t p-3 flex justify-end space-x-3 shadow-lg">
+        <button
+          onClick={renderSketch}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          <span>Render</span>
+        </button>
+      </div>
       {/* Main Content */}
       <div
         className={`flex-1 relative transition-all duration-300 ${
