@@ -51,6 +51,7 @@ module.exports = function fileBar(context) {
   }
 
   function bar(selection) {
+    return;
     const actions = [
       {
         title: 'Open',
