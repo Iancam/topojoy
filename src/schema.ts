@@ -62,6 +62,7 @@ const BackgroundTextConfigSchema = z.object({
 // Complete map configuration schema
 export const MapConfigSchema = z.object({
   name: z.string(),
+  zoomLevel: z.number().positive(),
   curve: CurveConfigSchema,
   trail: TrailConfigSchema,
   mountain: MountainConfigSchema,

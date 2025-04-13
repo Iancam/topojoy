@@ -90,6 +90,7 @@ const mountainKeepList = [
 
 export const EmeraldLakesConfig: MapConfig = {
   name: "Juniper Bark",
+  zoomLevel: 13,
   curve: {
     stepCount: 20,
     stepLength: 5,

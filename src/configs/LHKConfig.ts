@@ -75,6 +75,7 @@ const colorScales = {
 
 export const LHKConfig: MapConfig = {
   name: "LHK",
+  zoomLevel: 13,
   curve: {
     stepCount: 20,
     stepLength: 5,

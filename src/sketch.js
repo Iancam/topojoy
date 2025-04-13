@@ -17,7 +17,7 @@ import {
 } from "./trails";
 import { times } from "./libraries/utils";
 
-export const sketch = (boundsGeojson, zoom = 14, config) => {
+export const sketchFactory = (boundsGeojson, config) => {
   return {
     sketch: (sketch) => {
       let copperplateLight;
@@ -31,7 +31,7 @@ export const sketch = (boundsGeojson, zoom = 14, config) => {
       sketch.setup = async function setup() {
         const { topo, canvas, bounds } = await processImage(
           boundsGeojson,
-          zoom
+          config.zoomLevel
         );
         // it feels wrong not enforcing immutable data, but
         // this is significantly simpler, and still easy to reason about

@@ -235,6 +235,7 @@ const keepList = [
 
 export const SnowMesaConfig: MapConfig = {
   name: "Snow Mesa",
+  zoomLevel: 13,
   curve: {
     stepCount: 20,
     stepLength: 5,

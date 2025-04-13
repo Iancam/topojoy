@@ -39,6 +39,7 @@ const p = {
 
 export const SawtoothConfig: MapConfig = {
   name: "Sawtooth",
+  zoomLevel: 13,
   curve: {
     stepCount: 20,
     stepLength: 5,
