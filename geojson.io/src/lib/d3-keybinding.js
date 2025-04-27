@@ -19,6 +19,8 @@ d3.keybinding = function (namespace) {
   }
 
   function capture() {
+    // Store event in d3.event for compatibility
+    d3.event = event;
     for (let i = 0; i < bindings.length; i++) {
       const binding = bindings[i];
       if (matches(binding, d3.event)) {
@@ -28,6 +30,9 @@ d3.keybinding = function (namespace) {
   }
 
   function bubble() {
+    // Store event in d3.event for compatibility
+    d3.event = event;
+
     const tagName = d3.select(d3.event.target).node().tagName;
     if (tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA') {
       return;

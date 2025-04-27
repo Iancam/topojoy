@@ -26,15 +26,6 @@ require('./css/marker.css');
 require('./css/theme.css');
 require('./css/site.css');
 
-window.mbxMetadata = {
-  content_type: 'developer-tool'
-};
-
-// eslint-disable-next-line no-undef
-initializeMapboxAnalytics({
-  marketoMunchkin: false
-});
-
 const ui = require('./ui'),
   map = require('./ui/map'),
   data = require('./core/data'),
@@ -45,16 +36,6 @@ const ui = require('./ui'),
   user = require('./core/user'),
   api = require('./core/api'),
   store = require('store');
-
-const gjIO = geojsonIO(),
-  gjUI = ui(gjIO).write;
-
-d3.select('.geojsonio').call(gjUI);
-
-gjIO.recovery = recovery(gjIO);
-gjIO.router.on();
-
-api(gjIO);
 
 function geojsonIO() {
   const context = {};
@@ -68,3 +49,36 @@ function geojsonIO() {
   context.user = user(context);
   return context;
 }
+
+function init() {
+  if (typeof window === 'undefined') return;
+
+  window.mbxMetadata = {
+    content_type: 'developer-tool'
+  };
+
+  if (typeof window.initializeMapboxAnalytics !== 'undefined') {
+    window.initializeMapboxAnalytics({
+      marketoMunchkin: false
+    });
+  }
+
+  const gjIO = geojsonIO();
+  const gjUI = ui(gjIO).write;
+
+  if (typeof document !== 'undefined' && document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      d3.select('.geojsonio').call(gjUI);
+      gjIO.recovery = recovery(gjIO);
+      gjIO.router.on();
+      api(gjIO);
+    });
+  } else {
+    d3.select('.geojsonio').call(gjUI);
+    gjIO.recovery = recovery(gjIO);
+    gjIO.router.on();
+    api(gjIO);
+  }
+}
+
+init();

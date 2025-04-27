@@ -5,6 +5,7 @@ module.exports = function () {
   const html = `${HelpContent.html}`;
 
   function render(selection) {
+    console.log(selection);
     selection.html('').append('div').attr('class', 'pad2 prose').html(html);
   }
 

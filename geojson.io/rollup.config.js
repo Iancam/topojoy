@@ -10,14 +10,28 @@ import json from '@rollup/plugin-json';
 
 const production = !process.env.ROLLUP_WATCH;
 
+const globalPolyfill = `
+var global = typeof window !== 'undefined' ? window : 
+             typeof global !== 'undefined' ? global : 
+             typeof self !== 'undefined' ? self : 
+             typeof this !== 'undefined' ? this : 
+             {};
+`;
+
 export default {
   input: 'src/index.js',
   output: {
     file: 'dist/bundle.js',
-    format: 'iife',
+    format: 'umd',
+    name: 'geojsonio',
     sourcemap: true,
-    strict: false
+    strict: false,
+    globals: {
+      d3: 'd3'
+    },
+    banner: globalPolyfill
   },
+  external: ['d3'],
   plugins: [
     commonjs({
       include: ['./src/**/*', './node_modules/**/*'],
@@ -25,7 +39,9 @@ export default {
     }),
 
     replace({
-      'require.main === module': 'false' // jsonhint export quirk
+      'require.main === module': 'false', // jsonhint export quirk
+      preventAssignment: true,
+      global: 'window'
     }),
 
     resolve({

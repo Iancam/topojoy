@@ -14,7 +14,7 @@ const {
 
 const markers = [];
 
-makiNames = require('@mapbox/maki/layouts/all.json');
+const makiNames = require('@mapbox/maki/layouts/all.json');
 let makiOptions = '';
 
 for (let i = 0; i < makiNames.length; i++) {

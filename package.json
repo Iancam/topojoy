@@ -2,7 +2,7 @@
   "source": "index.html",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "cd geojson.io && npm run build && cd .. && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "postinstall": "cd geojson.io && npm install"

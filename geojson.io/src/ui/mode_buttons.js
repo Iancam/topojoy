@@ -38,7 +38,9 @@ module.exports = function (context, pane) {
       .attr('title', (d) => {
         return d.alt;
       })
-      .on('click', buttonClick);
+      .on('click', function (event, d) {
+        buttonClick.call(this, d);
+      });
     enter.append('i').attr('class', (d) => {
       return `fa-solid fa-${d.icon}`;
     });
@@ -46,13 +48,16 @@ module.exports = function (context, pane) {
       return d.title;
     });
 
-    d3.select(buttons.node()).trigger('click');
+    // d3.select(buttons.node()).dispatch('click');
+
+    buttonClick(buttonData[0]);
 
     function buttonClick(d) {
       buttons.classed('active', (_) => {
         return d.icon === _.icon;
       });
       if (mode) mode.off();
+      console.log(d);
       mode = d.behavior(context);
       pane.call(mode);
     }

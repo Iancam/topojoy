@@ -5,6 +5,22 @@ import react from "@vitejs/plugin-react";
 
 // https://vite.dev/config/
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        app: path.resolve(__dirname, "app.html"),
+        geojson: path.resolve(__dirname, "geojson.io/index.html"),
+      },
+      external: ["d3"],
+      output: {
+        name: "app",
+        globals: {
+          d3: "d3",
+        },
+      },
+    },
+  },
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
