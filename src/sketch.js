@@ -16,6 +16,8 @@ import {
   getWaterFeatures,
 } from "./trails";
 import { times } from "./libraries/utils";
+import copperplateLight from "../assets/Copperplate Light.ttf";
+import courier from "../assets/CourierPrime-Regular.ttf";
 
 export const sketchFactory = (boundsGeojson, config) => {
   return {
