@@ -5,8 +5,10 @@ import {
   randomGaussian,
   getAngle,
   collision,
+  times,
+  distance,
+  windowForEach,
 } from "./libraries/utils";
-
 import { res } from "./colorUtils";
 
 import chroma from "chroma-js";
@@ -272,31 +274,123 @@ export function drawLines(
   sketch,
   topo,
   lines,
-  { colorRange, weight, curveLength }
+  { colorRange, weight, curveLength, style }
 ) {
   const slopeScale = chroma.scale(colorRange);
   let Lines = Array.isArray(lines)
     ? lines.map(({ coords }) => coords)
     : Object.values(lines);
 
-  Lines.forEach((coords) => {
-    coords.forEach(([x, y], i) => {
-      if (x > topo.width || y > topo.height) return;
-      const [, slope] = topo.pixels[y][x];
-      sketch.stroke(...res(slopeScale(slope / 60)), 255);
+  function sketchedLines(Lines) {
+    Lines.forEach((coords) => {
+      coords.forEach(([x, y], i) => {
+        if (x > topo.width || y > topo.height) return;
+        const [, slope] = topo.pixels[y][x];
+        sketch.stroke(...res(slopeScale(slope / 60)), 255);
 
-      drawCurve(
-        sketch,
-        makeCurve(x, y, sketch.abs(randomGaussian(curveLength, 8)), 4, topo, {
-          angleTransform: (() => {
-            let counter = i;
-            return (a) => getAngle([x, y], coords[counter++] || [0, 0]);
-          })(),
-        }),
-        weight
-      );
+        drawCurve(
+          sketch,
+          makeCurve(x, y, sketch.abs(randomGaussian(curveLength, 8)), 4, topo, {
+            angleTransform: (() => {
+              let counter = i;
+              return (a) => getAngle([x, y], coords[counter++] || [0, 0]);
+            })(),
+          }),
+          weight
+        );
+      });
     });
-  });
+  }
+
+  const splitLineOnOutliers = function (line) {
+    
+    
+    // calculate average distance between points
+    const dists = windowForEach(line, 2, ([a, b]) => distance(a, b));
+    // remove outliers
+    const threshold = 4;
+    const mean = dists.reduce((sum, value) => sum + value, 0) / dists.length;
+    const stdDev = Math.sqrt(
+      dists.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) /
+        dists.length
+    );
+    const zscores = dists.map((value, i) => ({
+      zscore: (value - mean) / stdDev,
+      index: i + 1,
+    }));
+    const outliers = zscores
+      .filter((z) => z.zscore > threshold)
+      .map((z) => z.index);
+
+    // slice the line into segments, break on outliers
+    let segments = [];
+    let last = 0;
+    for (let i = 0; i < outliers.length; i++) {
+      segments.push(line.slice(last, outliers[i]));
+      last = outliers[i];
+    }
+    return segments;
+  };
+
+  const deformLine = function (line, subdivisions = 2, roughness = 0.5) {
+    let deformedLine = [...line];
+    // subdivide the line
+    for (let i = 0; i < subdivisions; i++) {
+      const newLine = [];
+      newLine.push(deformedLine[0]);
+
+      for (let j = 0; j < deformedLine.length - 1; j++) {
+        const current = deformedLine[j];
+        const next = deformedLine[j + 1];
+
+        const midX = (current[0] + next[0]) / 2;
+        const midY = (current[1] + next[1]) / 2;
+        const maxDist = 5;
+
+        const dist = distance(current, next);
+        const dx = randomGaussian(0, Math.min(maxDist, dist) * roughness);
+        const dy = randomGaussian(0, Math.min(maxDist, dist) * roughness);
+        newLine.push([midX + dx, midY + dy]);
+        newLine.push(next);
+      }
+
+      deformedLine = newLine;
+    }
+    return deformedLine;
+  };
+
+  const waterColorLine = function (line, layers = 4) {
+    const segments = splitLineOnOutliers(line);
+    times(layers, () => {
+      segments.forEach((segment) => {
+        const deformedLine = deformLine(segment);
+        sketch.stroke(
+          ...res(slopeScale(Math.abs(randomGaussian(0, 0.1)))),
+          150
+        );
+        // if (x > topo.width || y > topo.height) return;
+        // const [, slope] = topo.pixels[y][x];
+        // sketch.stroke(...res(slopeScale(slope / 60)), 255);
+
+        windowForEach(deformedLine, 2, ([a, b], i) => {
+          if (a.length !== 2 || b.length !== 2) console.error(a, b, i);
+          if (!a || !b) return;
+          const [x1, y1] = a;
+          const [x2, y2] = b;
+          sketch.line(x1, y1, x2, y2);
+        });
+      });
+    });
+  };
+  if (style === "sketched") {
+    sketchedLines(Lines);
+  } else if (style === "watercolor") {
+    for (const line of Lines) {
+      waterColorLine(line);
+    }
+  } else {
+    sketchedLines(Lines);
+  }
 }
 
 /**
