@@ -73,6 +73,10 @@ export default {
         {
           src: 'img/marker-chars/*.svg',
           dest: './dist/icons'
+        },
+        {
+          src: 'src/lib/d3.js',
+          dest: './dist/lib'
         }
       ]
     })
