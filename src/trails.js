@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { pointToTileFraction } from "./libraries/utils";
-
+import osmtogeojson from "osmtogeojson";
 const featuresToScreenCoords = (zoom, box) => (feature) => {
   const { properties, geometry } = feature;
   let { coordinates } = geometry;

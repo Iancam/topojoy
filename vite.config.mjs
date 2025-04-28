@@ -1,5 +1,6 @@
 import path from "path";
 import tailwindcss from "@tailwindcss/vite";
+import copy from "rollup-plugin-copy";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
@@ -21,7 +22,22 @@ export default defineConfig({
       },
     },
   },
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    copy({
+      targets: [
+        {
+          src: path.resolve(__dirname, "assets/Copperplate Light.ttf"),
+          dest: path.resolve(__dirname, "dist/assets"),
+        },
+        {
+          src: path.resolve(__dirname, "assets/CourierPrime-Regular.ttf"),
+          dest: path.resolve(__dirname, "dist/assets"),
+        },
+      ],
+    }),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
