@@ -1,9 +1,15 @@
-Select the rectangle tool to the left to draw a rectangle on the map. This will select the area used to create your map.
+# 1. Zoom to the area you want to remember
+
+Use the search bar in the top right corner to find the general area you're looking for. Then, zoom in and scroll to your specific area.
+
+### Map size
+
+Maps look best when they're rendered at a constant, high zoom level to capture detail. I recommend keeping the map scale, found in the bottom right corner, below 10km. Any larger and your map will be huge.
+
+# 2. Select the area
+
+Select the rectangle tool to the right of the map to draw a rectangle on the map. This will enable you to select the rectangular area that will become your map.
 
 **Don't click and drag. This moves the map. Instead, click and release to place the first point, then click again to place the second point.**
 
 When you've made your selection, **click [here](/app.html)**
-
-## Map size
-
-Your map will be rendered at a constant, high zoom level to capture detail. The bigger the area you select, regardless of how zoomed out you are, the bigger your map. If the map scale in the bottom right corner reads any more than 10km, you're probably looking at an area that's too big.
