@@ -18,7 +18,7 @@
 // ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-const csvParse = require('d3-dsv').csvParse;
+import { csvParse } from 'd3-dsv';
 
 const gtfs2geojson = {
   /**

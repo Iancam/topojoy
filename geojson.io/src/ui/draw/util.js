@@ -1,5 +1,5 @@
-const turfLength = require('@turf/length').default;
-const numeral = require('numeral');
+import turfLength from '@turf/length';
+import numeral from 'numeral';
 
 function getDisplayMeasurements(feature) {
   // should log both metric and standard display strings for the current drawn feature
@@ -40,6 +40,4 @@ function getDisplayMeasurements(feature) {
   return displayMeasurements;
 }
 
-module.exports = {
-  getDisplayMeasurements
-};
+export { getDisplayMeasurements };

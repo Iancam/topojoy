@@ -1,11 +1,11 @@
-const buttons = require('./ui/mode_buttons'),
-  file_bar = require('./ui/file_bar'),
-  dnd = require('./ui/dnd'),
-  // userUi = require('./ui/user'),
-  layer_switch = require('./ui/layer_switch'),
-  projection_switch = require('./ui/projection_switch');
+import buttons from './ui/mode_buttons';
+// import file_bar from './ui/file_bar';
+import dnd from './ui/dnd';
+import // userUi = require('./ui/user'),
+layer_switch from './ui/layer_switch';
+import projection_switch from './ui/projection_switch';
 
-module.exports = ui;
+export default ui;
 
 function ui(context) {
   function init(selection) {
@@ -82,10 +82,10 @@ function ui(context) {
       .attr('class', 'buttons flex')
       .call(buttons(context, pane));
 
-    container
-      .append('div')
-      .attr('class', 'file-bar hidden md:block')
-      .call(file_bar(context));
+    // container
+    //   .append('div')
+    //   .attr('class', 'file-bar hidden md:block')
+    //   .call(file_bar(context));
 
     dnd(context);
 

@@ -143,4 +143,4 @@ const DrawRectangle = {
   }
 };
 
-module.exports = DrawRectangle;
+export default DrawRectangle;

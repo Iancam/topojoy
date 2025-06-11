@@ -6,7 +6,7 @@ try {
   console.warn(e);
 }
 
-module.exports.save = save;
+export { save };
 
 function save(context, callback) {
   const path = context.data.get('path'),

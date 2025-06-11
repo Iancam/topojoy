@@ -1,7 +1,7 @@
-const qs = require('qs-hash'),
-  xtend = require('xtend');
+import qs from 'qs-hash';
+import xtend from 'xtend';
 
-module.exports = function (context) {
+export default function (context) {
   const router = {};
 
   router.on = function () {
@@ -69,4 +69,4 @@ module.exports = function (context) {
   }
 
   return router;
-};
+}

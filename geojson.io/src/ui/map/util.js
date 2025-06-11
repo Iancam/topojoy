@@ -1,20 +1,20 @@
-const mapboxgl = require('mapbox-gl');
-const escape = require('escape-html');
-const length = require('@turf/length').default;
-const area = require('@turf/area').default;
+import mapboxgl from 'mapbox-gl';
+import escape from 'escape-html';
+import length from '@turf/length';
+import area from '@turf/area';
 
-const popup = require('../../lib/popup');
-const ClickableMarker = require('./clickable_marker');
-const zoomextent = require('../../lib/zoomextent');
-const {
+import popup from '../../lib/popup';
+import ClickableMarker from './clickable_marker';
+import zoomextent from '../../lib/zoomextent';
+import {
   DEFAULT_DARK_FEATURE_COLOR,
   DEFAULT_LIGHT_FEATURE_COLOR,
   DEFAULT_SATELLITE_FEATURE_COLOR
-} = require('../../constants');
+} from '../../constants';
 
 const markers = [];
 
-const makiNames = require('@mapbox/maki/layouts/all.json');
+import makiNames from '@mapbox/maki/layouts/all.json';
 let makiOptions = '';
 
 for (let i = 0; i < makiNames.length; i++) {
@@ -466,9 +466,4 @@ function bindPopup(e, context, writable) {
     .addTo(context.map);
 }
 
-module.exports = {
-  addIds,
-  addMarkers,
-  geojsonToLayer,
-  bindPopup
-};
+export { addIds, addMarkers, geojsonToLayer, bindPopup };

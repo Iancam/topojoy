@@ -1,6 +1,6 @@
-const message = require('./message');
+import message from './message';
 
-module.exports = flash;
+export default flash;
 
 function flash(selection, txt) {
   'use strict';

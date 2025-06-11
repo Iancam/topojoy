@@ -1,4 +1,4 @@
-module.exports = function (selection, blocking) {
+export default function (selection, blocking) {
   const previous = selection.select('div.modal');
   const animate = previous.empty();
 
@@ -47,4 +47,4 @@ module.exports = function (selection, blocking) {
   }
 
   return shaded;
-};
+}

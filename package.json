@@ -47,6 +47,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "rollup-plugin-copy": "^3.5.0",
+    "shepherd.js": "^14.5.0",
     "statistics.js": "^1.0.0",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.0.12",

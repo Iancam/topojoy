@@ -1,4 +1,4 @@
-module.exports = function (context) {
+export default function (context) {
   if (
     // !/a\.tiles\.mapbox\.com/.test(L.mapbox.config.HTTP_URL) &&
     !require('../config.js')(location.hostname).GithubAPI
@@ -49,4 +49,4 @@ module.exports = function (context) {
       });
     }
   };
-};
+}

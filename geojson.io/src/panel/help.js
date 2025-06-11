@@ -1,15 +1,14 @@
-const HelpContent = require('../../data/help.md').default;
+import { html as HelpContent } from '../../data/help.md';
 // const ApiContent = require('../../API.md').default;
 
-module.exports = function () {
-  const html = `${HelpContent.html}`;
+export default function () {
+  const html = `${HelpContent}`;
 
   function render(selection) {
-    console.log(selection);
     selection.html('').append('div').attr('class', 'pad2 prose').html(html);
   }
 
   render.off = function () {};
 
   return render;
-};
+}

@@ -1,4 +1,4 @@
-module.exports = function (context) {
+export default function (context) {
   return function (e, id) {
     const sel = d3.select(e.target._content);
 
@@ -193,4 +193,4 @@ module.exports = function (context) {
       }
     }
   };
-};
+}

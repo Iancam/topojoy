@@ -1,23 +1,23 @@
-const shpwrite = require('shp-write'),
-  clone = require('clone'),
-  geojson2dsv = require('geojson2dsv'),
-  topojson = require('topojson-server'),
-  saveAs = require('file-saver'),
-  tokml = require('@placemarkio/tokml'),
-  geojsonNormalize = require('@mapbox/geojson-normalize'),
-  wellknown = require('wellknown');
+import shpwrite from 'shp-write';
+import clone from 'clone';
+import geojson2dsv from 'geojson2dsv';
+import topojson from 'topojson-server';
+import saveAs from 'file-saver';
+import tokml from '@placemarkio/tokml';
+import geojsonNormalize from '@mapbox/geojson-normalize';
+import wellknown from 'wellknown';
 
-const flash = require('./flash.js'),
-  zoomextent = require('../lib/zoomextent.js'),
-  readFile = require('../lib/readfile.js'),
-  meta = require('../lib/meta.js');
+import flash from './flash.js';
+import zoomextent from '../lib/zoomextent.js';
+import readFile from '../lib/readfile.js';
+import meta from '../lib/meta.js';
 
 /**
  * This module provides the file picking & status bar above the map interface.
  * It dispatches to source implementations that interface with specific
  * sources, like GitHub.
  */
-module.exports = function fileBar(context) {
+export default function fileBar(context) {
   const shpSupport = typeof ArrayBuffer !== 'undefined';
 
   const exportFormats = [
@@ -357,4 +357,4 @@ module.exports = function fileBar(context) {
   }
 
   return bar;
-};
+}

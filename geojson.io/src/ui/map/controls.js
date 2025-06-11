@@ -52,8 +52,4 @@ class TrashControl {
   }
 }
 
-module.exports = {
-  EditControl,
-  SaveCancelControl,
-  TrashControl
-};
+export { EditControl, SaveCancelControl, TrashControl };

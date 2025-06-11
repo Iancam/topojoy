@@ -1,8 +1,8 @@
-const qs = require('qs-hash'),
-  zoomextent = require('../lib/zoomextent'),
-  flash = require('../ui/flash');
+import qs from 'qs-hash';
+import zoomextent from '../lib/zoomextent';
+import flash from '../ui/flash';
 
-module.exports = function (context) {
+export default function (context) {
   function success(err, d) {
     context.container.select('.map').classed('loading', false);
 
@@ -94,4 +94,4 @@ module.exports = function (context) {
       context.data.fetch(query, success);
     }
   };
-};
+}

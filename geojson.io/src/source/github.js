@@ -1,8 +1,6 @@
-module.exports.save = save;
-module.exports.load = load;
-module.exports.loadRaw = loadRaw;
-
-const config = require('../config.js')(location.hostname);
+export { save, load, loadRaw };
+import cfg from '../config.js';
+const config = cfg(location.hostname);
 const githubBase = config.GithubAPI
   ? config.GithubAPI + '/api/v3'
   : 'https://api.github.com';

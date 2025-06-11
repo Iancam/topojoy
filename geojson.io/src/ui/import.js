@@ -1,9 +1,10 @@
-const importSupport = !!window.FileReader,
-  flash = require('./flash.js'),
-  readFile = require('../lib/readfile.js'),
-  zoomextent = require('../lib/zoomextent');
+const importSupport = !!window.FileReader;
 
-module.exports = function (context) {
+import flash from './flash.js';
+import readFile from '../lib/readfile.js';
+import zoomextent from '../lib/zoomextent';
+
+export default function (context) {
   return function (selection) {
     selection.html('');
 
@@ -82,4 +83,4 @@ module.exports = function (context) {
 
     wrap.append('div').attr('class', 'pad1');
   };
-};
+}

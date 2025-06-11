@@ -1,7 +1,7 @@
-const styles = require('./map/styles');
-const { DEFAULT_STYLE } = require('../constants');
+import styles from './map/styles';
+import { DEFAULT_STYLE } from '../constants';
 
-module.exports = function (context) {
+export default function (context) {
   return function (selection) {
     const layerButtons = selection
       .append('div')
@@ -50,4 +50,4 @@ module.exports = function (context) {
       })
       .call(layerSwap);
   };
-};
+}

@@ -1,26 +1,26 @@
-const mapboxgl = require('mapbox-gl');
+import mapboxgl from 'mapbox-gl';
 
-require('qs-hash');
-const geojsonRewind = require('@mapbox/geojson-rewind');
-const MapboxDraw = require('@mapbox/mapbox-gl-draw').default;
-const MapboxGeocoder = require('@mapbox/mapbox-gl-geocoder');
+import 'qs-hash';
+import geojsonRewind from '@mapbox/geojson-rewind';
+import MapboxDraw from '@mapbox/mapbox-gl-draw';
+import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 
-const DrawLineString = require('../draw/linestring');
-const DrawRectangle = require('../draw/rectangle');
-const DrawCircle = require('../draw/circle');
-const SimpleSelect = require('../draw/simple_select');
-const ExtendDrawBar = require('../draw/extend_draw_bar');
-const { EditControl, SaveCancelControl, TrashControl } = require('./controls');
-const { geojsonToLayer, bindPopup } = require('./util');
-const styles = require('./styles');
-const {
+import DrawLineString from '../draw/linestring';
+import DrawRectangle from '../draw/rectangle';
+import DrawCircle from '../draw/circle';
+import SimpleSelect from '../draw/simple_select';
+import ExtendDrawBar from '../draw/extend_draw_bar';
+import { EditControl, SaveCancelControl, TrashControl } from './controls';
+import { geojsonToLayer, bindPopup } from './util';
+import styles from './styles';
+import {
   DEFAULT_STYLE,
   DEFAULT_PROJECTION,
   DEFAULT_DARK_FEATURE_COLOR,
   DEFAULT_LIGHT_FEATURE_COLOR,
   DEFAULT_SATELLITE_FEATURE_COLOR
-} = require('../../constants');
-const drawStyles = require('../draw/styles');
+} from '../../constants';
+import drawStyles from '../draw/styles';
 
 let writable = false;
 let drawing = false;
@@ -39,7 +39,7 @@ const dummyGeojson = {
   ]
 };
 
-module.exports = function (context, readonly) {
+export default function (context, readonly) {
   writable = !readonly;
 
   // keyboard shortcuts
@@ -493,4 +493,4 @@ module.exports = function (context, readonly) {
   }
 
   return map;
-};
+}

@@ -1,16 +1,12 @@
-const topojson = require('topojson-client'),
-  toGeoJSON = require('@tmcw/togeojson'),
-  gtfs2geojson = require('./gtfs2geojson').default,
-  csv2geojson = require('csv2geojson'),
-  osmtogeojson = require('osmtogeojson'),
-  polytogeojson = require('polytogeojson'),
-  geojsonNormalize = require('@mapbox/geojson-normalize');
+import { feature } from 'topojson-client';
+import { kml, gpx } from '@tmcw/togeojson';
+import gtfs2geojson from './gtfs2geojson';
+import csv2geojson from 'csv2geojson';
+import osmtogeojson from 'osmtogeojson';
+import polytogeojson from 'polytogeojson';
+import geojsonNormalize from '@mapbox/geojson-normalize';
 
-module.exports.readDrop = readDrop;
-module.exports.readAsText = readAsText;
-module.exports.readFile = readFile;
-
-function readDrop(callback) {
+export default function readDrop(callback) {
   return function () {
     const results = [];
     const errors = [];
@@ -112,7 +108,7 @@ function readFile(f, text, callback) {
           'Please export and upload KML without NetworkLinks for optimal performance'
       };
     }
-    callback(null, toGeoJSON.kml(kmldom), warning);
+    callback(null, kml(kmldom), warning);
   } else if (fileType === 'xml') {
     const xmldom = toDom(text);
     if (!xmldom) {
@@ -127,14 +123,14 @@ function readFile(f, text, callback) {
     });
     callback(null, result);
   } else if (fileType === 'gpx') {
-    callback(null, toGeoJSON.gpx(toDom(text)));
+    callback(null, gpx(toDom(text)));
   } else if (fileType === 'geojson') {
     try {
       const gj = JSON.parse(text);
       if (gj && gj.type === 'Topology' && gj.objects) {
         const collection = { type: 'FeatureCollection', features: [] };
         for (const o in gj.objects) {
-          const ft = topojson.feature(gj, gj.objects[o]);
+          const ft = feature(gj, gj.objects[o]);
           if (ft.features)
             collection.features = collection.features.concat(ft.features);
           else collection.features = collection.features.concat([ft]);

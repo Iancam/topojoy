@@ -12,6 +12,7 @@ import {
 import { Config } from "../types";
 import { Slider } from "./ui/slider";
 import p5 from "p5";
+import MultiSelect from "./ui/multiselect";
 
 interface FormElements {
   [key: string]: [string, string, any];
@@ -67,6 +68,9 @@ interface ConfigFormProps {
   config: string;
   configs: { [key: string]: Config };
   form: any;
+  trails: any;
+  mountains: any;
+  waterFeatures: any;
   onConfigChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onFormChange: (key: string, value: any) => void;
   renderSketch: () => p5;
@@ -76,6 +80,9 @@ export const ConfigForm = ({
   config,
   configs,
   form,
+  trails,
+  mountains,
+  waterFeatures,
   onConfigChange,
   onFormChange,
   renderSketch,
@@ -97,6 +104,14 @@ export const ConfigForm = ({
     );
 
     const value = form[key];
+    const options =
+      key === "mountain.keepList"
+        ? mountains
+        : key === "river.keepList"
+        ? waterFeatures
+        : key === "trail.keepList"
+        ? trails
+        : [];
 
     const cases: Record<FormElementType, React.ReactElement> = {
       number: (
@@ -124,14 +139,10 @@ export const ConfigForm = ({
       ),
       list: (
         <div className="flex items-center space-x-2">
-          <Input
-            value={Array.isArray(value) ? value.join(",") : ""}
-            onChange={(e) =>
-              onFormChange(
-                key,
-                e.target.value.split(",").map((s) => s.trim())
-              )
-            }
+          <MultiSelect
+            options={options}
+            value={value}
+            onChange={(v) => onFormChange(key, v)}
           />
           <TooltipWrapper>
             <Info className="h-4 w-4" />
@@ -177,7 +188,7 @@ export const ConfigForm = ({
 
   return (
     <>
-      <form className="space-y-6 pb-16">
+      <form className="space-y-6 m-2 pb-16">
         <div className="bg-white pb-4 border-b mb-4">
           <label
             className="text-sm font-medium mb-2 block"

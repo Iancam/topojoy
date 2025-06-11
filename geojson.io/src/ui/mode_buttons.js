@@ -1,8 +1,8 @@
-const table = require('../panel/table'),
-  json = require('../panel/json'),
-  help = require('../panel/help');
+import table from '../panel/table';
+import json from '../panel/json';
+import help from '../panel/help';
 
-module.exports = function (context, pane) {
+export default function (context, pane) {
   return function (selection) {
     let mode = null;
 
@@ -62,4 +62,4 @@ module.exports = function (context, pane) {
       pane.call(mode);
     }
   };
-};
+}

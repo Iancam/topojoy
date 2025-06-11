@@ -1,6 +1,6 @@
-const { DEFAULT_PROJECTION } = require('../constants');
+import { DEFAULT_PROJECTION } from '../constants';
 
-module.exports = function (context) {
+export default function (context) {
   return function (selection) {
     const projections = [
       {
@@ -52,4 +52,4 @@ module.exports = function (context) {
       })
       .call(setProjection);
   };
-};
+}

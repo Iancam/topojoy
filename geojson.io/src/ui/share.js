@@ -1,7 +1,7 @@
-const gist = require('../source/gist'),
-  modal = require('./modal');
+import gist from '../source/gist';
+import modal from './modal';
 
-module.exports = share;
+export default share;
 
 // function facebookUrl(_) {
 //   return (

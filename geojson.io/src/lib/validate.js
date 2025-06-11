@@ -1,6 +1,6 @@
-const geojsonhint = require('@mapbox/geojsonhint');
+import geojsonhint from '@mapbox/geojsonhint';
 
-module.exports = function (callback) {
+export default function (callback) {
   return function (editor, changeObj) {
     const err = geojsonhint.hint(editor.getValue());
     editor.clearGutter('error');
@@ -80,4 +80,4 @@ module.exports = function (callback) {
         .node();
     }
   };
-};
+}

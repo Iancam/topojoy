@@ -1,4 +1,4 @@
-const MapboxDraw = require('@mapbox/mapbox-gl-draw').default;
+import MapboxDraw from '@mapbox/mapbox-gl-draw';
 
 const SimpleSelect = {
   ...MapboxDraw.modes.simple_select,
@@ -16,4 +16,4 @@ const SimpleSelect = {
   }
 };
 
-module.exports = SimpleSelect;
+export default SimpleSelect;

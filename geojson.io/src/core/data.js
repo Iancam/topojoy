@@ -1,11 +1,7 @@
-const clone = require('clone'),
-  xtend = require('xtend'),
-  config = require('../config.js')(location.hostname),
-  source = {
-    gist: require('../source/gist.js'),
-    github: require('../source/github.js'),
-    local: require('../source/local.js')
-  };
+import clone from 'clone';
+import xtend from 'xtend';
+import config from '../config.js';
+import source from '../source';
 
 function _getData() {
   return {
@@ -21,7 +17,7 @@ function _getData() {
   };
 }
 
-module.exports = function (context) {
+export default function (context) {
   const _data = _getData();
 
   function mapFile(gist) {
@@ -273,4 +269,4 @@ module.exports = function (context) {
   };
 
   return data;
-};
+}

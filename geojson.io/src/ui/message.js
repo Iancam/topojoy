@@ -1,4 +1,4 @@
-module.exports = message;
+export default message;
 
 function message(selection) {
   'use strict';

@@ -1,7 +1,7 @@
-const metatable = require('d3-metatable')(d3),
-  smartZoom = require('../lib/smartzoom.js');
+import metatable from 'd3-metatable';
+import smartZoom from '../lib/smartzoom.js';
 
-module.exports = function (context) {
+export default function (context) {
   function render(selection) {
     selection.html('');
 
@@ -60,4 +60,4 @@ module.exports = function (context) {
   };
 
   return render;
-};
+}

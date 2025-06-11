@@ -1,41 +1,43 @@
 // import d3 plus 3custom plugins
-require('./d3-global.js');
-require('./lib/d3-compat');
-require('./lib/d3-keybinding');
-require('./lib/d3-trigger');
+import './d3-global.js';
+import './lib/d3-compat';
+import './lib/d3-keybinding';
+import './lib/d3-trigger';
 
 // codemirror css
-require('../node_modules/codemirror/lib/codemirror.css');
-require('../node_modules/codemirror/addon/fold/foldgutter.css');
+import '../node_modules/codemirror/lib/codemirror.css';
+import '../node_modules/codemirror/addon/fold/foldgutter.css';
 
 // fontawesome css
-require('../node_modules/@fortawesome/fontawesome-free/css/fontawesome.min.css');
-require('../node_modules/@fortawesome/fontawesome-free/css/solid.min.css');
+import '../node_modules/@fortawesome/fontawesome-free/css/fontawesome.min.css';
+import '../node_modules/@fortawesome/fontawesome-free/css/solid.min.css';
 
 // tailwind css
-require('../dist/css/tailwind_dist.css');
+import '../dist/css/tailwind_dist.css';
 
 // mapboxgl, mapboxgl-draw, mapbox-gl-geocoder css
-require('../node_modules/mapbox-gl/dist/mapbox-gl.css');
-require('../node_modules/@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css');
-require('../node_modules/@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css');
+import '../node_modules/mapbox-gl/dist/mapbox-gl.css';
+import '../node_modules/@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
+import '../node_modules/@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 
 // import css
-require('./css/base.css');
-require('./css/marker.css');
-require('./css/theme.css');
-require('./css/site.css');
+import './css/base.css';
+import './css/marker.css';
+import './css/theme.css';
+import './css/site.css';
 
-const ui = require('./ui'),
-  map = require('./ui/map'),
-  data = require('./core/data'),
-  loader = require('./core/loader'),
-  router = require('./core/router'),
-  recovery = require('./core/recovery'),
-  repo = require('./core/repo'),
-  user = require('./core/user'),
-  api = require('./core/api'),
-  store = require('store');
+import { initWalkthrough } from './walkthrough.js';
+
+import ui from './ui';
+import map from './ui/map';
+import data from './core/data';
+import loader from './core/loader';
+import router from './core/router';
+import recovery from './core/recovery';
+import repo from './core/repo';
+import user from './core/user';
+import api from './core/api';
+import store from 'store';
 
 function geojsonIO() {
   const context = {};
@@ -82,3 +84,4 @@ function init() {
 }
 
 init();
+initWalkthrough();

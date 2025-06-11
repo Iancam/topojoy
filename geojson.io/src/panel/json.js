@@ -1,19 +1,19 @@
-const _ = require('lodash');
-const { createPopper } = require('@popperjs/core');
-const geojsonNormalize = require('@mapbox/geojson-normalize');
+import _ from 'lodash';
+import { createPopper } from '@popperjs/core';
+import geojsonNormalize from '@mapbox/geojson-normalize';
 
-const CodeMirror = require('codemirror');
-require('codemirror/addon/fold/foldcode');
-require('codemirror/addon/fold/foldgutter');
-require('codemirror/addon/fold/brace-fold');
-require('codemirror/addon/edit/matchbrackets');
-require('codemirror/mode/javascript/javascript');
+import CodeMirror from 'codemirror';
+import 'codemirror/addon/fold/foldcode';
+import 'codemirror/addon/fold/foldgutter';
+import 'codemirror/addon/fold/brace-fold';
+import 'codemirror/addon/edit/matchbrackets';
+import 'codemirror/mode/javascript/javascript';
 
-const validate = require('../lib/validate');
-const zoomextent = require('../lib/zoomextent');
-const flash = require('../ui/flash');
+import validate from '../lib/validate';
+import zoomextent from '../lib/zoomextent';
+import flash from '../ui/flash';
 
-module.exports = function (context) {
+export default function (context) {
   CodeMirror.keyMap.tabSpace = {
     Tab: function (cm) {
       const spaces = new Array(cm.getOption('indentUnit') + 1).join(' ');
@@ -176,4 +176,4 @@ module.exports = function (context) {
   };
 
   return render;
-};
+}

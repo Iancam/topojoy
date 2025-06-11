@@ -1,6 +1,6 @@
-const bbox = require('@turf/bbox').default;
+import bbox from '@turf/bbox';
 
-module.exports = function (map, feature) {
+export default function (map, feature) {
   if (feature.geometry.type === 'Point') {
     map.flyTo({
       center: feature.geometry.coordinates
@@ -9,4 +9,4 @@ module.exports = function (map, feature) {
     const bounds = bbox(feature);
     map.fitBounds(bounds, { padding: 60 });
   }
-};
+}

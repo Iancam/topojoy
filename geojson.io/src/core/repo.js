@@ -1,6 +1,6 @@
-const config = require('../config.js')(location.hostname);
+import config from '../config.js';
 
-module.exports = function (context) {
+export default function (context) {
   const repo = {};
 
   repo.details = function (callback) {
@@ -45,4 +45,4 @@ module.exports = function (context) {
   };
 
   return repo;
-};
+}

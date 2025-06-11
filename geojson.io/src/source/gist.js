@@ -1,10 +1,9 @@
-const config = require('../config.js')(location.hostname);
+import config from '../config.js';
 const githubBase = config.GithubAPI
   ? config.GithubAPI + '/api/v3'
   : 'https://api.github.com';
 
-module.exports.load = load;
-module.exports.loadRaw = loadRaw;
+export { load, loadRaw };
 
 function load(id, context, callback) {
   const endpoint = githubBase + '/gists/';

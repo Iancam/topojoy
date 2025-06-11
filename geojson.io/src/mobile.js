@@ -1,11 +1,11 @@
-const ui = require('./ui'),
-  map = require('./ui/map'),
-  data = require('./core/data'),
-  loader = require('./core/loader'),
-  router = require('./core/router'),
-  repo = require('./core/repo'),
-  user = require('./core/user'),
-  store = require('store');
+import ui from './ui';
+import map from './ui/map';
+import data from './core/data';
+import loader from './core/loader';
+import router from './core/router';
+import repo from './core/repo';
+import user from './core/user';
+import store from 'store';
 
 const gjIO = geojsonIO(),
   gjUI = ui(gjIO).read;

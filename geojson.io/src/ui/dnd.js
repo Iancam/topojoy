@@ -1,8 +1,8 @@
-const readDrop = require('../lib/readfile.js').readDrop,
-  flash = require('./flash.js'),
-  zoomextent = require('../lib/zoomextent.js');
+import readDrop from '../lib/readfile.js';
+import flash from './flash.js';
+import zoomextent from '../lib/zoomextent.js';
 
-module.exports = function (context) {
+export default function (context) {
   d3.select('body')
     .attr('dropzone', 'copy')
     .on(
@@ -43,4 +43,4 @@ module.exports = function (context) {
     d3.event.dataTransfer.dropEffect = 'copy';
     d3.select('body').classed('dragover', false);
   }
-};
+}

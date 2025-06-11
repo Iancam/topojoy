@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 import p5 from "p5";
 import { sketchFactory } from "./sketch";
@@ -14,6 +14,13 @@ import { Config } from "./types.ts";
 import { MapConfig } from "./schema.ts";
 import { ConfigForm } from "./components/configForm.tsx";
 import { P5Canvas } from "./components/p5Canvas.tsx";
+import {
+  getGeoJSONFromOSM,
+  getMountainFeatures,
+  getTrails,
+  getWaterFeatures,
+} from "./trails.js";
+import { tilesForFeatures } from "./processImage.js";
 
 interface Configs {
   [key: string]: MapConfig;
@@ -51,10 +58,39 @@ export const App = () => {
   );
   const [form, setForm] = useState(addHeightsToForm(configs[config], preForm));
 
+  const [trails, setTrails] = useState<string[]>([]);
+  const [mountains, setMountains] = useState<string[]>([]);
+  const [waterFeatures, setWaterFeatures] = useState<string[]>([]);
+
   const [isFullscreen, setIsFullscreen] = useState(false);
   const p5Ref = useRef<HTMLDivElement>(null);
 
-  const renderSketch = () => {
+  useEffect(() => {
+    const downstreamConfig = getDownstreamConfig();
+    const geoJSON = JSON.parse(localStorage.getItem("topojoy:geojson") || "{}");
+    const { bounds } = tilesForFeatures(geoJSON, downstreamConfig.zoomLevel);
+    const mapGeoJSON = getGeoJSONFromOSM(bounds.latLngbox, {
+      streams: downstreamConfig.river.streams,
+      rivers: downstreamConfig.river.show,
+      trails: downstreamConfig.trail.show,
+      peaks: downstreamConfig.mountain.show,
+      lakes: false,
+    }).then((geoJSON) => {
+      const mountains = getMountainFeatures(bounds, geoJSON);
+      const waterFeatures = getWaterFeatures(bounds, geoJSON);
+      const trails = getTrails(bounds, geoJSON);
+      setMountains(Object.keys(mountains));
+      setWaterFeatures(Object.keys(waterFeatures));
+      setTrails(Object.keys(trails));
+    });
+  }, [
+    form["river.streams"],
+    form["river.show"],
+    form["trail.show"],
+    form["mountain.show"],
+  ]);
+
+  const getDownstreamConfig = () => {
     let downstreamConfig = configs[config];
     for (const [key, value] of Object.entries(form)) {
       const keys = key.split(".");
@@ -65,12 +101,17 @@ export const App = () => {
       }
       current[lastKey] = value;
     }
-    const geoJSON = JSON.parse(localStorage.getItem("topojoy:geojson") || "{}");
+    return downstreamConfig;
+  };
+
+  const renderSketch = async () => {
+    const downstreamConfig = getDownstreamConfig();
     if (!p5Ref.current) return;
 
     while (p5Ref.current.firstChild) {
       p5Ref.current.removeChild(p5Ref.current.firstChild);
     }
+    const geoJSON = JSON.parse(localStorage.getItem("topojoy:geojson") || "{}");
     const { sketch } = sketchFactory(geoJSON, downstreamConfig);
 
     const myp5 = new p5(sketch, p5Ref.current);
@@ -101,6 +142,9 @@ export const App = () => {
           config={config}
           configs={configs}
           form={form}
+          trails={trails}
+          mountains={mountains}
+          waterFeatures={waterFeatures}
           onConfigChange={onConfigChange}
           onFormChange={onFormChange}
           renderSketch={renderSketch}

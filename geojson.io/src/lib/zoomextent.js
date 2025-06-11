@@ -1,6 +1,6 @@
-const bbox = require('@turf/bbox').default;
+import bbox from '@turf/bbox';
 
-module.exports = function (context) {
+export default function (context) {
   const geojson = context.data.get('map');
   // if the data is a single point, flyTo()
   if (
@@ -19,4 +19,4 @@ module.exports = function (context) {
       duration: 1000
     });
   }
-};
+}

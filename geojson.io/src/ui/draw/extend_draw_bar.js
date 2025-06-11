@@ -43,4 +43,4 @@ class extendDrawBar {
   }
 }
 
-module.exports = extendDrawBar;
+export default extendDrawBar;

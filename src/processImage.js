@@ -17,7 +17,6 @@ const gpu = initGPU();
 const toHeights = gpu
   .createKernel(function hmap(data, width) {
     const { x, y } = this.thread;
-    // can't declare functions in the kernel, or I would refactor this
     const start = y * (width * 4) + x * 4;
     const [R, G, B, A] = [
       data[start],
@@ -60,42 +59,6 @@ const slope = gpu
     return [height, slope, aspect, cosIncidence];
   })
   .setDynamicOutput(true);
-
-/**
- * Given an image and a meters per pixel, returns a
- * canvas of the same size as the image, where the color of each pixel
- * is its aspect. The aspect is the direction of the slope with respect
- * to the east, measured in degrees from 0 to 360. The color of each
- * pixel is a shade of gray, with 0 degrees represented by black and
- * 360 degrees by white.
- * Used for debugging.
- * @param {width, height, data} image - an image
- * @param {number} metersPerPixel
- * @returns {undefined}
- */
-function toHmap(image, metersPerPixel) {
-  const heights = toHeights.setOutput([image.width, image.height])(
-    image.data,
-    image.width
-  );
-  const slopes = slope.setPipeline(true).setOutput([image.width, image.height])(
-    heights,
-    metersPerPixel
-  );
-
-  const render = gpu
-    .createKernel(function (slArray) {
-      const { x, y } = this.thread;
-      const v = slArray[y][x];
-      const c = (255 * v[2]) / 360;
-      this.color(c, c, c, 1);
-    })
-    .setOutput([image.width, image.height])
-    .setGraphical(true);
-  render(slopes);
-
-  document.getElementsByTagName("body")[0].appendChild(render.canvas);
-}
 
 /**
  * Takes an image and pixel distance and returns a map of height, slope and
@@ -179,22 +142,6 @@ export function processPixels(image, metersPerPixel, sunAz, sunEl, vert) {
   };
 }
 
-function slopeCPU(data, width, metersPerPixel, sunAz, sunEl, vert) {
-  const pixels = [];
-  for (let x = 0; x < step; x++) {
-    const pixelsI = [];
-    for (let j = 0; j < width; j++) {
-      const val = getSlopes(j, x, data, metersPerPixel, sunAz, sunEl, vert);
-      pixelsI.push(val);
-      const h = val[0];
-      if (h < min) min = h;
-      if (h > max) max = h;
-    }
-    pixels.push(pixelsI);
-  }
-  return pixels;
-}
-
 function getPixel(pixels, width, x, y) {
   return [
     pixels[y * width + x * 4],
@@ -209,34 +156,9 @@ function getHeight(data, width, y, x) {
   const h = -10000 + (R * 256 * 256 + G * 256 + B) * 0.1;
   return h;
 }
+// ########## END GPU ##########
 
-function getSlopes(x, y, data, width, metersPerPixel, sunAz, sunEl, vert) {
-  const height = getHeight(data, width, y, x);
-
-  const eleN = vert * getHeight(data, width, y, x - 1);
-  const eleS = vert * getHeight(data, width, y, x + 1);
-  const eleE = vert * getHeight(data, width, y + 1, x);
-  const eleW = vert * getHeight(data, width, y - 1, x);
-  const d = 3 * metersPerPixel;
-  const dzdx = (eleE - eleW) / d;
-  const dzdy = (eleN - eleS) / d;
-  const slope = Math.atan(Math.sqrt(dzdx ** 2 + dzdy ** 2)) * (180 / Math.PI);
-  const aspect =
-    d !== 0 // counterclockwise from east
-      ? (Math.atan2(dzdy, dzdx) * (180 / Math.PI) + 180) % 360
-      : (90 * (d > 0 ? 1 : -1) + 180) % 360;
-
-  const El = (Math.PI / 180) * sunEl;
-  const Az = (Math.PI / 180) * sunAz;
-
-  const cosIncidence =
-    Math.sin(El) * Math.cos(slope) +
-    Math.cos(El) * Math.sin(slope) * Math.cos(Az - aspect);
-
-  const shade = 255 * cosIncidence;
-  return [height, slope, aspect, cosIncidence];
-}
-
+// ########## BEGIN Loading Map##########
 const tileToUrl = ([x, y, zoom]) => {
   const MBX_TOKEN =
     "pk.eyJ1IjoibXJpYW5jYW1wYmVsbCIsImEiOiJja2k5bzR1cTAwaGd4MzRueHAxMHlxbmtwIn0.RqasAuFr0-Bea2MiohpzDQ";
@@ -253,7 +175,7 @@ const tileToUrl = ([x, y, zoom]) => {
  *     box is an array of [x0, y0, x1, y1] coordinates of the bounding box of the tiles.
  *     width and height are the dimensions of the bounding box.
  */
-function tilesForFeatures(feature, zoom) {
+export function tilesForFeatures(feature, zoom) {
   const limits = { min_zoom: zoom, max_zoom: zoom };
   const coverTiles = cover
     .tiles(feature.geometry, limits)
@@ -307,7 +229,7 @@ function tilesForFeatures(feature, zoom) {
  * @param {number} tileHeight - Height of each tile in pixels
  * @returns {Promise<Canvas>} - A promise that resolves to a canvas of the stitched image
  */
-function stitchMapTiles(tiles, gridWidth, tileWidth, tileHeight) {
+export function stitchMapTiles(tiles, gridWidth, tileWidth, tileHeight) {
   return new Promise((resolve, reject) => {
     const gridHeight = Math.ceil(tiles.length / gridWidth);
     const totalWidth = gridWidth * tileWidth;
@@ -349,14 +271,6 @@ function stitchMapTiles(tiles, gridWidth, tileWidth, tileHeight) {
   });
 }
 
-const getDataImageCanvas = async ({ feature, zoom }) => {
-  const { tiles, bounds } = tilesForFeatures(feature, zoom);
-
-  const dataImageCnvs = await stitchMapTiles(tiles, bounds.width, 256, 256);
-
-  return { canvas: dataImageCnvs, bounds };
-};
-
 /**
  * Process an image from geojson feature. This function is used to pre-process each of the
  * map tiles that make up the map. The image is processed into a 3d array, where
@@ -372,7 +286,8 @@ const getDataImageCanvas = async ({ feature, zoom }) => {
  *     drawn onto.
  */
 export async function processImage(feature, zoom) {
-  const { canvas, bounds } = await getDataImageCanvas({ feature, zoom });
+  const { tiles, bounds } = tilesForFeatures(feature, zoom);
+  const canvas = await stitchMapTiles(tiles, bounds.width, 256, 256);
   const ctx = canvas.getContext("2d");
   const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
 

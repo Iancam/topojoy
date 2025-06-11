@@ -1,13 +1,13 @@
-const escape = require('escape-html'),
-  geojsonRandom = require('geojson-random'),
-  geojsonExtent = require('@mapbox/geojson-extent'),
-  geojsonFlatten = require('geojson-flatten'),
-  polyline = require('@mapbox/polyline'),
-  wkx = require('wkx'),
-  Buffer = require('buffer').Buffer,
-  zoomextent = require('./zoomextent');
+import escape from 'escape-html';
+import geojsonRandom from 'geojson-random';
+import geojsonExtent from '@mapbox/geojson-extent';
+import geojsonFlatten from 'geojson-flatten';
+import polyline from '@mapbox/polyline';
+import wkx from 'wkx';
+import Buffer from 'buffer';
+import zoomextent from './zoomextent';
 
-module.exports.adduserlayer = function (context, _url, _name) {
+export const addUserLayer = function (context, _url, _name) {
   const url = escape(_url),
     name = escape(_name);
 
@@ -56,27 +56,25 @@ module.exports.adduserlayer = function (context, _url, _name) {
   addUserSourceAndLayer();
 };
 
-module.exports.zoomextent = function (context) {
-  zoomextent(context);
-};
+export { zoomextent };
 
-module.exports.clear = function (context) {
+export const clear = function (context) {
   context.data.clear();
 };
 
-module.exports.random = function (context, count, type) {
+export const random = function (context, count, type) {
   context.data.mergeFeatures(geojsonRandom(count, type).features, 'meta');
 };
 
-module.exports.bboxify = function (context) {
+export const bboxify = function (context) {
   context.data.set({ map: geojsonExtent.bboxify(context.data.get('map')) });
 };
 
-module.exports.flatten = function (context) {
+export const flatten = function (context) {
   context.data.set({ map: geojsonFlatten(context.data.get('map')) });
 };
 
-module.exports.polyline = function (context) {
+const polyline7 = function (context) {
   const input = prompt('Enter your polyline');
   try {
     const decoded = polyline.toGeoJSON(input);
@@ -86,7 +84,9 @@ module.exports.polyline = function (context) {
   }
 };
 
-module.exports.polyline6 = function (context) {
+export { polyline7 as polyline };
+
+export const polyline6 = function (context) {
   const input = prompt('Enter your polyline');
   try {
     const decoded = polyline.toGeoJSON(input, 6);
@@ -96,7 +96,7 @@ module.exports.polyline6 = function (context) {
   }
 };
 
-module.exports.wkxBase64 = function (context) {
+export const wkxBase64 = function (context) {
   const input = prompt('Enter your Base64 encoded WKB/EWKB');
   try {
     const decoded = wkx.Geometry.parse(Buffer.from(input, 'base64'));
@@ -108,7 +108,7 @@ module.exports.wkxBase64 = function (context) {
   }
 };
 
-module.exports.wkxHex = function (context) {
+export const wkxHex = function (context) {
   const input = prompt('Enter your Hex encoded WKB/EWKB');
   try {
     const decoded = wkx.Geometry.parse(Buffer.from(input, 'hex'));
@@ -120,7 +120,7 @@ module.exports.wkxHex = function (context) {
   }
 };
 
-module.exports.wkxString = function (context) {
+export const wkxString = function (context) {
   const input = prompt('Enter your WKT/EWKT String');
   try {
     const decoded = wkx.Geometry.parse(input);

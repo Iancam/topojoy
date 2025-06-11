@@ -1,6 +1,6 @@
-const qs = require('qs-hash');
+import qs from 'qs-hash';
 
-module.exports = function (context) {
+export default function (context) {
   d3.select(window).on('unload', onunload);
   context.dispatch.on('change', onchange);
 
@@ -35,4 +35,4 @@ module.exports = function (context) {
       context.storage.remove('recover');
     }
   }
-};
+}
