@@ -1,4 +1,5 @@
 import Shepherd from 'shepherd.js';
+import 'shepherd.js/dist/css/shepherd.css';
 
 export function initWalkthrough() {
   const tour = new Shepherd.Tour({
@@ -6,6 +7,7 @@ export function initWalkthrough() {
       cancelIcon: {
         enabled: true
       },
+      scrollTo: { behavior: 'smooth', block: 'center' },
       classes: 'shepherd-theme-dark'
     }
   });
@@ -13,7 +15,7 @@ export function initWalkthrough() {
   tour.addStep({
     id: 'search-bar',
     title: 'Search for a location',
-    text: 'Enter a location to search for',
+    text: 'Start here. Enter a location to search for.',
     attachTo: {
       element: '.mapboxgl-ctrl-geocoder--input',
       on: 'bottom'
@@ -34,6 +36,7 @@ export function initWalkthrough() {
 
   tour.addStep({
     id: 'final-step',
+    title: 'Finished?',
     text: "click here when you've completed your selection",
     attachTo: {
       element: '.link-to-app',
