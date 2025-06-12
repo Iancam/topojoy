@@ -1,5 +1,3 @@
-import table from '../panel/table';
-import json from '../panel/json';
 import help from '../panel/help';
 
 export default function (context, pane) {

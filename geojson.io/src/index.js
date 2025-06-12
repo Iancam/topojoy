@@ -5,8 +5,8 @@ import './lib/d3-keybinding';
 import './lib/d3-trigger';
 
 // codemirror css
-import '../node_modules/codemirror/lib/codemirror.css';
-import '../node_modules/codemirror/addon/fold/foldgutter.css';
+// import '../node_modules/codemirror/lib/codemirror.css';
+// import '../node_modules/codemirror/addon/fold/foldgutter.css';
 
 // fontawesome css
 import '../node_modules/@fortawesome/fontawesome-free/css/fontawesome.min.css';
