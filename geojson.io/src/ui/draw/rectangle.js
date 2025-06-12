@@ -36,6 +36,10 @@ const DrawRectangle = {
         coordinates: [[]]
       }
     });
+    const rectBtn = document.querySelector(
+      '.mapbox-gl-draw_ctrl-draw-btn.mapbox-gl-draw_rectangle'
+    );
+    rectBtn.classList.add('active');
     this.addFeature(rectangle);
     this.clearSelectedFeatures();
     doubleClickZoom.disable(this);
@@ -107,7 +111,10 @@ const DrawRectangle = {
     doubleClickZoom.enable(this);
     this.updateUIClasses({ mouse: 'none' });
     this.activateUIButton();
-
+    const rectBtn = document.querySelector(
+      '.mapbox-gl-draw_ctrl-draw-btn.mapbox-gl-draw_rectangle'
+    );
+    rectBtn.classList.remove('active');
     // check to see if we've deleted this feature
     if (this.getFeature(state.rectangle.id) === undefined) return;
 

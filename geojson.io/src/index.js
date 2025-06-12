@@ -13,7 +13,7 @@ import '../node_modules/@fortawesome/fontawesome-free/css/fontawesome.min.css';
 import '../node_modules/@fortawesome/fontawesome-free/css/solid.min.css';
 
 // tailwind css
-import '../dist/css/tailwind_dist.css';
+// import '../dist/css/tailwind_dist.css';
 // import './css/tailwind_src.css';
 // mapboxgl, mapboxgl-draw, mapbox-gl-geocoder css
 import '../node_modules/mapbox-gl/dist/mapbox-gl.css';

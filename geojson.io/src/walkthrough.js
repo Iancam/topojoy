@@ -45,5 +45,7 @@ export function initWalkthrough() {
     buttons: [{ text: 'Finish', action: tour.complete }]
   });
 
-  tour.start();
+  document.querySelector('.start-tour').addEventListener('click', () => {
+    tour.start();
+  });
 }

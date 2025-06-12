@@ -14,7 +14,11 @@ var global = typeof window !== 'undefined' ? window :
 `;
 
 export default defineConfig({
-  plugins: [tailwindcss()],
+  plugins: [
+    tailwindcss({
+      config: './tailwind.config.cjs'
+    })
+  ],
   define: {
     global: 'window'
   },

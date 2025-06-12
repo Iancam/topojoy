@@ -519,3 +519,15 @@ input[type='text'] {
   opacity: 0.25;
   background: #444 url(spinner.gif) 50% 50% no-repeat;
 }
+
+/* Mapbox GL Draw – highlight rectangle draw button when active */
+.mapbox-gl-draw_ctrl-draw-btn.mapbox-gl-draw_rectangle.active {
+  background-color: #4f46e5; /* indigo-600 */
+  border: 2px solid #4338ca; /* indigo-700 */
+  color: #fff;
+}
+
+/* Provide subtle hover feedback too */
+.mapbox-gl-draw_ctrl-draw-btn.mapbox-gl-draw_rectangle:not(.active):hover {
+  background-color: #e0e7ff; /* indigo-100 */
+}
