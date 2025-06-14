@@ -16,7 +16,7 @@ const RangeSchema = z
 const CurveConfigSchema = z.object({
   stepCount: z.number().positive(),
   stepLength: z.number().positive(),
-  countScalar: z.number().min(0).max(1),
+  density: z.number().min(0).max(1),
 });
 
 const TrailConfigSchema = z.object({

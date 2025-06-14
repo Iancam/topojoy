@@ -43,7 +43,7 @@ export const SawtoothConfig: MapConfig = {
   curve: {
     stepCount: 20,
     stepLength: 5,
-    countScalar: 1,
+    density: 1,
   },
   trail: {
     colorRange: [res(chroma(p.f4).mix("grey", 0.4)), p.f5],

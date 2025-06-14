@@ -9,7 +9,7 @@ export interface Config {
   curve: {
     stepCount: number;
     stepLength: number;
-    countScalar: number;
+    density: number;
   };
   trail: {
     stepCount: number;
@@ -46,12 +46,12 @@ export interface Configs {
   [key: string]: Config;
 }
 
-declare module '*.css' {
+declare module "*.css" {
   const content: { [className: string]: string };
   export default content;
 }
 
-declare module '*.js' {
+declare module "*.js" {
   const content: any;
   export default content;
 }

@@ -94,7 +94,7 @@ export const EmeraldLakesConfig: MapConfig = {
   curve: {
     stepCount: 20,
     stepLength: 5,
-    countScalar: 0.5,
+    density: 0.5,
   },
   trail: {
     colorRange: [p.JuniperBark9, p.ochre],

@@ -13,47 +13,11 @@ import { Config } from "../types";
 import { Slider } from "./ui/slider";
 import p5 from "p5";
 import MultiSelect from "./ui/multiselect";
-
-interface FormElements {
-  [key: string]: [string, string, any];
-}
-type FormElementType = "number" | "boolean" | "list" | "range" | "slider";
-
-export const formElements: FormElements = {
-  "curve.countScalar": ["number", "the density of the background squiggles", 1],
-  zoomLevel: ["number", "the zoom level of the map", 13],
-  "trail.stepCount": [
-    "number",
-    "the length of each squiggle in the trail. Higher numbers make a thicker trail",
-    8,
-  ],
-  "trail.show": ["boolean", "show/hide trails", true],
-  "river.stepCount": [
-    "number",
-    "the length of each squiggle in the rivers. Higher numbers make thicker rivers",
-    8,
-  ],
-  "river.streams": ["boolean", "show/hide streams", false],
-  "river.show": ["boolean", "show/hide rivers", true],
-  "mountain.keepList": ["list", "mountains to show", []],
-  "mountain.drop": [
-    "boolean",
-    "if checked, mountains not in the keepList will be dropped",
-    false,
-  ],
-  "mountain.show": ["boolean", "show/hide mountains", true],
-  "backgroundText.text": ["textarea", "the text in the background", ""],
-  "backgroundText.elevationRange": [
-    "range",
-    "the elevations where the background text will be visible",
-    [0.7, 1],
-  ],
-  crossHatch: [
-    "boolean",
-    "display a crosshatch, as opposed to the standard elevation lines",
-    false,
-  ],
-};
+import {
+  basicFormElements,
+  advancedFormElements,
+  FormElementType,
+} from "./configFormData";
 
 interface TooltipWrapperProps {
   children: React.ReactNode;
@@ -114,6 +78,15 @@ export const ConfigForm = ({
         : [];
 
     const cases: Record<FormElementType, React.ReactElement> = {
+      textarea: (
+        <textarea
+          className="border border-gray-300 rounded p-2 w-full"
+          rows={5}
+          cols={20}
+          value={value}
+          onChange={(e) => onFormChange(key, e.target.value)}
+        />
+      ),
       number: (
         <Input
           type="number"
@@ -162,11 +135,14 @@ export const ConfigForm = ({
 
     const element = cases[elementType] || null;
     return (
-      <div className="flex items-center space-x-2">
-        {element}
-        <TooltipWrapper>
-          <Info className="h-4 w-4" />
-        </TooltipWrapper>
+      <div key={key} className="flex flex-col gap-2">
+        <label className="text-sm font-medium">{key}</label>
+        <div className="flex items-center space-x-2">
+          {element}
+          <TooltipWrapper>
+            <Info className={"h-4 w-4 tooltip-" + key.replace(".", "-")} />
+          </TooltipWrapper>
+        </div>
       </div>
     );
   };
@@ -195,15 +171,12 @@ export const ConfigForm = ({
           </select>
         </div>
 
-        {Object.entries(formElements).map(([key, [type, description]]) => (
-          <div key={key} className="flex flex-col gap-2">
-            <label className="text-sm font-medium">{key}</label>
-            {renderFormElement(key, type as FormElementType, description)}
-          </div>
-        ))}
+        {Object.entries(basicFormElements).map(([key, [type, description]]) =>
+          renderFormElement(key, type, description)
+        )}
 
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Color Plans</h2>
+          <h2 className="text-lg font-semibold color-height">Color Plans</h2>
           {configs[config].colorPlan.map(
             (colorPlan: ColorPlan, index: number) => (
               <div
@@ -225,6 +198,11 @@ export const ConfigForm = ({
                 )}
               </div>
             )
+          )}
+          <h2 className="text-lg font-semibold">Advanced</h2>
+          {Object.entries(advancedFormElements).map(
+            ([key, [type, description]]) =>
+              renderFormElement(key, type, description)
           )}
         </div>
       </form>

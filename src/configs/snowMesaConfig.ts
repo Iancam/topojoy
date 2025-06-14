@@ -239,7 +239,7 @@ export const SnowMesaConfig: MapConfig = {
   curve: {
     stepCount: 20,
     stepLength: 5,
-    countScalar: 0.5,
+    density: 0.5,
   },
   trail: {
     colorRange: [p.f4, p.f5],

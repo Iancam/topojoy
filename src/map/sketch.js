@@ -61,7 +61,7 @@ export const sketchFactory = (boundsGeojson, config, options = {}) => {
         const curvePixelCount =
           config.curve.stepCount * config.curve.stepLength;
         const curveCount =
-          (config.curve.countScalar / curvePixelCount) *
+          (config.curve.density / curvePixelCount) *
           (canvas.width * canvas.height);
         const colorAt = colorAtFactory(config.colorPlan, topo);
 

@@ -3,14 +3,13 @@ import { TourMap } from "./walkthrough";
 import p5 from "p5";
 import { sketchFactory } from "./map/sketch";
 
-import { formElements } from "./components/configForm";
+import { formElements } from "./components/configFormData";
 
 // Import configs with correct paths
 import { SnowMesaConfig } from "./configs/snowMesaConfig.ts";
 import { EmeraldLakesConfig } from "./configs/emeraldLakesConfig.ts";
 import { LHKConfig } from "./configs/LHKConfig.ts";
 import { SawtoothConfig } from "./configs/sawtoothConfig.ts";
-import { Config } from "./types.ts";
 import { MapConfig } from "./schema.ts";
 import { ConfigForm } from "./components/configForm.tsx";
 import { P5Canvas } from "./components/p5Canvas.tsx";

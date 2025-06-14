@@ -23,7 +23,7 @@ export const P5Canvas = ({
     };
   }, [config]);
   return (
-    <div className={"ml-90 mt-15"}>
+    <div className={"ml-80 mt-15"}>
       <div ref={p5Ref} className={`relative inset-0`} />
     </div>
   );
