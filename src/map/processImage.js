@@ -1,7 +1,7 @@
 import cover from "@iancam/tile-cover";
 import { tileToBBOX } from "@mapbox/tilebelt";
-import { times } from "./libraries/utils";
-import { getMetersPerPixelAtLatitude } from "./libraries/utils";
+import { times } from "../libraries/utils";
+import { getMetersPerPixelAtLatitude } from "../libraries/utils";
 
 const N_SLICES = 4;
 

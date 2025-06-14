@@ -15,8 +15,8 @@ import {
   getMountainFeatures,
   getWaterFeatures,
 } from "./trails";
-import { times } from "./libraries/utils";
-import { createWebGLFlowField } from "./contourExploration/terrainFlowField";
+import { times } from "../libraries/utils";
+import { createWebGLFlowField } from "../contourExploration/terrainFlowField";
 
 export const sketchFactory = (boundsGeojson, config, options = {}) => {
   const { contourLines = false } = options;

@@ -115,56 +115,36 @@ export const ConfigForm = ({
 
     const cases: Record<FormElementType, React.ReactElement> = {
       number: (
-        <div className="flex items-center space-x-2">
-          <Input
-            type="number"
-            value={value}
-            onChange={(e) => onFormChange(key, Number(e.target.value))}
-          />
-          <TooltipWrapper>
-            <Info className="h-4 w-4" />
-          </TooltipWrapper>
-        </div>
+        <Input
+          type="number"
+          value={value}
+          onChange={(e) => onFormChange(key, Number(e.target.value))}
+        />
       ),
       boolean: (
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            checked={value}
-            onCheckedChange={(checked) => onFormChange(key, checked)}
-          />
-          <TooltipWrapper>
-            <Info className="h-4 w-4" />
-          </TooltipWrapper>
-        </div>
+        <Checkbox
+          checked={value}
+          onCheckedChange={(checked) => onFormChange(key, checked)}
+        />
       ),
       list: (
-        <div className="flex items-center space-x-2">
-          <MultiSelect
-            options={options}
-            value={value}
-            onChange={(v) => onFormChange(key, v)}
-          />
-          <TooltipWrapper>
-            <Info className="h-4 w-4" />
-          </TooltipWrapper>
-        </div>
+        <MultiSelect
+          options={options}
+          value={value}
+          onChange={(v) => onFormChange(key, v)}
+        />
       ),
       range: (
-        <div className="flex items-center space-x-2">
-          <DualRangeSlider
-            min={0}
-            max={1}
-            step={0.01}
-            value={value}
-            onValueChange={(val) => onFormChange(key, val)}
-          />
-          <TooltipWrapper>
-            <Info className="h-4 w-4" />
-          </TooltipWrapper>
-        </div>
+        <DualRangeSlider
+          min={0}
+          max={1}
+          step={0.01}
+          value={value}
+          onValueChange={(val) => onFormChange(key, val)}
+        />
       ),
       slider: (
-        <div className="flex items-center space-x-2">
+        <>
           <Slider
             min={0}
             max={1}
@@ -176,14 +156,19 @@ export const ConfigForm = ({
           <span className="text-sm w-12 text-right">
             {Number(value).toFixed(2)}
           </span>
-          <TooltipWrapper>
-            <Info className="h-4 w-4" />
-          </TooltipWrapper>
-        </div>
+        </>
       ),
     };
 
-    return cases[elementType] || null;
+    const element = cases[elementType] || null;
+    return (
+      <div className="flex items-center space-x-2">
+        {element}
+        <TooltipWrapper>
+          <Info className="h-4 w-4" />
+        </TooltipWrapper>
+      </div>
+    );
   };
 
   return (
@@ -243,8 +228,9 @@ export const ConfigForm = ({
           )}
         </div>
       </form>
-      <div className="sticky bottom-0 left-0 bg-white border-t p-3 flex justify-end space-x-3 shadow-lg">
+      <div className="sticky bottom-15 left-0 bg-white border-t p-3 flex justify-end space-x-3 shadow-lg">
         <button
+          id="render-sketch"
           onClick={renderSketch}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
         >

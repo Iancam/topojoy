@@ -3,7 +3,7 @@ import {
   radiansToDegrees,
   lerpAngle,
   collision,
-} from "./libraries/utils";
+} from "../libraries/utils";
 import { res } from "./colorUtils";
 
 import chroma from "chroma-js";

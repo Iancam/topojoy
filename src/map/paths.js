@@ -5,7 +5,7 @@ import {
   times,
   distance,
   windowForEach,
-} from "./libraries/utils";
+} from "../libraries/utils";
 import { res } from "./colorUtils";
 import { drawCurve, makeCurve } from "./layers";
 

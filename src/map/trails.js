@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { pointToTileFraction } from "./libraries/utils";
+import { pointToTileFraction } from "../libraries/utils";
 import osmtogeojson from "osmtogeojson";
 const featuresToScreenCoords = (zoom, box) => (feature) => {
   const { properties, geometry } = feature;
@@ -151,6 +151,7 @@ out skel qt;
     console.log("saving cache");
   } catch (e) {
     console.log("unable to save cache");
+    console.log(e);
   }
 
   return geoJSON;

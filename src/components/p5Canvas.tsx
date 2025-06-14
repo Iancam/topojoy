@@ -23,22 +23,8 @@ export const P5Canvas = ({
     };
   }, [config]);
   return (
-    <div
-      className={`flex-1 relative transition-all duration-300 ${
-        isFullscreen ? "ml-0" : "ml-80"
-      }`}
-    >
-      <div ref={p5Ref} className={`absolute inset-0`} />
-      <button
-        className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-lg"
-        onClick={() => setIsFullscreen(!isFullscreen)}
-      >
-        {isFullscreen ? (
-          <Minimize2 className="h-4 w-4" />
-        ) : (
-          <Maximize2 className="h-4 w-4" />
-        )}
-      </button>
+    <div className={"ml-90 mt-15"}>
+      <div ref={p5Ref} className={`relative inset-0`} />
     </div>
   );
 };

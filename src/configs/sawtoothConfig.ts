@@ -1,4 +1,4 @@
-import { darken, res } from "../colorUtils";
+import { darken, res } from "../map/colorUtils";
 import { MapConfig } from "../schema";
 import chroma from "chroma-js";
 const p = {
