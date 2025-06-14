@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-
+import { TourMap } from "./walkthrough";
 import p5 from "p5";
-import { sketchFactory } from "./sketch";
+import { sketchFactory } from "./map/sketch";
 
 import { formElements } from "./components/configForm";
 
@@ -19,8 +19,9 @@ import {
   getMountainFeatures,
   getTrails,
   getWaterFeatures,
-} from "./trails.js";
-import { tilesForFeatures } from "./processImage.js";
+} from "./map/trails.js";
+import { tilesForFeatures } from "./map/processImage.js";
+import { log } from "console";
 
 interface Configs {
   [key: string]: MapConfig;
@@ -90,6 +91,12 @@ export const App = () => {
     form["mountain.show"],
   ]);
 
+  const tour = TourMap();
+
+  // useEffect(() => {
+  //   tour.start();
+  // }, []);
+
   const getDownstreamConfig = () => {
     let downstreamConfig = configs[config];
     for (const [key, value] of Object.entries(form)) {
@@ -104,7 +111,7 @@ export const App = () => {
     return downstreamConfig;
   };
 
-  const renderSketch = async () => {
+  const renderSketch = () => {
     const downstreamConfig = getDownstreamConfig();
     if (!p5Ref.current) return;
 
@@ -131,33 +138,62 @@ export const App = () => {
   };
 
   return (
-    <div className="flex h-screen">
-      {/* Sidebar */}
-      <div
-        className={`w-80 fixed top-0 left-0 h-full overflow-y-auto border-r bg-white p-4 flex-shrink-0 transition-transform duration-300 ${
-          isFullscreen ? "-translate-x-full" : "translate-x-0"
-        }`}
-      >
-        <ConfigForm
-          config={config}
-          configs={configs}
-          form={form}
-          trails={trails}
-          mountains={mountains}
-          waterFeatures={waterFeatures}
-          onConfigChange={onConfigChange}
-          onFormChange={onFormChange}
-          renderSketch={renderSketch}
-        />
+    <>
+      <div className="text-white bg-slate-800 font-sans px-3 flex justify-between h-15 fixed top-0 left-0 right-0">
+        <div className="font-extrabold flex items-center tracking-wide text-base">
+          TopoJoy
+        </div>
+        <div className="flex-grow flex justify-end">
+          <div style={{ height: "42px" }}></div>
+          <div
+            className="flex items-center bg-pink"
+            style={{ fontSize: "10px" }}
+          >
+            <div className="pr-3"></div>
+            <div className="flex items-center ml-auto">
+              <button
+                className={
+                  "bg-indigo-500 hover:bg-indigo-700 start-tour text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200"
+                }
+                onClick={() => {
+                  tour.start();
+                  console.log("Tour started");
+                }}
+              >
+                Start Tour
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-      {/* Main Content */}
-      <P5Canvas
-        config={configs[config]}
-        isFullscreen={isFullscreen}
-        setIsFullscreen={setIsFullscreen}
-        renderSketch={renderSketch}
-        p5Ref={p5Ref}
-      ></P5Canvas>
-    </div>
+
+      <div className="flex h-screen">
+        {/* Sidebar */}
+        <div
+          className={`w-80 fixed top-15 left-0 h-full overflow-y-auto border-r bg-white p-4 flex-shrink-0
+          }`}
+        >
+          <ConfigForm
+            config={config}
+            configs={configs}
+            form={form}
+            trails={trails}
+            mountains={mountains}
+            waterFeatures={waterFeatures}
+            onConfigChange={onConfigChange}
+            onFormChange={onFormChange}
+            renderSketch={renderSketch}
+          />
+        </div>
+        {/* Main Content */}
+        <P5Canvas
+          config={configs[config]}
+          isFullscreen={isFullscreen}
+          setIsFullscreen={setIsFullscreen}
+          renderSketch={renderSketch}
+          p5Ref={p5Ref}
+        ></P5Canvas>
+      </div>
+    </>
   );
 };
