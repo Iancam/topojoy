@@ -1,6 +1,60 @@
 import _ from "lodash";
 import { pointToTileFraction } from "../libraries/utils";
 import osmtogeojson from "osmtogeojson";
+
+// IndexedDB helper functions for caching OSM queries
+const DB_NAME = "topojoy-cache";
+const STORE_NAME = "osmCache";
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    if (!("indexedDB" in window)) {
+      reject(new Error("IndexedDB not supported"));
+      return;
+    }
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+  });
+}
+
+async function idbGet(key) {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readonly");
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) {
+    console.warn("IndexedDB unavailable, falling back to network");
+    return null;
+  }
+}
+
+async function idbPut(key, value) {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.put(value, key);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) {
+    console.warn("IndexedDB unavailable, cache not saved");
+  }
+}
+
 const featuresToScreenCoords = (zoom, box) => (feature) => {
   const { properties, geometry } = feature;
   let { coordinates } = geometry;
@@ -129,9 +183,11 @@ out body(${latLongBox.join(",")});
 >;
 out skel qt;
 `;
-  if (localStorage.getItem(query)) {
-    console.log("using cache");
-    return JSON.parse(localStorage.getItem(query));
+  // Try IndexedDB cache first
+  const cached = await idbGet(query);
+  if (cached) {
+    console.log("using IndexedDB cache");
+    return cached;
   }
 
   const osm = await fetch("https://overpass-api.de/api/interpreter", {
@@ -146,13 +202,14 @@ out skel qt;
 
   const geoJSON = osmtogeojson(osm);
 
-  try {
-    localStorage.setItem(query, JSON.stringify(geoJSON));
-    console.log("saving cache");
-  } catch (e) {
-    console.log("unable to save cache");
-    console.log(e);
-  }
+  // Save to IndexedDB cache (best-effort)
+  idbPut(query, geoJSON)
+    .then(() => {
+      console.log("saved to IndexedDB cache");
+    })
+    .catch(() => {
+      console.log("unable to save cache");
+    });
 
   return geoJSON;
 }
