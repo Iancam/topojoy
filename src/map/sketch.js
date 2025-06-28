@@ -18,7 +18,12 @@ import {
 import { times } from "../libraries/utils";
 import { createWebGLFlowField } from "../contourExploration/terrainFlowField";
 
-export const sketchFactory = (boundsGeojson, config, options = {}) => {
+export const sketchFactory = (
+  boundsGeojson,
+  config,
+  callback,
+  options = {}
+) => {
   const { contourLines = false } = options;
   return {
     sketch: (sketch) => {
@@ -70,6 +75,7 @@ export const sketchFactory = (boundsGeojson, config, options = {}) => {
         OGCanvas.style("position", "absolute");
         OGCanvas.style("top", 0);
         OGCanvas.style("left", 0);
+        OGCanvas.style("pointer-events", "none");
 
         sketch.background(config.background);
 
@@ -184,6 +190,7 @@ export const sketchFactory = (boundsGeojson, config, options = {}) => {
 
           drawLayers();
         }
+        callback(OGCanvas, sketch);
       };
     },
   };

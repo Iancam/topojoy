@@ -118,9 +118,32 @@ export const App = () => {
       p5Ref.current.removeChild(p5Ref.current.firstChild);
     }
     const geoJSON = JSON.parse(localStorage.getItem("topojoy:geojson") || "{}");
-    const { sketch } = sketchFactory(geoJSON, downstreamConfig);
+    const { sketch } = sketchFactory(
+      geoJSON,
+      downstreamConfig,
+      (canvas: { elt: HTMLCanvasElement }, sketch: p5) => {
+        const png = canvas.elt.toDataURL("image/png");
+        const img = new Image();
+        img.src = png!;
+
+        img.width = sketch.width;
+        img.height = sketch.height;
+        img.style.width = `${sketch.width}px`;
+        img.style.height = `${sketch.height}px`;
+        img.style.display = "block";
+        img.style.position = "absolute";
+        img.style.top = "0";
+        img.style.left = "0";
+        img.style.zIndex = "-1";
+        img.style.maxWidth = `${sketch.width}px`;
+        p5Ref.current?.appendChild(img); // 2. use <img>, not <canvas>
+        sketch.remove();
+      }
+    );
 
     const myp5 = new p5(sketch, p5Ref.current);
+    myp5.noLoop();
+
     return myp5;
     // p5Ref.current = myp5;
   };
