@@ -93,10 +93,11 @@ export function processPixels(image, metersPerPixel, sunAz, sunEl, vert) {
   const { width, height, data } = image;
   const step = height / N_SLICES;
   const numChannels = 4;
+  const histogram = new Map();
   const slices = times(N_SLICES, (i) =>
     data.slice(
       i * step * width * numChannels,
-      (i + 1) * step * width * N_SLICES
+      (i + 1) * step * width * numChannels
     )
   ).map((data) => {
     const htex = toHeights.setOutput([width, step])(data, width);
@@ -107,12 +108,22 @@ export function processPixels(image, metersPerPixel, sunAz, sunEl, vert) {
       for (let j = 0; j < htex[i].length; j++) {
         let h = htex[i][j];
         let backTrack = 0;
+        let backTrack2 = 0;
         // fix negative heights: for whatever reason, these occur sometimes
         while (h < 0) {
-          h = getHeight(data, width, i, j + backTrack);
+          if (j - backTrack < 0) {
+            backTrack = 0;
+            backTrack2++;
+          }
+          h = getHeight(data, width, i - backTrack2, j - backTrack);
+          if (h > 0) {
+          }
           backTrack++;
         }
         htex[i][j] = h;
+        const bucketSize = 20;
+        const key = Math.floor(h / bucketSize) * bucketSize;
+        histogram.set(key, (histogram.get(key) || 0) + 1);
         if (h < min) min = h;
         if (h > max) max = h;
       }
@@ -129,7 +140,6 @@ export function processPixels(image, metersPerPixel, sunAz, sunEl, vert) {
     // calculate min and max, and store heights
 
     // const pixels = slopeCPU(data, width, metersPerPixel, sunAz, sunEl, vert);
-
     return {
       min,
       max,
@@ -140,8 +150,20 @@ export function processPixels(image, metersPerPixel, sunAz, sunEl, vert) {
     };
   });
 
-  const min = Math.min(...slices.map(({ min }) => min));
-  const max = Math.max(...slices.map(({ max }) => max));
+  // const min = Math.min(...slices.map(({ min }) => min));
+  // const max = Math.max(...slices.map(({ max }) => max));
+  // console.log(
+  //   "histogram bins",
+  //   [...histogram.entries()]
+  //     .sort((a, b) => a[0] - b[0]) // sort by bucket key
+  //     .map(([bucket, count]) => ({ elevation: bucket, count }))
+  // );
+  const significantBuckets = [...histogram.entries()].filter(
+    ([bucket, count]) => count > 100
+  );
+
+  const min = significantBuckets.reduce((a, b) => (a[0] < b[0] ? a : b))[0];
+  const max = significantBuckets.reduce((a, b) => (a[0] > b[0] ? a : b))[0];
 
   return {
     min,
@@ -250,6 +272,10 @@ export function stitchMapTiles(tiles, gridWidth, tileWidth, tileHeight) {
     canvas.width = totalWidth;
     canvas.height = totalHeight;
     const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled =
+      ctx.webkitImageSmoothingEnabled =
+      ctx.mozImageSmoothingEnabled =
+        false;
     let loadedTiles = 0;
     const totalTiles = tiles.length;
 
@@ -300,6 +326,7 @@ export async function processImage(feature, zoom) {
   const { tiles, bounds } = tilesForFeatures(feature, zoom);
   const canvas = await stitchMapTiles(tiles, bounds.width, 256, 256);
   const ctx = canvas.getContext("2d");
+
   const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
   const lat = feature.geometry.coordinates[0][0][1];
