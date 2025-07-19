@@ -29,6 +29,31 @@ function hueDistance(color1, color2) {
   return diff;
 }
 
+export function contrastingLuminance(color, minRatio) {
+  const luminance = chroma(color).luminance();
+
+  if (luminance > 0.5) {
+    const brighter = luminance;
+    // minRatio = (brighter+.05)/(darker+.05)
+    // darker+ .05 = brighter + .05/minRatio
+    // darker = (brighter + .05)/minRatio - .05
+    const darker = Math.max(0, (brighter + 0.05) / minRatio - 0.05);
+    return chroma(color).set("hsl.l", darker).hex();
+  } else {
+    // minRatio = (brighter+.05)/(darker+.05)
+    // brighter = minRatio * (darker + .05) - .05
+    const darker = luminance;
+    const brighter = Math.min(1, minRatio * (darker + 0.05) - 0.05);
+    return chroma(color).set("hsl.l", brighter).hex();
+  }
+}
+
+export function complement(color) {
+  return chroma(color)
+    .set("hsl.h", (chroma(color).get("hsl.h") + 180) % 360)
+    .hex();
+}
+
 // color palette
 export const p = {
   orange: "#ed9228",

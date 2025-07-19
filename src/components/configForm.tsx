@@ -78,6 +78,13 @@ export const ConfigForm = ({
         : [];
 
     const cases: Record<FormElementType, React.ReactElement> = {
+      text: (
+        <Input
+          type="text"
+          value={value}
+          onChange={(e) => onFormChange(key, e.target.value)}
+        />
+      ),
       textarea: (
         <textarea
           className="border border-gray-300 rounded p-2 w-full"

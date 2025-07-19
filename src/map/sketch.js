@@ -17,6 +17,7 @@ import {
 } from "./trails";
 import { times } from "../libraries/utils";
 import { createWebGLFlowField } from "../contourExploration/terrainFlowField";
+import { drawTitle } from "./title";
 
 export const sketchFactory = (
   boundsGeojson,
@@ -29,8 +30,9 @@ export const sketchFactory = (
     sketch: (sketch) => {
       let copperplateLight;
       let courier;
-
+      let copperplateBold;
       sketch.preload = function preload() {
+        copperplateBold = sketch.loadFont("/assets/Copperplate Bold.otf");
         copperplateLight = sketch.loadFont("/assets/Copperplate Light.ttf");
         courier = sketch.loadFont("/assets/CourierPrime-Regular.ttf");
       };
@@ -129,6 +131,14 @@ export const sketchFactory = (
             topo,
             trails,
             { ...config.trail, style: "sketched" },
+            textBoxes
+          );
+          textBoxes = drawTitle(
+            sketch,
+            config.title.text,
+            bounds.latLngbox,
+            config.background,
+            copperplateBold,
             textBoxes
           );
           textBoxes = mountainLayer(

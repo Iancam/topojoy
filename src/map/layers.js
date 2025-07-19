@@ -139,7 +139,10 @@ function fillText(
         if (!pixel) return;
         const [h, s, aspect, shade] = pixel;
         const c = colorAt([x, y]);
+        //TODO: color strategies
+        // if(colorStrategy === "oppose"){
 
+        // }
         const col = sketch.color(res(chroma(c).mix("black", shade)));
 
         col.setAlpha(alpha);

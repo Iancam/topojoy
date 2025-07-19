@@ -16,6 +16,9 @@ export const basicFormElements: FormElements = {
     "if checked, mountains not in the keepList will be dropped",
     false,
   ],
+  "title.text": ["text", "the text of the title", ""],
+
+  zoomLevel: ["number", "the zoom level of the map", 13],
 } satisfies FormElements;
 
 export const advancedFormElements: FormElements = {
@@ -38,7 +41,6 @@ export const advancedFormElements: FormElements = {
     "display a crosshatch, as opposed to the standard elevation lines",
     false,
   ],
-  zoomLevel: ["number", "the zoom level of the map", 13],
 };
 
 export const formElements = {
@@ -52,4 +54,5 @@ export type FormElementType =
   | "list"
   | "range"
   | "slider"
-  | "textarea";
+  | "textarea"
+  | "text";
