@@ -34,7 +34,11 @@ const configs: Configs = {
 };
 
 export const App = () => {
-  const [config, setConfig] = useState("Original");
+  const [config, setConfig] = useState(() => {
+    // Load previously selected config from localStorage if it exists
+    const saved = localStorage.getItem("topojoy:config");
+    return saved && Object.keys(configs).includes(saved) ? saved : "Original";
+  });
 
   const addHeightsToForm = (config: MapConfig, form: {}) => {
     const heights = config.colorPlan.reduce((obj, { height }, i) => {
@@ -56,7 +60,12 @@ export const App = () => {
     },
     {}
   );
-  const [form, setForm] = useState(addHeightsToForm(configs[config], preForm));
+  const [form, setForm] = useState(() => {
+    // Combine default form values with any saved values in localStorage
+    const saved = JSON.parse(localStorage.getItem("topojoy:form") || "{}");
+    const base = addHeightsToForm(configs[config], preForm);
+    return { ...base, ...saved };
+  });
 
   const [trails, setTrails] = useState<string[]>([]);
   const [mountains, setMountains] = useState<string[]>([]);
@@ -103,6 +112,11 @@ export const App = () => {
       const lastKey = keys.pop()!;
       let current = downstreamConfig;
       for (const k of keys) {
+        // allow configFormData to create new fields without having to edit
+        // config Files
+        if (!current[k]) {
+          current[k] = {};
+        }
         current = current[k];
       }
       current[lastKey] = value;
@@ -159,6 +173,16 @@ export const App = () => {
     setForm(addHeightsToForm(configs[e.target.value], form));
   };
 
+  // Persist current config selection
+  useEffect(() => {
+    localStorage.setItem("topojoy:config", config);
+  }, [config]);
+
+  // Persist form entries whenever they change
+  useEffect(() => {
+    localStorage.setItem("topojoy:form", JSON.stringify(form));
+  }, [form]);
+
   return (
     <>
       <div className="text-white bg-slate-800 font-sans px-3 flex justify-between h-15 fixed top-0 left-0 right-0">
@@ -172,6 +196,16 @@ export const App = () => {
             style={{ fontSize: "10px" }}
           >
             <div className="pr-3"></div>
+            <div className="flex items-center ml-auto">
+              <a
+                className={
+                  "bg-indigo-500 hover:bg-indigo-700 start-tour text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200"
+                }
+                href="/geojson.io/index.html"
+              >
+                Open Map Editor
+              </a>
+            </div>
             <div className="flex items-center ml-auto">
               <button
                 className={
