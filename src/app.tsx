@@ -20,7 +20,6 @@ import {
   getWaterFeatures,
 } from "./map/trails.js";
 import { tilesForFeatures } from "./map/processImage.js";
-import { log } from "console";
 
 interface Configs {
   [key: string]: MapConfig;
@@ -63,6 +62,12 @@ export const App = () => {
   const [form, setForm] = useState(() => {
     // Combine default form values with any saved values in localStorage
     const saved = JSON.parse(localStorage.getItem("topojoy:form") || "{}");
+    Object.keys(saved).forEach((k) => {
+      k.startsWith("colorPlan") &&
+        k.endsWith("height") &&
+        saved[k] === null &&
+        (saved[k] = Infinity);
+    });
     const base = addHeightsToForm(configs[config], preForm);
     return { ...base, ...saved };
   });
