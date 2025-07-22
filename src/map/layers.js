@@ -4,7 +4,11 @@ import {
   lerpAngle,
   collision,
 } from "../libraries/utils";
-import { res } from "./colorUtils";
+import {
+  contrastingLuminance,
+  luminanceContrastRatio,
+  res,
+} from "./colorUtils";
 
 import chroma from "chroma-js";
 /**
@@ -71,7 +75,17 @@ export function textsLayer(
   sketch,
   topo,
   colorAt,
-  { textSize, text, font, alpha, bbox, margin, elevationRange }
+  {
+    textSize,
+    text,
+    font,
+    alpha,
+    bbox,
+    margin,
+    elevationRange,
+    highContrast,
+    backgroundColor,
+  }
 ) {
   bbox = bbox || [0, 0, topo.width, topo.height];
   /**
@@ -108,7 +122,18 @@ export function textsLayer(
 
   sketch.textFont(font);
   sketch.textAlign(sketch.CENTER, sketch.CENTER);
-  fillText(sketch, topo, text, alpha, textSize, colorAt, predicate, bbox);
+  fillText(
+    sketch,
+    topo,
+    text,
+    alpha,
+    textSize,
+    colorAt,
+    highContrast,
+    backgroundColor,
+    predicate,
+    bbox
+  );
 }
 
 function fillText(
@@ -118,6 +143,8 @@ function fillText(
   alpha,
   size,
   colorAt,
+  highContrast,
+  backgroundColor,
   predicate = () => true,
   bbox = [0, 0, width, height],
   margin = 40
@@ -143,9 +170,13 @@ function fillText(
         // if(colorStrategy === "oppose"){
 
         // }
-        const col = sketch.color(res(chroma(c).mix("black", shade)));
-
-        col.setAlpha(alpha);
+        let col = chroma(c).mix("black", shade).hex();
+        if (highContrast) {
+          col = contrastingLuminance(col, 7.5);
+          if (luminanceContrastRatio(col, backgroundColor) < 5.5) {
+            col = contrastingLuminance(col, 7.5);
+          }
+        }
 
         sketch.push();
 

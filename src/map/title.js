@@ -46,7 +46,7 @@ export function drawTitle(
   p5.textSize(textSize);
   p5.fill(contrastingLuminance(backgroundColor, 10.5));
   p5.text(
-    "Snow Mesa",
+    title,
     p5.width / 2,
     (9 * p5.height) / 10
     // Math.floor((2 * p5.width) / 3),

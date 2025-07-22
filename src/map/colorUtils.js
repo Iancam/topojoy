@@ -6,7 +6,7 @@ import {
   times,
   weightedRandom,
 } from "../libraries/utils";
-function luminanceContrastRatio(color1, color2) {
+export function luminanceContrastRatio(color1, color2) {
   const luminance1 = chroma(color1).luminance();
   const luminance2 = chroma(color2).luminance();
 

@@ -116,7 +116,11 @@ export const sketchFactory = (
           drawCurve(sketch, c, 1.8);
         };
         const drawLayers = () => {
-          textsLayer(sketch, topo, colorAt, config.backgroundText);
+          if (!config.backgroundText.highContrast)
+            textsLayer(sketch, topo, colorAt, {
+              ...config.backgroundText,
+              backgroundColor: config.background,
+            });
 
           let textBoxes = [];
           drawLines(
@@ -133,6 +137,15 @@ export const sketchFactory = (
             { ...config.trail, style: "sketched" },
             textBoxes
           );
+          if (config.backgroundText.highContrast) {
+            textsLayer(sketch, topo, colorAt, {
+              ...config.backgroundText,
+              backgroundColor: config.background,
+            });
+            times(0.2 * curveCount, genCurve(topo)).forEach(
+              colorAndDrawCurve(colorAt)
+            );
+          }
           textBoxes = drawTitle(
             sketch,
             config.title.text,
@@ -194,7 +207,8 @@ export const sketchFactory = (
             drawLayers();
           });
         } else {
-          times(0.8 * curveCount, genCurve(topo)).forEach(
+          const multiplier = config.backgroundText.highContrast ? 0.6 : 0.8;
+          times(multiplier * curveCount, genCurve(topo)).forEach(
             colorAndDrawCurve(colorAt)
           );
 

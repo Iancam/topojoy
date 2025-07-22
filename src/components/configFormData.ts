@@ -9,6 +9,11 @@ export const basicFormElements: FormElements = {
     "the elevations where the background text will be visible",
     [0.7, 1],
   ],
+  "backgroundText.highContrast": [
+    "boolean",
+    "display background text in high contrast",
+    false,
+  ],
   "curve.density": ["number", "the density of the background curves", 1],
   "mountain.keepList": ["list", "mountains to show", []],
   "mountain.drop": [
