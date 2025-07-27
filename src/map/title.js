@@ -1,4 +1,5 @@
 import { complement, contrastingLuminance } from "./colorUtils";
+import { placeWithoutCollision } from "./layers";
 
 /**
  * Pick a visually balanced title font-size.
@@ -22,7 +23,9 @@ function titleFontSize(w, h, txt) {
 }
 
 /**
- *
+ * function must be called twice, once with drawText = false, and once with drawText = true
+ * when drawText is false, it will only calculate the bounding boxes
+ * when drawText is true, it will draw the text
  * @param {p5} p5
  * @param {string} title
  * @param {string} backgroundColor
@@ -36,8 +39,10 @@ export function drawTitle(
   latlngBox,
   backgroundColor,
   font,
+  drawText,
   textBoxes
 ) {
+  let labels = { [title]: [p5.width / 2, (9 * p5.height) / 10] };
   p5.push();
   p5.textAlign(p5.CENTER, p5.BOTTOM);
   p5.textFont(font);
@@ -45,21 +50,33 @@ export function drawTitle(
   const textSize = titleFontSize(p5.width, p5.height, title);
   p5.textSize(textSize);
   p5.fill(contrastingLuminance(backgroundColor, 10.5));
-  p5.text(
-    title,
-    p5.width / 2,
-    (9 * p5.height) / 10
-    // Math.floor((2 * p5.width) / 3),
-    // Math.floor(p5.height)
-  );
+  if (!drawText) {
+    textBoxes = placeWithoutCollision(p5, labels, font, [], false, textBoxes);
+  }
+  if (drawText) {
+    p5.text(
+      title,
+      p5.width / 2,
+      (9 * p5.height) / 10
+      // Math.floor((2 * p5.width) / 3),
+      // Math.floor(p5.height)
+    );
+  }
   p5.textAlign(p5.CENTER, p5.TOP);
-  console.log(latlngBox);
   const latlng = [latlngBox[0], latlngBox[1]]
     .map((n) => n.toFixed(4))
     .join(", ");
+
   p5.textSize(textSize / 2);
-  p5.text(latlng, p5.width / 2, (9 * p5.height) / 10 + 20);
-  textBoxes.push(font.textBounds(title, p5.width / 2, (9 * p5.height) / 10));
+
+  labels = { [latlng]: [p5.width / 2, (9 * p5.height) / 10 + 20] };
+
+  if (!drawText) {
+    textBoxes = placeWithoutCollision(p5, labels, font, [], false, textBoxes);
+  } else {
+    p5.text(latlng, p5.width / 2, (9 * p5.height) / 10 + 20);
+  }
+
   p5.pop();
 
   return textBoxes;

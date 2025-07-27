@@ -67,6 +67,8 @@ export function drawCurve(sketch, curve, weight) {
   sketch.noFill();
   sketch.strokeWeight(weight);
   sketch.beginShape();
+  console.log(sketch);
+  console.log(sketch.curveVertex);
   curve.forEach(([x, y]) => sketch.curveVertex(x, y));
   sketch.endShape();
 }
@@ -75,6 +77,7 @@ export function textsLayer(
   sketch,
   topo,
   colorAt,
+  textBoxes,
   {
     textSize,
     text,
@@ -98,7 +101,7 @@ export function textsLayer(
    * @param {number} wordWidth - The width of the word.
    * @returns {boolean} - Whether the word is visible or not.
    */
-  const predicate = (topo, x, y, wordWidth) => {
+  const predicate = (topo, textBoxes, x, y, wordWidth, wordHeight) => {
     const translate = (percentOfHeight) =>
       topo.min + percentOfHeight * topo.magnitude;
     const pix1 = topo.pixels[y]?.[x];
@@ -111,6 +114,11 @@ export function textsLayer(
     )
       return false;
     if (!pix1 || !pix2) return false;
+    for (const { box } of textBoxes) {
+      if (collision(box, { x, y, w: wordWidth, h: wordHeight })) {
+        return false;
+      }
+    }
     const [h1] = pix1;
     const [h2] = pix2;
 
@@ -125,6 +133,7 @@ export function textsLayer(
   fillText(
     sketch,
     topo,
+    textBoxes,
     text,
     alpha,
     textSize,
@@ -139,6 +148,7 @@ export function textsLayer(
 function fillText(
   sketch,
   topo,
+  textBoxes,
   inpText,
   alpha,
   size,
@@ -159,8 +169,9 @@ function fillText(
 
   while (word && y < bbox[3] - margin) {
     wordWidth = Math.ceil(sketch.textWidth(word + " "));
+    const wordHeight = Math.ceil(sketch.textAscent() + sketch.textDescent());
     [x, y] = [Math.floor(x), Math.round(y)];
-    if (predicate(topo, x, y, wordWidth)) {
+    if (predicate(topo, textBoxes, x, y, wordWidth, wordHeight)) {
       word.split("").forEach((char) => {
         const pixel = topo.pixels[y][x];
         if (!pixel) return;
@@ -210,6 +221,7 @@ export function mountainLayer(
     keepList: [],
     drop: false,
   },
+  drawText,
   collisionBoxes
 ) {
   const peaksObj = Object.entries(peaks)
@@ -241,6 +253,7 @@ export function mountainLayer(
     peaksObj,
     font,
     keepList,
+    drawText,
     collisionBoxes
   );
 }
@@ -252,36 +265,65 @@ export function mountainLayer(
  * @param {Array<string>} keepList - List of labels to always keep, even if they collide with other labels.
  * @returns {void}
  */
-const placeWithoutCollision = (
+export const placeWithoutCollision = (
   sketch,
   labels,
   font,
   keepList,
+  drawText,
   collisionBoxes
 ) => {
   let bboxes = collisionBoxes || [];
+
+  const getRealBoundingBox = (pt, bbox) => {
+    const { x, y, w, h } = bbox;
+    return { x, y: pt[1] - h / 2, w, h };
+  };
+
   for (const name of keepList || []) {
     if (!labels[name]) continue;
-    const bbox = font.textBounds(name, labels[name][0], labels[name][1]);
-    bboxes.push(bbox);
-    sketch.text(name, labels[name][0], labels[name][1]);
+    const bbox = getRealBoundingBox(
+      labels[name],
+      font.textBounds(name, labels[name][0], labels[name][1])
+    );
+
+    if (drawText) {
+      sketch.text(name, labels[name][0], labels[name][1]);
+    } else {
+      bboxes.push({ box: bbox, text: name });
+    }
+  }
+  // if not drawing text, just construct the bounding boxes list
+  if (!drawText) {
+    Object.entries(labels).forEach(([name, pt]) => {
+      const bbox = getRealBoundingBox(pt, font.textBounds(name, pt[0], pt[1]));
+      let skip = false;
+      for (const { box, text } of bboxes) {
+        if (collision(bbox, box)) {
+          skip = true;
+          break;
+        }
+      }
+      if (!skip) {
+        bboxes.push({ box: bbox, text: name });
+      }
+    });
+  }
+  // if drawing text, look up if the text is in the bounding boxes list
+  // and draw it if it is.
+  else {
+    const bboxHashmap = bboxes.reduce((acc, { box, text }) => {
+      acc[text] = box;
+      return acc;
+    }, {});
+
+    Object.entries(labels).forEach(([name, pt]) => {
+      const bbox = bboxHashmap[name];
+      if (!bbox) return;
+      sketch.text(name, pt[0], pt[1]);
+    });
   }
 
-  Object.entries(labels).forEach(([name, pt]) => {
-    const bbox = font.textBounds(name, pt[0], pt[1]);
-    let skip = false;
-    for (const box of bboxes) {
-      if (collision(bbox, box)) {
-        skip = true;
-        break;
-      }
-    }
-
-    if (!skip) {
-      bboxes.push(bbox);
-      sketch.text(name, pt[0], pt[1]);
-    }
-  });
   return bboxes;
 };
 
@@ -302,6 +344,7 @@ export function namedLines(
   topo,
   lineStrings,
   { ts, textColor, weight, keepList = [], font },
+  drawText,
   collisionBoxes
 ) {
   sketch.strokeWeight(weight);
@@ -334,6 +377,7 @@ export function namedLines(
     labels,
     font,
     keepList.map((name) => name.split(" ").join("\n")),
+    drawText,
     collisionBoxes
   );
 }

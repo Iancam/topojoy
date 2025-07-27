@@ -113,32 +113,79 @@ export const sketchFactory = (
           const col = sketch.color(col1);
           col.setAlpha(128);
           sketch.stroke(col);
+
           drawCurve(sketch, c, 1.8);
         };
         const drawLayers = () => {
+          const drawTextOrGetBounds = (boundsOrDraw, textBoxes) => {
+            let drawText = true;
+            if (boundsOrDraw === "bounds") drawText = false;
+            if (!textBoxes) textBoxes = [];
+            textBoxes = drawTitle(
+              sketch,
+              config.title.text,
+              bounds.latLngbox,
+              config.background,
+              copperplateBold,
+              drawText,
+              textBoxes
+            );
+            textBoxes = mountainLayer(
+              sketch,
+              mountains,
+              courier,
+              config.mountain,
+              drawText,
+              textBoxes
+            );
+            textBoxes = namedLines(
+              sketch,
+              topo,
+              waterFeatures,
+              { ...config.river, font: courier },
+              drawText,
+              textBoxes
+            );
+            textBoxes = namedLines(
+              sketch,
+              topo,
+              trails,
+              { ...config.trail, font: courier },
+              drawText,
+              textBoxes
+            );
+            return textBoxes;
+          };
+
+          let textBoxes = drawTextOrGetBounds("bounds");
+          for (const { box } of textBoxes) {
+            console.log(box);
+            sketch.push();
+            sketch.stroke(255, 0, 0);
+            sketch.strokeWeight(3);
+            sketch.noFill();
+
+            sketch.rect(box.x, box.y, box.w, box.h);
+
+            sketch.pop();
+          }
+
           if (!config.backgroundText.highContrast)
-            textsLayer(sketch, topo, colorAt, {
+            textsLayer(sketch, topo, colorAt, textBoxes, {
               ...config.backgroundText,
               backgroundColor: config.background,
             });
 
-          let textBoxes = [];
-          drawLines(
-            sketch,
-            topo,
-            waterFeatures,
-            { ...config.river, style: "sketched" },
-            textBoxes
-          );
-          drawLines(
-            sketch,
-            topo,
-            trails,
-            { ...config.trail, style: "sketched" },
-            textBoxes
-          );
+          drawLines(sketch, topo, waterFeatures, {
+            ...config.river,
+            style: "sketched",
+          });
+          drawLines(sketch, topo, trails, {
+            ...config.trail,
+            style: "sketched",
+          });
           if (config.backgroundText.highContrast) {
-            textsLayer(sketch, topo, colorAt, {
+            textsLayer(sketch, topo, colorAt, textBoxes, {
               ...config.backgroundText,
               backgroundColor: config.background,
             });
@@ -146,35 +193,7 @@ export const sketchFactory = (
               colorAndDrawCurve(colorAt)
             );
           }
-          textBoxes = drawTitle(
-            sketch,
-            config.title.text,
-            bounds.latLngbox,
-            config.background,
-            copperplateBold,
-            textBoxes
-          );
-          textBoxes = mountainLayer(
-            sketch,
-            mountains,
-            courier,
-            config.mountain,
-            textBoxes
-          );
-          textBoxes = namedLines(
-            sketch,
-            topo,
-            waterFeatures,
-            { ...config.river, font: courier },
-            textBoxes
-          );
-          textBoxes = namedLines(
-            sketch,
-            topo,
-            trails,
-            { ...config.trail, font: courier },
-            textBoxes
-          );
+          drawTextOrGetBounds("draw", textBoxes);
         };
 
         if (contourLines) {
