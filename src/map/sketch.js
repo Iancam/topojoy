@@ -158,17 +158,6 @@ export const sketchFactory = (
           };
 
           let textBoxes = drawTextOrGetBounds("bounds");
-          for (const { box } of textBoxes) {
-            console.log(box);
-            sketch.push();
-            sketch.stroke(255, 0, 0);
-            sketch.strokeWeight(3);
-            sketch.noFill();
-
-            sketch.rect(box.x, box.y, box.w, box.h);
-
-            sketch.pop();
-          }
 
           if (!config.backgroundText.highContrast)
             textsLayer(sketch, topo, colorAt, textBoxes, {

@@ -67,8 +67,6 @@ export function drawCurve(sketch, curve, weight) {
   sketch.noFill();
   sketch.strokeWeight(weight);
   sketch.beginShape();
-  console.log(sketch);
-  console.log(sketch.curveVertex);
   curve.forEach(([x, y]) => sketch.curveVertex(x, y));
   sketch.endShape();
 }
@@ -276,8 +274,11 @@ export const placeWithoutCollision = (
   let bboxes = collisionBoxes || [];
 
   const getRealBoundingBox = (pt, bbox) => {
-    const { x, y, w, h } = bbox;
-    return { x, y: pt[1] - h / 2, w, h };
+    let { x, y, w, h } = bbox;
+    if (sketch._renderer._textBaseline === "center") {
+      y = pt[1] - h / 2;
+    }
+    return { x, y, w, h };
   };
 
   for (const name of keepList || []) {
