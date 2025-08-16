@@ -13,19 +13,13 @@ import { Config } from "../types";
 import { Slider } from "./ui/slider";
 import p5 from "p5";
 import MultiSelect from "./ui/multiselect";
-import {
-  basicFormElements,
-  advancedFormElements,
-  FormElementType,
-} from "./configFormData";
+import { FormElementType, formJourney, formElements } from "./configFormData";
+
+import { MultiStepForm } from "./multiStepForm";
+import { log } from "console";
 
 interface TooltipWrapperProps {
   children: React.ReactNode;
-}
-
-interface ColorPlan {
-  height: number;
-  colors: string | string[] | ((params: any) => string);
 }
 
 interface ConfigFormProps {
@@ -40,6 +34,8 @@ interface ConfigFormProps {
   renderSketch: () => p5;
 }
 
+// Reusable multistep form wrapper
+
 export const ConfigForm = ({
   config,
   configs,
@@ -51,11 +47,17 @@ export const ConfigForm = ({
   onFormChange,
   renderSketch,
 }: ConfigFormProps) => {
-  const renderFormElement = (
-    key: string,
-    elementType: FormElementType,
-    description: string
-  ): React.ReactElement | null => {
+  const RenderFormElement = ({
+    id,
+    elementType,
+    description,
+    label,
+  }: {
+    id: string;
+    elementType: FormElementType;
+    description: string;
+    label: string;
+  }): React.ReactElement | null => {
     const TooltipWrapper = ({ children }: TooltipWrapperProps) => (
       <TooltipProvider>
         <Tooltip>
@@ -67,13 +69,13 @@ export const ConfigForm = ({
       </TooltipProvider>
     );
 
-    const value = form[key];
+    const value = form[id];
     const options =
-      key === "mountain.keepList"
+      id === "mountain.keepList"
         ? mountains
-        : key === "river.keepList"
+        : id === "river.keepList"
         ? waterFeatures
-        : key === "trail.keepList"
+        : id === "trail.keepList"
         ? trails
         : [];
 
@@ -82,7 +84,7 @@ export const ConfigForm = ({
         <Input
           type="text"
           value={value}
-          onChange={(e) => onFormChange(key, e.target.value)}
+          onChange={(e) => onFormChange(id, e.target.value)}
         />
       ),
       textarea: (
@@ -91,27 +93,27 @@ export const ConfigForm = ({
           rows={5}
           cols={20}
           value={value}
-          onChange={(e) => onFormChange(key, e.target.value)}
+          onChange={(e) => onFormChange(id, e.target.value)}
         />
       ),
       number: (
         <Input
           type="number"
           value={value}
-          onChange={(e) => onFormChange(key, Number(e.target.value))}
+          onChange={(e) => onFormChange(id, Number(e.target.value))}
         />
       ),
       boolean: (
         <Checkbox
           checked={value}
-          onCheckedChange={(checked) => onFormChange(key, checked)}
+          onCheckedChange={(checked) => onFormChange(id, checked)}
         />
       ),
       list: (
         <MultiSelect
           options={options}
           value={value}
-          onChange={(v) => onFormChange(key, v)}
+          onChange={(v) => onFormChange(id, v)}
         />
       ),
       range: (
@@ -120,7 +122,7 @@ export const ConfigForm = ({
           max={1}
           step={0.01}
           value={value}
-          onValueChange={(val) => onFormChange(key, val)}
+          onValueChange={(val) => onFormChange(id, val)}
         />
       ),
       slider: (
@@ -130,7 +132,7 @@ export const ConfigForm = ({
             max={1}
             step={0.01}
             value={[Number(value)]}
-            onValueChange={([val]) => onFormChange(key, val)}
+            onValueChange={([val]) => onFormChange(id, val)}
             className="w-full"
           />
           <span className="text-sm w-12 text-right">
@@ -142,12 +144,12 @@ export const ConfigForm = ({
 
     const element = cases[elementType] || null;
     return (
-      <div key={key} className="flex flex-col gap-2">
-        <label className="text-sm font-medium">{key}</label>
+      <div key={id} className="flex flex-col gap-2">
+        <label className="text-sm font-medium">{label}</label>
         <div className="flex items-center space-x-2">
           {element}
           <TooltipWrapper>
-            <Info className={"h-4 w-4 tooltip-" + key.replace(".", "-")} />
+            <Info className={"h-4 w-4 tooltip-" + id.replace(".", "-")} />
           </TooltipWrapper>
         </div>
       </div>
@@ -156,86 +158,63 @@ export const ConfigForm = ({
 
   return (
     <>
-      <form className="space-y-6 m-2 pb-16">
-        <div className="bg-white pb-4 border-b mb-4">
-          <label
-            className="text-sm font-medium mb-2 block"
-            htmlFor="config-select"
-          >
-            Color Scheme
-          </label>
-          <select
-            id="config-select"
-            value={config}
-            onChange={onConfigChange}
-            className="w-full p-2 border rounded"
-          >
-            {Object.keys(configs).map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {Object.entries(basicFormElements).map(([key, [type, description]]) =>
-          renderFormElement(key, type, description)
-        )}
-
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold color-height">Color Plans</h2>
-          {configs[config].colorPlan.map(
-            (colorPlan: ColorPlan, index: number) => (
-              <div
-                key={index}
-                className="flex flex-col gap-2 p-2 border rounded"
-              >
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">
-                    Height {index + 1}
-                  </label>
-                  <span className="text-sm text-gray-500">
-                    {colorPlan.height.toFixed(2)}
-                  </span>
-                </div>
-                {renderFormElement(
-                  `colorPlan.${index}.height`,
-                  "slider",
-                  `Set the height value for color plan ${index + 1}`
+      <MultiStepForm
+        steps={formJourney.map((step) => ({
+          title: step.title,
+          content: step.formElements.map((FormElement, i) => {
+            const [elementType, description, defaultValue, label] =
+              typeof FormElement === "string"
+                ? formElements[FormElement]
+                : ["", "", "", ""];
+            return (
+              <div key={i} className="flex flex-col gap-2 mt-4">
+                {typeof FormElement === "string" ? (
+                  <RenderFormElement
+                    id={FormElement}
+                    elementType={elementType}
+                    description={description}
+                    label={label}
+                  />
+                ) : (
+                  <FormElement
+                    config={config}
+                    configs={configs}
+                    renderFormElement={RenderFormElement}
+                    onConfigChange={onConfigChange}
+                    onFormChange={onFormChange}
+                  />
                 )}
               </div>
-            )
-          )}
-          <h2 className="text-lg font-semibold">Advanced</h2>
-          {Object.entries(advancedFormElements).map(
-            ([key, [type, description]]) =>
-              renderFormElement(key, type, description)
-          )}
-        </div>
-      </form>
-      <div className="sticky bottom-15 left-0 bg-white border-t p-3 flex justify-end space-x-3 shadow-lg">
-        <button
-          id="render-sketch"
-          onClick={renderSketch}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
+            );
+          }),
+        }))}
+        onSubmit={() => {
+          console.log("Form submitted");
+        }}
+        leftAction={
+          <button
+            id="render-sketch"
+            onClick={renderSketch}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          <span>Render</span>
-        </button>
-      </div>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            <span>Render</span>
+          </button>
+        }
+      />
     </>
   );
 };

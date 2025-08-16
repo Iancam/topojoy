@@ -173,7 +173,7 @@ export const App = () => {
       [key]: value,
     });
   };
-  const onConfigChange = (e) => {
+  const onConfigChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setConfig(e.target.value);
     setForm(addHeightsToForm(configs[e.target.value], form));
   };
