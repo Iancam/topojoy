@@ -57,6 +57,7 @@ export const sketchFactory = (
         Object.values(baseConfigTransforms).forEach((transform) => {
           transform(config);
         });
+        const textSizeMultiplier = Math.pow(2, config.zoomLevel - 13);
 
         const geoJSON = await getGeoJSONFromOSM(bounds.latLngbox, {
           streams: config.river.streams,
@@ -134,7 +135,10 @@ export const sketchFactory = (
               sketch,
               mountains,
               courier,
-              config.mountain,
+              {
+                ...config.mountain,
+                labelSize: config.mountain.labelSize * textSizeMultiplier,
+              },
               drawText,
               textBoxes
             );
@@ -142,7 +146,11 @@ export const sketchFactory = (
               sketch,
               topo,
               waterFeatures,
-              { ...config.river, font: courier },
+              {
+                ...config.river,
+                font: courier,
+                ts: config.river.ts * textSizeMultiplier,
+              },
               drawText,
               textBoxes
             );
@@ -150,7 +158,11 @@ export const sketchFactory = (
               sketch,
               topo,
               trails,
-              { ...config.trail, font: courier },
+              {
+                ...config.trail,
+                font: courier,
+                ts: config.trail.ts * textSizeMultiplier,
+              },
               drawText,
               textBoxes
             );
@@ -163,6 +175,7 @@ export const sketchFactory = (
             textsLayer(sketch, topo, colorAt, textBoxes, {
               ...config.backgroundText,
               backgroundColor: config.background,
+              textSize: config.backgroundText.textSize * textSizeMultiplier,
             });
 
           drawLines(sketch, topo, waterFeatures, {
@@ -176,6 +189,7 @@ export const sketchFactory = (
           if (config.backgroundText.highContrast) {
             textsLayer(sketch, topo, colorAt, textBoxes, {
               ...config.backgroundText,
+              textSize: config.backgroundText.textSize * textSizeMultiplier,
               backgroundColor: config.background,
             });
             times(0.2 * curveCount, genCurve(topo)).forEach(
