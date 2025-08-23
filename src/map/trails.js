@@ -56,24 +56,40 @@ async function idbPut(key, value) {
 }
 
 const featuresToScreenCoords = (zoom, box) => (feature) => {
+  const processCoords = function (coordinates) {
+    const imageCoords = coordinates
+      .map((coord) => pointToTileFraction(...coord, zoom))
+      .filter(([x, y]) => {
+        const inBounds =
+          x < box[2] + 1 && y < box[3] + 1 && x > box[0] && y > box[1];
+        // if (inBounds) console.log(x, y, ...box);
+        return inBounds;
+      })
+      .map(([x, y]) => [
+        Math.floor(256 * (x - box[0])),
+        Math.floor(256 * (y - box[1])),
+      ]);
+    const coords = _.uniqBy(imageCoords, JSON.stringify);
+    return coords;
+  };
+
   const { properties, geometry } = feature;
   let { coordinates } = geometry;
   if (typeof coordinates[0] === "number") {
     coordinates = [coordinates];
   }
-  const imageCoords = coordinates
-    .map((coord) => pointToTileFraction(...coord, zoom))
-    .filter(([x, y]) => {
-      const inBounds =
-        x < box[2] + 1 && y < box[3] + 1 && x > box[0] && y > box[1];
-      // if (inBounds) console.log(x, y, ...box);
-      return inBounds;
-    })
-    .map(([x, y]) => [
-      Math.floor(256 * (x - box[0])),
-      Math.floor(256 * (y - box[1])),
-    ]);
-  const coords = _.uniqBy(imageCoords, JSON.stringify);
+  // handle the case where polygon has more than one ring
+  let coords;
+  if (geometry.type === "Polygon") {
+    if (coordinates.length !== 1) {
+      console.log(
+        `Polygon named ${properties.name}, id ${properties.id} has more than one ring`
+      );
+    }
+    coords = coordinates.map(processCoords);
+  } else {
+    coords = processCoords(coordinates);
+  }
 
   return { ...properties, coords };
 };
@@ -83,8 +99,13 @@ const excludeList =
   ({ properties: { name } }) =>
     !exclude.some((drop) => name.includes(drop));
 
+// TODO: this is likely the cause of my error
 const screenCoordListToObj = (obj, { name, coords }) => {
-  obj[name] = obj[name] ? [...obj[name], ...coords] : coords;
+  if (obj[name]) {
+    obj[name].push(coords);
+  } else {
+    obj[name] = [coords];
+  }
   return obj;
 };
 
@@ -109,13 +130,16 @@ const makeDenser = (feature) => {
 export function getTrails({ box, zoom }, geoJSON, exclude, include) {
   const trails = geoJSON.features
     .filter(
-      ({ properties }) =>
-        !properties.waterway && !(properties.natural === "peak")
+      ({ properties, geometry }) =>
+        !properties.waterway &&
+        !(properties.natural === "peak") &&
+        !(properties.natural === "water") &&
+        geometry.type === "LineString"
     )
     // .map(makeDenser)
     .map(featuresToScreenCoords(zoom, box))
-    .filter(({ coords }) => coords.length > 0);
-  // .reduce(screenCoordListToObj, {});
+    .filter(({ coords }) => coords.length > 0)
+    .reduce(screenCoordListToObj, {});
 
   return trails;
 }
@@ -128,6 +152,26 @@ export function getWaterFeatures({ box, zoom }, geoJSON) {
       .map(featuresToScreenCoords(zoom, box))
       .reduce(screenCoordListToObj, {})
   );
+}
+
+export function getLakes({ box, zoom }, geoJSON) {
+  return geoJSON.features
+    .filter(({ properties, geometry }) => {
+      if (geometry.type === "Polygon") {
+        if (geometry.coordinates.length !== 1) {
+          console.warn(
+            `Polygon named ${properties.name}, id ${properties.id} has more than one ring`
+          );
+        }
+        return true;
+      }
+      return false;
+    })
+    .map(featuresToScreenCoords(zoom, box))
+    .reduce((acc, { name, coords }) => {
+      acc[name] = coords;
+      return acc;
+    }, {});
 }
 
 export function getMountainFeatures({ box, zoom }, geoJSON) {
@@ -163,8 +207,13 @@ export async function getGeoJSONFromOSM(
   const water = `
   ${rivers ? "" : "//"} way["waterway"="river"](${latLongBox.join(",")});
   ${streams ? "" : "//"} way["waterway"="stream"](${latLongBox.join(",")});
-  ${lakes ? "" : "//"} way["natural"="water"](${latLongBox.join(",")});
-  `;
+  ${
+    !lakes
+      ? ""
+      : `way[natural=water](${latLongBox.join(",")});
+         way[water=lake](${latLongBox.join(",")});
+         way[natural=lake](${latLongBox.join(",")});`
+  }`;
   const mountains = `
   ${peaks ? "" : "//"} node["natural"="peak"](${latLongBox.join(",")});
   // node["natural"="mountain"](${latLongBox.join(",")});

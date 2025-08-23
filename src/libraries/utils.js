@@ -1,5 +1,49 @@
 // utils.js;
 
+export function maxPrintSizeInches(widthPx, heightPx, minDPI = 250) {
+  const widthIn = widthPx / minDPI;
+  const heightIn = heightPx / minDPI;
+  const diagonalIn = Math.hypot(widthIn, heightIn);
+  return { widthIn, heightIn, diagonalIn, dpi: minDPI };
+}
+
+// points: Array of [x, y]. Can be open or closed (first != last).
+// yDown: true if coordinates are in screen space where y increases downward.
+export function ringOrientation(points, { yDown = true } = {}) {
+  if (!Array.isArray(points) || points.length < 3) {
+    return { orientation: "degenerate", clockwise: false, signedArea: 0 };
+  }
+
+  // Drop duplicate closing point if present
+  const n =
+    points[0][0] === points[points.length - 1][0] &&
+    points[0][1] === points[points.length - 1][1]
+      ? points.length - 1
+      : points.length;
+
+  let area2 = 0; // 2 * signed area (no 0.5 for speed)
+  for (let i = 0; i < n; i++) {
+    const [x1, y1] = points[i];
+    const [x2, y2] = points[(i + 1) % n];
+    area2 += x1 * y2 - x2 * y1;
+  }
+
+  // Convert to signed area; flip sign for y-down screens
+  let signedArea = area2 / 2;
+  if (yDown) signedArea = -signedArea;
+
+  // In y-up math: signedArea > 0 => CCW, < 0 => CW.
+  const orientation =
+    signedArea > 0
+      ? "counterclockwise"
+      : signedArea < 0
+      ? "clockwise"
+      : "degenerate";
+  const clockwise = orientation === "clockwise";
+
+  return { orientation, clockwise, signedArea };
+}
+
 // #### Tile Functions
 export const tilenum_to_lonlat = function (x, y, zoom) {
   const n_tiles = Math.pow(2, zoom);

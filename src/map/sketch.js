@@ -7,6 +7,8 @@ import {
   namedLines,
   makeCurve,
   drawCurve,
+  lakesLabels,
+  drawLakes,
 } from "./layers";
 import { drawLines } from "./paths";
 import {
@@ -14,6 +16,7 @@ import {
   getGeoJSONFromOSM,
   getMountainFeatures,
   getWaterFeatures,
+  getLakes,
 } from "./trails";
 import { times } from "../libraries/utils";
 import { createWebGLFlowField } from "../contourExploration/terrainFlowField";
@@ -64,6 +67,7 @@ export const sketchFactory = (
           rivers: config.river.show,
           trails: config.trail.show,
           peaks: config.mountain.show,
+          lakes: config.lakes.show,
         });
 
         const curvePixelCount =
@@ -85,6 +89,7 @@ export const sketchFactory = (
         const mountains = getMountainFeatures(bounds, geoJSON);
         const waterFeatures = getWaterFeatures(bounds, geoJSON);
         const trails = getTrails(bounds, geoJSON);
+        const lakes = getLakes(bounds, geoJSON);
 
         const genCurve = (topo) => () => {
           const angleTransforms = [
@@ -142,26 +147,39 @@ export const sketchFactory = (
               drawText,
               textBoxes
             );
+
             textBoxes = namedLines(
               sketch,
-              topo,
               waterFeatures,
               {
                 ...config.river,
                 font: courier,
-                ts: config.river.ts * textSizeMultiplier,
+                textSize: config.river.textSize * textSizeMultiplier,
               },
               drawText,
               textBoxes
             );
+
             textBoxes = namedLines(
               sketch,
-              topo,
               trails,
               {
                 ...config.trail,
                 font: courier,
-                ts: config.trail.ts * textSizeMultiplier,
+                textSize: config.trail.textSize * textSizeMultiplier,
+              },
+              drawText,
+              textBoxes
+            );
+
+            textBoxes = lakesLabels(
+              sketch,
+              lakes,
+              {
+                font: courier,
+                textSize: config.river.textSize * textSizeMultiplier,
+                textColor: config.river.textColor,
+                weight: config.river.weight,
               },
               drawText,
               textBoxes
@@ -177,14 +195,14 @@ export const sketchFactory = (
               backgroundColor: config.background,
               textSize: config.backgroundText.textSize * textSizeMultiplier,
             });
-
-          drawLines(sketch, topo, waterFeatures, {
+          drawLakes(sketch, lakes, { color: config.river.colorRange[0] });
+          drawLines(sketch, topo, waterFeatures, textSizeMultiplier, {
             ...config.river,
-            style: "sketched",
+            style: "watercolor",
           });
-          drawLines(sketch, topo, trails, {
+          drawLines(sketch, topo, trails, textSizeMultiplier, {
             ...config.trail,
-            style: "sketched",
+            style: "watercolor",
           });
           if (config.backgroundText.highContrast) {
             textsLayer(sketch, topo, colorAt, textBoxes, {
@@ -230,9 +248,9 @@ export const sketchFactory = (
           });
         } else {
           const multiplier = config.backgroundText.highContrast ? 0.6 : 0.8;
-          times(multiplier * curveCount, genCurve(topo)).forEach(
-            colorAndDrawCurve(colorAt)
-          );
+          // times(multiplier * curveCount, genCurve(topo)).forEach(
+          //   colorAndDrawCurve(colorAt)
+          // );
 
           drawLayers();
         }

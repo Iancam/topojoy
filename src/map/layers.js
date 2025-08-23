@@ -3,6 +3,7 @@ import {
   radiansToDegrees,
   lerpAngle,
   collision,
+  ringOrientation,
 } from "../libraries/utils";
 import {
   contrastingLuminance,
@@ -208,6 +209,79 @@ function fillText(
   }
 }
 
+export function lakesLabels(
+  sketch,
+  lakes,
+  { font, textSize, textColor, weight } = {},
+  drawText,
+  collisionBoxes
+) {
+  const names = [];
+  const labels = {};
+
+  Object.entries(lakes)
+    .map(([name, [externalRing, ...holes]]) => {
+      return {
+        name,
+        externalRing,
+      };
+    })
+    .forEach(({ name, externalRing }) => {
+      if (name === "undefined") return;
+      if (!name) return;
+      if (names.includes(name)) return;
+      names.push(name);
+
+      const [x, y] = externalRing.reduce(
+        (acc, [x, y]) => {
+          acc[0] += x;
+          acc[1] += y;
+          return acc;
+        },
+        [0, 0]
+      );
+      const [cx, cy] = [x / externalRing.length, y / externalRing.length];
+      labels[name.split(" ").join("\n")] = [cx, cy];
+    });
+
+  // sketch.strokeWeight(weight);
+  sketch.textSize(textSize);
+  sketch.textFont(font);
+  sketch.fill(textColor);
+  console.log(labels);
+  console.log(collisionBoxes);
+  return placeWithoutCollision(
+    sketch,
+    labels,
+    font,
+    [],
+    drawText,
+    collisionBoxes
+  );
+}
+
+export function drawLakes(sketch, lakes, { color }) {
+  sketch.fill(color);
+  Object.entries(lakes).forEach(([name, [externalRing, ...holes]]) => {
+    const { orientation } = ringOrientation(externalRing);
+    if (orientation !== "clockwise") {
+      externalRing.reverse();
+    }
+    sketch.beginShape();
+    externalRing.forEach(([x, y]) => sketch.vertex(x, y));
+    holes.forEach((hole) => {
+      const { orientation } = ringOrientation(hole);
+      if (orientation === "clockwise") {
+        hole.reverse();
+      }
+      sketch.beginContour();
+      hole.forEach(([x, y]) => sketch.vertex(x, y));
+      sketch.endContour();
+    });
+    sketch.endShape(sketch.CLOSE);
+  });
+}
+
 export function mountainLayer(
   sketch,
   peaks,
@@ -224,7 +298,7 @@ export function mountainLayer(
 ) {
   const peaksObj = Object.entries(peaks)
     .filter(([name]) => (drop ? keepList.includes(name) : true))
-    .map(([name, [pt]]) => {
+    .map(([name, [[pt]]]) => {
       return [name, pt];
     })
     .reduce((obj, [name, pt]) => {
@@ -232,6 +306,7 @@ export function mountainLayer(
       return obj;
     }, {});
 
+  // ## MOUNTAIN ICONS ##
   sketch.textAlign(sketch.CENTER, sketch.CENTER);
   sketch.stroke("white");
   sketch.fill(iconColor);
@@ -242,6 +317,7 @@ export function mountainLayer(
     sketch.text("\u{26F0}", pt[0], pt[1]);
   });
 
+  // ## MOUNTAIN LABELS ##
   sketch.textFont(font);
   sketch.fill(labelColor);
   sketch.textSize(labelSize);
@@ -298,6 +374,7 @@ export const placeWithoutCollision = (
   if (!drawText) {
     Object.entries(labels).forEach(([name, pt]) => {
       const bbox = getRealBoundingBox(pt, font.textBounds(name, pt[0], pt[1]));
+      // console.log({ name, bbox, pt });
       let skip = false;
       for (const { box, text } of bboxes) {
         if (collision(bbox, box)) {
@@ -329,6 +406,76 @@ export const placeWithoutCollision = (
 };
 
 /**
+ * internal data structures:
+ * - Labels: [{labels:[{name, pt, keep, bbox, category}], drawEnv: function}]
+ * - Collisions: [[string, string]]
+ * functions:
+ * - addLabels(labels: [{name, pt}], keepList: string[], drawEnv: function, category: string)
+ * - drawLabels()
+ * //- reportKeptCollisions()
+ * //- reportUnkeptLabels(category: string?)
+ *
+ */
+
+export const placeWithoutCollisionFactory = (sketch) => {
+  let labels = [];
+  let collisions = [];
+  const getRealBoundingBox = (pt, bbox) => {
+    let { x, y, w, h } = bbox;
+    if (sketch._renderer._textBaseline === "center") {
+      y = pt[1] - h / 2;
+    }
+    return { x, y, w, h };
+  };
+
+  const checkCollisions = (bbox, name) => {
+    for (const { box, text } of labels) {
+      if (collision(bbox, box)) {
+        collisions.push([text, name]);
+        return true;
+      }
+    }
+    return false;
+  };
+
+  return {
+    addLabels: (givenLabels, keepList, { setContext, font }, category) => {
+      sketch.push();
+      setContext();
+      const newLabels = givenLabels.map(({ name, pt }) => {
+        const bbox = getRealBoundingBox(
+          pt,
+          font.textBounds(name, pt[0], pt[1])
+        );
+        const collides = checkCollisions(bbox, name);
+        const keep = keepList.includes(name) || !collides;
+        return { name, pt, keep, category, bbox };
+      });
+      labels.push({ labels: newLabels, drawEnv: setContext });
+      sketch.pop();
+    },
+    drawLabels: () => {
+      labels.forEach(({ labels, drawEnv }) => {
+        sketch.push();
+        drawEnv();
+        labels.forEach((label) => {
+          if (label.keep) {
+            sketch.text(label.name, label.pt[0], label.pt[1]);
+          }
+        });
+        sketch.pop();
+      });
+    },
+    // reportKeptCollisions: () => {
+    //   return collisions;
+    // },
+    // reportUnkeptLabels: () => {
+    // return labels.filter((label) => !label.keep);
+    // },
+  };
+};
+
+/**
  * Given a topology `topo`, and a collection of trail coordinates `trails`
  * this function renders the trails on
  * the canvas.  The trails are rendered in a gradient of colors, depending
@@ -342,17 +489,11 @@ export const placeWithoutCollision = (
  */
 export function namedLines(
   sketch,
-  topo,
   lineStrings,
-  { ts, textColor, weight, keepList = [], font },
+  { textSize, textColor, keepList = [], font },
   drawText,
   collisionBoxes
 ) {
-  sketch.strokeWeight(weight);
-  // ## TRAIL NAMES ##
-  sketch.textSize(ts);
-  sketch.textFont(font);
-  sketch.fill(textColor);
   let names = [];
   let labels = {};
   if (!Array.isArray(lineStrings)) {
@@ -367,12 +508,25 @@ export function namedLines(
     if (!name) return;
     if (names.includes(name)) return;
     names.push(name);
+    let maxLength = 0;
+    let maxIndex = 0;
 
-    const mid = Math.floor(coords.length / 2);
-    const pt = coords[mid];
+    for (const [i, coordList] of coords.entries()) {
+      if (coordList.length > maxLength) {
+        maxIndex = i;
+        maxLength = coordList.length;
+      }
+    }
+    const mid = Math.floor(maxLength / 2);
+    const pt = coords[maxIndex][mid];
     labels[name.split(" ").join("\n")] = pt;
   });
 
+  // sketch.strokeWeight(weight);
+  sketch.textSize(textSize);
+
+  sketch.textFont(font);
+  sketch.fill(textColor);
   return placeWithoutCollision(
     sketch,
     labels,
