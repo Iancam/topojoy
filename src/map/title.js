@@ -34,7 +34,7 @@ function titleFontSize(w, h, txt) {
  * @returns {Array<p5.FontMetrics>}
  */
 export function drawTitle(
-  p5,
+  sketch,
   title,
   latlngBox,
   backgroundColor,
@@ -42,42 +42,46 @@ export function drawTitle(
   drawText,
   textBoxes
 ) {
-  let labels = { [title]: [p5.width / 2, (9 * p5.height) / 10] };
-  p5.push();
-  p5.textAlign(p5.CENTER, p5.BOTTOM);
-  p5.textFont(font);
-  p5.alpha(255);
-  const textSize = titleFontSize(p5.width, p5.height, title);
-  p5.textSize(textSize);
-  p5.fill(contrastingLuminance(backgroundColor, 10.5));
-  if (!drawText) {
-    textBoxes = placeWithoutCollision(p5, labels, font, [], false, textBoxes);
-  }
-  if (drawText) {
-    p5.text(
-      title,
-      p5.width / 2,
-      (9 * p5.height) / 10
-      // Math.floor((2 * p5.width) / 3),
-      // Math.floor(p5.height)
-    );
-  }
-  p5.textAlign(p5.CENTER, p5.TOP);
+  let labels = { [title]: [sketch.width / 2, (9 * sketch.height) / 10] };
+  const textSize = titleFontSize(sketch.width, sketch.height, title);
+  sketch.push();
+  sketch.textAlign(sketch.CENTER, sketch.BOTTOM);
+  sketch.textFont(font);
+  sketch.alpha(255);
+  sketch.textSize(textSize);
+  sketch.fill(contrastingLuminance(backgroundColor, 10.5));
+  textBoxes = placeWithoutCollision(
+    sketch,
+    labels,
+    font,
+    [],
+    drawText,
+    textBoxes
+  );
+  sketch.pop();
+  // draw latlng
+  sketch.push();
+  sketch.textFont(font);
+  sketch.textAlign(sketch.CENTER, sketch.TOP);
+  sketch.fill(contrastingLuminance(backgroundColor, 10.5));
   const latlng = [latlngBox[0], latlngBox[1]]
     .map((n) => n.toFixed(4))
     .join(", ");
 
-  p5.textSize(textSize / 2);
+  sketch.textSize(textSize / 2);
 
-  labels = { [latlng]: [p5.width / 2, (9 * p5.height) / 10 + 20] };
+  labels = { [latlng]: [sketch.width / 2, (9 * sketch.height) / 10 + 20] };
 
-  if (!drawText) {
-    textBoxes = placeWithoutCollision(p5, labels, font, [], false, textBoxes);
-  } else {
-    p5.text(latlng, p5.width / 2, (9 * p5.height) / 10 + 20);
-  }
+  textBoxes = placeWithoutCollision(
+    sketch,
+    labels,
+    font,
+    [],
+    drawText,
+    textBoxes
+  );
 
-  p5.pop();
+  sketch.pop();
 
   return textBoxes;
 }

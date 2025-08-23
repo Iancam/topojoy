@@ -21,11 +21,10 @@ export const formJourney: {
     description: `Choose which features to show on the map.`,
     formElements: [
       "mountain.show",
-      "mountain.keepList",
-      "mountain.drop",
       "river.show",
       "river.streams",
       "trail.show",
+      "lakes.show",
     ],
   },
   {
@@ -52,11 +51,17 @@ export const formJourney: {
   {
     title: "Misc.",
     description: `Choose other options for the map.`,
-    formElements: ["curve.density", "crossHatch"],
+    formElements: [
+      "mountain.keepList",
+      "mountain.drop",
+      "curve.density",
+      "crossHatch",
+    ],
   },
 ];
 
 export const basicFormElements: FormElements = {
+  "lakes.show": ["boolean", "show/hide lakes", false, "Show Lakes"],
   "backgroundText.text": ["textarea", "the text in the background", "", "Text"],
   "backgroundText.elevationRange": [
     "range",
