@@ -9,6 +9,7 @@ import {
   drawCurve,
   lakesLabels,
   drawLakes,
+  placeWithoutCollisionFactory,
 } from "./layers";
 import { drawLines } from "./paths";
 import {
@@ -122,75 +123,75 @@ export const sketchFactory = (
 
           drawCurve(sketch, c, 1.8);
         };
+
+        const { addLabels, drawLabels, textBoxes } =
+          placeWithoutCollisionFactory(sketch);
+
+        const placeLabelsWithoutCollision = () => {
+          let drawText = true;
+          drawTitle(
+            sketch,
+            config.title.text,
+            bounds.latLngbox,
+            config.background,
+            copperplateBold,
+            addLabels
+          );
+          mountainLayer(
+            sketch,
+            mountains,
+            courier,
+            {
+              ...config.mountain,
+              labelSize: config.mountain.labelSize * textSizeMultiplier,
+            },
+            addLabels
+          );
+
+          namedLines(
+            sketch,
+            waterFeatures,
+            [],
+            "river",
+            {
+              ...config.river,
+              font: courier,
+              textSize: config.river.textSize * textSizeMultiplier,
+            },
+            addLabels
+          );
+
+          namedLines(
+            sketch,
+            trails,
+            [],
+            "trail",
+            {
+              ...config.trail,
+              font: courier,
+              textSize: config.trail.textSize * textSizeMultiplier,
+            },
+            addLabels
+          );
+
+          lakesLabels(
+            sketch,
+            lakes,
+            [],
+            {
+              font: courier,
+              textSize: config.river.textSize * textSizeMultiplier,
+              textColor: config.river.textColor,
+              weight: config.river.weight,
+            },
+            addLabels
+          );
+        };
         const drawLayers = () => {
-          const drawTextOrGetBounds = (boundsOrDraw, textBoxes) => {
-            let drawText = true;
-            if (boundsOrDraw === "bounds") drawText = false;
-            if (!textBoxes) textBoxes = [];
-            textBoxes = drawTitle(
-              sketch,
-              config.title.text,
-              bounds.latLngbox,
-              config.background,
-              copperplateBold,
-              drawText,
-              textBoxes
-            );
-            textBoxes = mountainLayer(
-              sketch,
-              mountains,
-              courier,
-              {
-                ...config.mountain,
-                labelSize: config.mountain.labelSize * textSizeMultiplier,
-              },
-              drawText,
-              textBoxes
-            );
-
-            textBoxes = namedLines(
-              sketch,
-              waterFeatures,
-              {
-                ...config.river,
-                font: courier,
-                textSize: config.river.textSize * textSizeMultiplier,
-              },
-              drawText,
-              textBoxes
-            );
-
-            textBoxes = namedLines(
-              sketch,
-              trails,
-              {
-                ...config.trail,
-                font: courier,
-                textSize: config.trail.textSize * textSizeMultiplier,
-              },
-              drawText,
-              textBoxes
-            );
-
-            textBoxes = lakesLabels(
-              sketch,
-              lakes,
-              {
-                font: courier,
-                textSize: config.river.textSize * textSizeMultiplier,
-                textColor: config.river.textColor,
-                weight: config.river.weight,
-              },
-              drawText,
-              textBoxes
-            );
-            return textBoxes;
-          };
-
-          let textBoxes = drawTextOrGetBounds("bounds");
+          placeLabelsWithoutCollision();
 
           if (!config.backgroundText.highContrast)
-            textsLayer(sketch, topo, colorAt, textBoxes, {
+            textsLayer(sketch, topo, colorAt, textBoxes(), {
               ...config.backgroundText,
               backgroundColor: config.background,
               textSize: config.backgroundText.textSize * textSizeMultiplier,
@@ -205,7 +206,7 @@ export const sketchFactory = (
             style: "watercolor",
           });
           if (config.backgroundText.highContrast) {
-            textsLayer(sketch, topo, colorAt, textBoxes, {
+            textsLayer(sketch, topo, colorAt, textBoxes(), {
               ...config.backgroundText,
               textSize: config.backgroundText.textSize * textSizeMultiplier,
               backgroundColor: config.background,
@@ -214,7 +215,7 @@ export const sketchFactory = (
               colorAndDrawCurve(colorAt)
             );
           }
-          drawTextOrGetBounds("draw", textBoxes);
+          drawLabels();
         };
 
         if (contourLines) {

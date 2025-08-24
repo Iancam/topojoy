@@ -113,7 +113,7 @@ export function textsLayer(
     )
       return false;
     if (!pix1 || !pix2) return false;
-    for (const { box } of textBoxes) {
+    for (const { bbox: box } of textBoxes) {
       if (collision(box, { x, y, w: wordWidth, h: wordHeight })) {
         return false;
       }
@@ -212,9 +212,9 @@ function fillText(
 export function lakesLabels(
   sketch,
   lakes,
-  { font, textSize, textColor, weight } = {},
-  drawText,
-  collisionBoxes
+  keepList,
+  { font, textSize, textColor } = {},
+  addLabels
 ) {
   const names = [];
   const labels = {};
@@ -245,19 +245,14 @@ export function lakesLabels(
     });
 
   // sketch.strokeWeight(weight);
-  sketch.textSize(textSize);
-  sketch.textFont(font);
-  sketch.fill(textColor);
-  console.log(labels);
-  console.log(collisionBoxes);
-  return placeWithoutCollision(
-    sketch,
-    labels,
-    font,
-    [],
-    drawText,
-    collisionBoxes
-  );
+  const setContext = () => {
+    sketch.stroke("white");
+    sketch.textSize(textSize);
+    sketch.textFont(font);
+    sketch.fill(textColor);
+  };
+
+  addLabels(labels, keepList, { setContext, font }, "lake");
 }
 
 export function drawLakes(sketch, lakes, { color }) {
@@ -293,8 +288,7 @@ export function mountainLayer(
     keepList: [],
     drop: false,
   },
-  drawText,
-  collisionBoxes
+  addLabels
 ) {
   const peaksObj = Object.entries(peaks)
     .filter(([name]) => (drop ? keepList.includes(name) : true))
@@ -318,92 +312,16 @@ export function mountainLayer(
   });
 
   // ## MOUNTAIN LABELS ##
-  sketch.textFont(font);
-  sketch.fill(labelColor);
-  sketch.textSize(labelSize);
-  sketch.textStyle(sketch.NORMAL);
-  return placeWithoutCollision(
-    sketch,
-    peaksObj,
-    font,
-    keepList,
-    drawText,
-    collisionBoxes
-  );
-}
-
-/**
- * Draws labels at their specified points, avoiding collisions with previous labels that have been drawn.
- * @param {Object} labels - A dictionary of labels with their corresponding points.
- * @param {Object} font - p5.Font object used to calculate bounding box of text
- * @param {Array<string>} keepList - List of labels to always keep, even if they collide with other labels.
- * @returns {void}
- */
-export const placeWithoutCollision = (
-  sketch,
-  labels,
-  font,
-  keepList,
-  drawText,
-  collisionBoxes
-) => {
-  let bboxes = collisionBoxes || [];
-
-  const getRealBoundingBox = (pt, bbox) => {
-    let { x, y, w, h } = bbox;
-    if (sketch._renderer._textBaseline === "center") {
-      y = pt[1] - h / 2;
-    }
-    return { x, y, w, h };
+  const setContext = () => {
+    sketch.textAlign(sketch.CENTER, sketch.CENTER);
+    sketch.stroke("white");
+    sketch.textFont(font);
+    sketch.fill(labelColor);
+    sketch.textSize(labelSize);
+    sketch.textStyle(sketch.NORMAL);
   };
-
-  for (const name of keepList || []) {
-    if (!labels[name]) continue;
-    const bbox = getRealBoundingBox(
-      labels[name],
-      font.textBounds(name, labels[name][0], labels[name][1])
-    );
-
-    if (drawText) {
-      sketch.text(name, labels[name][0], labels[name][1]);
-    } else {
-      bboxes.push({ box: bbox, text: name });
-    }
-  }
-  // if not drawing text, just construct the bounding boxes list
-  if (!drawText) {
-    Object.entries(labels).forEach(([name, pt]) => {
-      const bbox = getRealBoundingBox(pt, font.textBounds(name, pt[0], pt[1]));
-      // console.log({ name, bbox, pt });
-      let skip = false;
-      for (const { box, text } of bboxes) {
-        if (collision(bbox, box)) {
-          skip = true;
-          break;
-        }
-      }
-      if (!skip) {
-        bboxes.push({ box: bbox, text: name });
-      }
-    });
-  }
-  // if drawing text, look up if the text is in the bounding boxes list
-  // and draw it if it is.
-  else {
-    const bboxHashmap = bboxes.reduce((acc, { box, text }) => {
-      acc[text] = box;
-      return acc;
-    }, {});
-
-    Object.entries(labels).forEach(([name, pt]) => {
-      const bbox = bboxHashmap[name];
-      if (!bbox) return;
-      sketch.text(name, pt[0], pt[1]);
-    });
-  }
-
-  return bboxes;
-};
+  addLabels(peaksObj, keepList, { setContext, font }, "mountain");
+}
 
 /**
  * internal data structures:
@@ -419,6 +337,7 @@ export const placeWithoutCollision = (
 
 export const placeWithoutCollisionFactory = (sketch) => {
   let labels = [];
+  let contexts = [];
   let collisions = [];
   const getRealBoundingBox = (pt, bbox) => {
     let { x, y, w, h } = bbox;
@@ -429,7 +348,8 @@ export const placeWithoutCollisionFactory = (sketch) => {
   };
 
   const checkCollisions = (bbox, name) => {
-    for (const { box, text } of labels) {
+    for (const { bbox: box, name: text, keep } of labels) {
+      if (!keep) continue;
       if (collision(bbox, box)) {
         collisions.push([text, name]);
         return true;
@@ -440,8 +360,17 @@ export const placeWithoutCollisionFactory = (sketch) => {
 
   return {
     addLabels: (givenLabels, keepList, { setContext, font }, category) => {
+      if (!Array.isArray(givenLabels)) {
+        givenLabels = Object.entries(givenLabels).map(([name, pt]) => ({
+          name,
+          pt,
+        }));
+      }
+
       sketch.push();
       setContext();
+      const setContextId = contexts.length;
+      contexts.push(setContext);
       const newLabels = givenLabels.map(({ name, pt }) => {
         const bbox = getRealBoundingBox(
           pt,
@@ -449,22 +378,25 @@ export const placeWithoutCollisionFactory = (sketch) => {
         );
         const collides = checkCollisions(bbox, name);
         const keep = keepList.includes(name) || !collides;
-        return { name, pt, keep, category, bbox };
+
+        return { name, pt, keep, category, bbox, setContextId };
       });
-      labels.push({ labels: newLabels, drawEnv: setContext });
+
+      labels.push(...newLabels);
       sketch.pop();
     },
     drawLabels: () => {
-      labels.forEach(({ labels, drawEnv }) => {
+      labels.forEach(({ setContextId, keep, name, pt }) => {
         sketch.push();
-        drawEnv();
-        labels.forEach((label) => {
-          if (label.keep) {
-            sketch.text(label.name, label.pt[0], label.pt[1]);
-          }
-        });
+        contexts[setContextId]();
+        if (keep) {
+          sketch.text(name, pt[0], pt[1]);
+        }
         sketch.pop();
       });
+    },
+    textBoxes: () => {
+      return labels.filter(({ keep }) => keep);
     },
     // reportKeptCollisions: () => {
     //   return collisions;
@@ -490,9 +422,10 @@ export const placeWithoutCollisionFactory = (sketch) => {
 export function namedLines(
   sketch,
   lineStrings,
-  { textSize, textColor, keepList = [], font },
-  drawText,
-  collisionBoxes
+  keepList,
+  category,
+  { textSize, textColor, font },
+  addLabels
 ) {
   let names = [];
   let labels = {};
@@ -521,18 +454,17 @@ export function namedLines(
     const pt = coords[maxIndex][mid];
     labels[name.split(" ").join("\n")] = pt;
   });
+  const setContext = () => {
+    sketch.stroke("white");
+    sketch.textSize(textSize);
+    sketch.textFont(font);
+    sketch.fill(textColor);
+  };
 
-  // sketch.strokeWeight(weight);
-  sketch.textSize(textSize);
-
-  sketch.textFont(font);
-  sketch.fill(textColor);
-  return placeWithoutCollision(
-    sketch,
+  addLabels(
     labels,
-    font,
     keepList.map((name) => name.split(" ").join("\n")),
-    drawText,
-    collisionBoxes
+    { setContext, font },
+    category
   );
 }

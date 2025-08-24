@@ -1,5 +1,4 @@
 import { complement, contrastingLuminance } from "./colorUtils";
-import { placeWithoutCollision } from "./layers";
 
 /**
  * Pick a visually balanced title font-size.
@@ -39,49 +38,30 @@ export function drawTitle(
   latlngBox,
   backgroundColor,
   font,
-  drawText,
-  textBoxes
+  addLabels
 ) {
   let labels = { [title]: [sketch.width / 2, (9 * sketch.height) / 10] };
   const textSize = titleFontSize(sketch.width, sketch.height, title);
-  sketch.push();
-  sketch.textAlign(sketch.CENTER, sketch.BOTTOM);
-  sketch.textFont(font);
-  sketch.alpha(255);
-  sketch.textSize(textSize);
-  sketch.fill(contrastingLuminance(backgroundColor, 10.5));
-  textBoxes = placeWithoutCollision(
-    sketch,
-    labels,
-    font,
-    [],
-    drawText,
-    textBoxes
-  );
-  sketch.pop();
-  // draw latlng
-  sketch.push();
-  sketch.textFont(font);
-  sketch.textAlign(sketch.CENTER, sketch.TOP);
-  sketch.fill(contrastingLuminance(backgroundColor, 10.5));
+
+  const drawEnvTitle = () => {
+    sketch.textAlign(sketch.CENTER, sketch.BOTTOM);
+    sketch.textFont(font);
+    sketch.alpha(255);
+    sketch.textSize(textSize);
+    sketch.fill(contrastingLuminance(backgroundColor, 10.5));
+  };
+  addLabels(labels, [title], { setContext: drawEnvTitle, font }, "title");
+  const drawEnvLatlng = () => {
+    sketch.textFont(font);
+    sketch.textAlign(sketch.CENTER, sketch.TOP);
+    sketch.fill(contrastingLuminance(backgroundColor, 10.5));
+    sketch.textSize(textSize / 2);
+  };
   const latlng = [latlngBox[0], latlngBox[1]]
     .map((n) => n.toFixed(4))
     .join(", ");
 
-  sketch.textSize(textSize / 2);
-
   labels = { [latlng]: [sketch.width / 2, (9 * sketch.height) / 10 + 20] };
 
-  textBoxes = placeWithoutCollision(
-    sketch,
-    labels,
-    font,
-    [],
-    drawText,
-    textBoxes
-  );
-
-  sketch.pop();
-
-  return textBoxes;
+  addLabels(labels, [latlng], { setContext: drawEnvLatlng, font }, "title");
 }
