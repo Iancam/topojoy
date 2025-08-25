@@ -188,8 +188,6 @@ export const sketchFactory = (
           );
         };
         const drawLayers = () => {
-          placeLabelsWithoutCollision();
-
           if (!config.backgroundText.highContrast)
             textsLayer(sketch, topo, colorAt, textBoxes(), {
               ...config.backgroundText,
@@ -215,6 +213,7 @@ export const sketchFactory = (
               colorAndDrawCurve(colorAt)
             );
           }
+          placeLabelsWithoutCollision();
           drawLabels();
         };
 
@@ -249,9 +248,9 @@ export const sketchFactory = (
           });
         } else {
           const multiplier = config.backgroundText.highContrast ? 0.6 : 0.8;
-          // times(multiplier * curveCount, genCurve(topo)).forEach(
-          //   colorAndDrawCurve(colorAt)
-          // );
+          times(multiplier * curveCount, genCurve(topo)).forEach(
+            colorAndDrawCurve(colorAt)
+          );
 
           drawLayers();
         }

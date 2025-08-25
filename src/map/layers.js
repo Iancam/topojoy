@@ -347,13 +347,16 @@ export const placeWithoutCollisionFactory = (sketch) => {
     return { x, y, w, h };
   };
 
-  const checkCollisions = (bbox, name) => {
+  const checkCollisions = (bbox, name, aIndex) => {
+    let bIndex = 0;
     for (const { bbox: box, name: text, keep } of labels) {
+      const collides = collision(bbox, box);
       if (!keep) continue;
-      if (collision(bbox, box)) {
-        collisions.push([text, name]);
+      if (collides) {
+        collisions.push([aIndex, bIndex]);
         return true;
       }
+      bIndex++;
     }
     return false;
   };
@@ -371,18 +374,17 @@ export const placeWithoutCollisionFactory = (sketch) => {
       setContext();
       const setContextId = contexts.length;
       contexts.push(setContext);
-      const newLabels = givenLabels.map(({ name, pt }) => {
+
+      givenLabels.forEach(({ name, pt }) => {
         const bbox = getRealBoundingBox(
           pt,
           font.textBounds(name, pt[0], pt[1])
         );
-        const collides = checkCollisions(bbox, name);
+        const collides = checkCollisions(bbox, name, labels.length);
         const keep = keepList.includes(name) || !collides;
-
-        return { name, pt, keep, category, bbox, setContextId };
+        labels.push({ name, pt, keep, category, bbox, setContextId });
       });
 
-      labels.push(...newLabels);
       sketch.pop();
     },
     drawLabels: () => {
