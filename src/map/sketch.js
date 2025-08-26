@@ -194,7 +194,6 @@ export const sketchFactory = (
               backgroundColor: config.background,
               textSize: config.backgroundText.textSize * textSizeMultiplier,
             });
-          drawLakes(sketch, lakes, { color: config.river.colorRange[0] });
           drawLines(sketch, topo, waterFeatures, textSizeMultiplier, {
             ...config.river,
             style: "watercolor",
@@ -203,6 +202,9 @@ export const sketchFactory = (
             ...config.trail,
             style: "watercolor",
           });
+          drawLakes(sketch, lakes, { color: config.river.colorRange[0] });
+
+          placeLabelsWithoutCollision();
           if (config.backgroundText.highContrast) {
             textsLayer(sketch, topo, colorAt, textBoxes(), {
               ...config.backgroundText,
@@ -213,7 +215,7 @@ export const sketchFactory = (
               colorAndDrawCurve(colorAt)
             );
           }
-          placeLabelsWithoutCollision();
+
           drawLabels();
         };
 
