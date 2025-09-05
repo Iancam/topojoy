@@ -3,7 +3,9 @@ import { ColorPlan } from "./ColorPlan";
 import { ConfigSelect } from "./ConfigSelect";
 
 export interface FormElements {
-  [key: string]: [FormElementType, string, any, string];
+  [key: string]:
+    | [FormElementType, string, any, string]
+    | [FormElementType, string, any, string, { [key: string]: any }];
 }
 
 export const formJourney: {
@@ -95,7 +97,13 @@ export const basicFormElements: FormElements = {
     1,
     "Curve Density",
   ],
-  zoomLevel: ["number", "the zoom level of the map", 13, "Zoom Level"],
+  zoomLevel: [
+    "number",
+    "the zoom level of the map",
+    13,
+    "Zoom Level",
+    { min: 12, max: 15 },
+  ],
 } satisfies FormElements;
 
 export const advancedFormElements: FormElements = {

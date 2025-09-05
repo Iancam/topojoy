@@ -52,11 +52,13 @@ export const ConfigForm = ({
     elementType,
     description,
     label,
+    props,
   }: {
     id: string;
     elementType: FormElementType;
     description: string;
     label: string;
+    props?: { [key: string]: any };
   }): React.ReactElement | null => {
     const TooltipWrapper = ({ children }: TooltipWrapperProps) => (
       <TooltipProvider>
@@ -100,6 +102,9 @@ export const ConfigForm = ({
         <Input
           type="number"
           value={value}
+          {...props}
+          // min={props?.min}
+          // max={props?.max}
           onChange={(e) => onFormChange(id, Number(e.target.value))}
         />
       ),
@@ -162,10 +167,10 @@ export const ConfigForm = ({
         steps={formJourney.map((step) => ({
           title: step.title,
           content: step.formElements.map((FormElement, i) => {
-            const [elementType, description, defaultValue, label] =
+            const [elementType, description, defaultValue, label, props] =
               typeof FormElement === "string"
                 ? formElements[FormElement]
-                : ["", "", "", ""];
+                : ["", "", "", "", {}];
             return (
               <div key={i} className="flex flex-col gap-2 mt-4">
                 {typeof FormElement === "string" ? (
@@ -174,6 +179,7 @@ export const ConfigForm = ({
                     elementType={elementType}
                     description={description}
                     label={label}
+                    props={props}
                   />
                 ) : (
                   <FormElement
