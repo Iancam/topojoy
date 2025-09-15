@@ -18,17 +18,19 @@ import {
   getMountainFeatures,
   getWaterFeatures,
   getLakes,
+  getUserSelectedTrails,
 } from "./trails";
 import { times } from "../libraries/utils";
 import { createWebGLFlowField } from "../contourExploration/terrainFlowField";
 import { drawTitle } from "./title";
-
+import chroma from "chroma-js";
 export const sketchFactory = (
   boundsGeojson,
   config,
   callback,
   options = {}
 ) => {
+  chroma;
   const { contourLines = false } = options;
   return {
     sketch: (sketch) => {
@@ -91,6 +93,7 @@ export const sketchFactory = (
         const waterFeatures = getWaterFeatures(bounds, geoJSON);
         const trails = getTrails(bounds, geoJSON);
         const lakes = getLakes(bounds, geoJSON);
+        const userSelectedTrails = getUserSelectedTrails(bounds);
 
         const genCurve = (topo) => () => {
           const angleTransforms = [
@@ -200,6 +203,15 @@ export const sketchFactory = (
           });
           drawLines(sketch, topo, trails, textSizeMultiplier, {
             ...config.trail,
+            style: "watercolor",
+          });
+
+          drawLines(sketch, topo, userSelectedTrails, textSizeMultiplier, {
+            ...config.trail,
+            colorRange: [
+              chroma("#e91e63").brighten(0.5).hex(),
+              chroma("#e91e63").darken(0.5).hex(),
+            ],
             style: "watercolor",
           });
           drawLakes(sketch, lakes, { color: config.river.colorRange[0] });

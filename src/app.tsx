@@ -81,14 +81,16 @@ export const App = () => {
 
   useEffect(() => {
     const downstreamConfig = getDownstreamConfig();
-    const geoJSON = JSON.parse(localStorage.getItem("topojoy:geojson") || "{}");
+    const geoJSON = JSON.parse(
+      localStorage.getItem("topojoy:geojson.bbox") || "{}"
+    );
     const { bounds } = tilesForFeatures(geoJSON, downstreamConfig.zoomLevel);
-    const mapGeoJSON = getGeoJSONFromOSM(bounds.latLngbox, {
+    getGeoJSONFromOSM(bounds.latLngbox, {
       streams: downstreamConfig.river.streams,
       rivers: downstreamConfig.river.show,
       trails: downstreamConfig.trail.show,
       peaks: downstreamConfig.mountain.show,
-      lakes: false,
+      lakes: true,
     }).then((geoJSON) => {
       const mountains = getMountainFeatures(bounds, geoJSON);
       const waterFeatures = getWaterFeatures(bounds, geoJSON);
@@ -136,7 +138,9 @@ export const App = () => {
     while (p5Ref.current.firstChild) {
       p5Ref.current.removeChild(p5Ref.current.firstChild);
     }
-    const geoJSON = JSON.parse(localStorage.getItem("topojoy:geojson") || "{}");
+    const geoJSON = JSON.parse(
+      localStorage.getItem("topojoy:geojson.bbox") || "{}"
+    );
     const { sketch } = sketchFactory(
       geoJSON,
       downstreamConfig,
@@ -168,6 +172,7 @@ export const App = () => {
   };
 
   const onFormChange = (key: string, value: any) => {
+    // console.log(key, value);
     setForm({
       ...form,
       [key]: value,
