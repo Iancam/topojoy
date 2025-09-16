@@ -40,6 +40,7 @@ const RenderFormElement = ({
   mountains,
   trails,
   waterFeatures,
+  props,
   id,
   elementType,
   description,
@@ -54,6 +55,7 @@ const RenderFormElement = ({
   elementType: FormElementType;
   description: string;
   label: string;
+  props?: { [key: string]: any };
 }): React.ReactElement | null => {
   const TooltipWrapper = ({ children }: TooltipWrapperProps) => (
     <TooltipProvider>
@@ -97,6 +99,7 @@ const RenderFormElement = ({
       <Input
         type="number"
         value={value}
+        {...props}
         onChange={(e) => onFormChange(id, Number(e.target.value))}
       />
     ),
@@ -168,10 +171,10 @@ export const ConfigForm = ({
   const steps = formJourney.map((step) => ({
     title: step.title,
     content: step.formElements.map((FormElement, i) => {
-      const [elementType, description, defaultValue, label] =
+      const [elementType, description, defaultValue, label, props] =
         typeof FormElement === "string"
           ? formElements[FormElement]
-          : ["", "", "", ""];
+          : ["", "", "", "", {}];
       return (
         <div
           key={typeof FormElement === "string" ? FormElement : i}
@@ -188,6 +191,7 @@ export const ConfigForm = ({
               elementType={elementType}
               description={description}
               label={label}
+              props={props}
             />
           ) : (
             <FormElement

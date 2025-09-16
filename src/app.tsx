@@ -15,6 +15,7 @@ import { ConfigForm } from "./components/configForm.tsx";
 import { P5Canvas } from "./components/p5Canvas.tsx";
 import {
   getGeoJSONFromOSM,
+  getLakes,
   getMountainFeatures,
   getTrails,
   getWaterFeatures,
@@ -39,6 +40,8 @@ export const App = () => {
     return saved && Object.keys(configs).includes(saved) ? saved : "Original";
   });
 
+  // use when you want to delete old values from the heights, IE, when you're
+  //changing configs.
   const addHeightsToForm = (config: MapConfig, form: {}) => {
     const heights = config.colorPlan.reduce((obj, { height }, i) => {
       const key = `colorPlan.${i}.height`;
@@ -75,9 +78,11 @@ export const App = () => {
   const [trails, setTrails] = useState<string[]>([]);
   const [mountains, setMountains] = useState<string[]>([]);
   const [waterFeatures, setWaterFeatures] = useState<string[]>([]);
+  const [lakes, setLakes] = useState<string[]>([]);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const p5Ref = useRef<HTMLDivElement>(null);
+  const [isRendering, setIsRendering] = useState(false);
 
   useEffect(() => {
     const downstreamConfig = getDownstreamConfig();
@@ -90,27 +95,26 @@ export const App = () => {
       rivers: downstreamConfig.river.show,
       trails: downstreamConfig.trail.show,
       peaks: downstreamConfig.mountain.show,
-      lakes: true,
+      lakes: downstreamConfig.lakes.show,
     }).then((geoJSON) => {
       const mountains = getMountainFeatures(bounds, geoJSON);
       const waterFeatures = getWaterFeatures(bounds, geoJSON);
       const trails = getTrails(bounds, geoJSON);
+      const lakes = getLakes(bounds, geoJSON);
       setMountains(Object.keys(mountains));
       setWaterFeatures(Object.keys(waterFeatures));
       setTrails(Object.keys(trails));
+      setLakes(Object.keys(lakes));
     });
   }, [
     form["river.streams"],
     form["river.show"],
     form["trail.show"],
     form["mountain.show"],
+    form["lakes.show"],
   ]);
 
   const tour = TourMap();
-
-  // useEffect(() => {
-  //   tour.start();
-  // }, []);
 
   const getDownstreamConfig = () => {
     let downstreamConfig = configs[config];
@@ -134,6 +138,9 @@ export const App = () => {
   const renderSketch = () => {
     const downstreamConfig = getDownstreamConfig();
     if (!p5Ref.current) return;
+
+    // show loading while rendering
+    setIsRendering(true);
 
     while (p5Ref.current.firstChild) {
       p5Ref.current.removeChild(p5Ref.current.firstChild);
@@ -161,6 +168,8 @@ export const App = () => {
         img.style.maxWidth = `${sketch.width}px`;
         p5Ref.current?.appendChild(img); // 2. use <img>, not <canvas>
         sketch.remove();
+        // hide loading once image is ready
+        setIsRendering(false);
       }
     );
 
@@ -258,6 +267,7 @@ export const App = () => {
           setIsFullscreen={setIsFullscreen}
           renderSketch={renderSketch}
           p5Ref={p5Ref}
+          isLoading={isRendering}
         ></P5Canvas>
       </div>
     </>
