@@ -13,64 +13,66 @@ function initGPU() {
   }
 }
 
-const gpu = initGPU();
-const toHeights = gpu
-  .createKernel(
-    function hmap(data, width) {
-      const { x, y } = this.thread;
-      const start = y * (width * 4) + x * 4;
-      const [R, G, B, A] = [
-        data[start],
-        data[start + 1],
-        data[start + 2],
-        data[start + 3],
-      ];
-      const h = -10000 + (R * 256 * 256 + G * 256 + B) * 0.1;
-      return h;
-    },
-    {
-      dynamicArguments: true,
-    }
-  )
-  // .setPipeline(true)
-  .setDynamicOutput(true);
+const initKernels = () => {
+  const gpu = initGPU();
+  const toHeights = gpu
+    .createKernel(
+      function hmap(data, width) {
+        const { x, y } = this.thread;
+        const start = y * (width * 4) + x * 4;
+        const [R, G, B, A] = [
+          data[start],
+          data[start + 1],
+          data[start + 2],
+          data[start + 3],
+        ];
+        const h = -10000 + (R * 256 * 256 + G * 256 + B) * 0.1;
+        return h;
+      },
+      {
+        dynamicArguments: true,
+      }
+    )
+    // .setPipeline(true)
+    .setDynamicOutput(true);
 
-const slope = gpu
-  .createKernel(
-    function (hArray, metersPerPixel, sunAz, sunEl, vert) {
-      const { x, y } = this.thread;
-      const height = hArray[y][x];
+  const slope = gpu
+    .createKernel(
+      function (hArray, metersPerPixel, sunAz, sunEl, vert) {
+        const { x, y } = this.thread;
+        const height = hArray[y][x];
 
-      const eleN = vert * hArray[y][x - 1];
-      const eleS = vert * hArray[y][x + 1];
-      const eleE = vert * hArray[y + 1][x];
-      const eleW = vert * hArray[y - 1][x];
-      const d = 3 * metersPerPixel;
-      const dzdx = (eleE - eleW) / d;
-      const dzdy = (eleN - eleS) / d;
-      const slope =
-        Math.atan(Math.sqrt(dzdx ** 2 + dzdy ** 2)) * (180 / Math.PI);
-      const aspect =
-        d !== 0 // counterclockwise from east
-          ? (Math.atan2(dzdy, dzdx) * (180 / Math.PI) + 180) % 360
-          : (90 * (d > 0 ? 1 : -1) + 180) % 360;
+        const eleN = vert * hArray[y][x - 1];
+        const eleS = vert * hArray[y][x + 1];
+        const eleE = vert * hArray[y + 1][x];
+        const eleW = vert * hArray[y - 1][x];
+        const d = 3 * metersPerPixel;
+        const dzdx = (eleE - eleW) / d;
+        const dzdy = (eleN - eleS) / d;
+        const slope =
+          Math.atan(Math.sqrt(dzdx ** 2 + dzdy ** 2)) * (180 / Math.PI);
+        const aspect =
+          d !== 0 // counterclockwise from east
+            ? (Math.atan2(dzdy, dzdx) * (180 / Math.PI) + 180) % 360
+            : (90 * (d > 0 ? 1 : -1) + 180) % 360;
 
-      const El = (Math.PI / 180) * sunEl;
-      const Az = (Math.PI / 180) * sunAz;
+        const El = (Math.PI / 180) * sunEl;
+        const Az = (Math.PI / 180) * sunAz;
 
-      const cosIncidence =
-        Math.sin(El) * Math.cos(slope) +
-        Math.cos(El) * Math.sin(slope) * Math.cos(Az - aspect);
+        const cosIncidence =
+          Math.sin(El) * Math.cos(slope) +
+          Math.cos(El) * Math.sin(slope) * Math.cos(Az - aspect);
 
-      const shade = 255 * cosIncidence;
-      return [height, slope, aspect, cosIncidence];
-    },
-    {
-      dynamicArguments: true,
-    }
-  )
-  .setDynamicOutput(true);
-
+        const shade = 255 * cosIncidence;
+        return [height, slope, aspect, cosIncidence];
+      },
+      {
+        dynamicArguments: true,
+      }
+    )
+    .setDynamicOutput(true);
+  return { toHeights, slope };
+};
 /**
  * Takes an image and pixel distance and returns a map of height, slope and
  * aspect values for each pixel, as well as the minimum, maximum, and range of
@@ -90,6 +92,7 @@ const slope = gpu
  * } heightmap
  */
 export function processPixels(image, metersPerPixel, sunAz, sunEl, vert) {
+  const { toHeights, slope } = initKernels();
   const { width, height, data } = image;
   const step = height / N_SLICES;
   const numChannels = 4;

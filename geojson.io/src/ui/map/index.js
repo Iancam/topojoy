@@ -56,11 +56,11 @@ export default function (context, readonly) {
     //     context.Draw.changeMode('draw_point');
     //   }
     // })
-    // .on('l', () => {
-    //   if (!editing) {
-    //     context.Draw.changeMode('draw_line_string');
-    //   }
-    // })
+    .on('l', () => {
+      if (!editing) {
+        context.Draw.changeMode('draw_line_string');
+      }
+    })
     // .on('p', () => {
     //   if (!editing) {
     //     context.Draw.changeMode('draw_polygon');
@@ -130,7 +130,7 @@ export default function (context, readonly) {
           ...MapboxDraw.modes,
           simple_select: SimpleSelect,
           direct_select: MapboxDraw.modes.direct_select,
-          // draw_line_string: DrawLineString,
+          draw_line_string: DrawLineString,
           draw_rectangle: DrawRectangle
           // draw_circle: DrawCircle
         },
@@ -150,15 +150,15 @@ export default function (context, readonly) {
           //   classes: ['mapbox-gl-draw_ctrl-draw-btn', 'mapbox-gl-draw_point'],
           //   title: 'Draw Point (m)'
           // },
-          // {
-          //   on: 'click',
-          //   action: () => {
-          //     drawing = true;
-          //     context.Draw.changeMode('draw_line_string');
-          //   },
-          //   classes: ['mapbox-gl-draw_ctrl-draw-btn', 'mapbox-gl-draw_line'],
-          //   title: 'Draw LineString (l)'
-          // },
+          {
+            on: 'click',
+            action: () => {
+              drawing = true;
+              context.Draw.changeMode('draw_line_string');
+            },
+            classes: ['mapbox-gl-draw_ctrl-draw-btn', 'mapbox-gl-draw_line'],
+            title: 'Draw LineString (l)'
+          },
           // {
           //   on: 'click',
           //   action: () => {

@@ -89,15 +89,10 @@ const featuresToScreenCoords = (zoom, box) => (feature) => {
     coords = coordinates.map(processCoords);
   } else {
     coords = processCoords(coordinates);
+    console.log({ coordinates, coords });
   }
-
   return { ...properties, coords };
 };
-
-const excludeList =
-  (exclude) =>
-  ({ properties: { name } }) =>
-    !exclude.some((drop) => name.includes(drop));
 
 // TODO: this is likely the cause of my error
 const screenCoordListToObj = (obj, { name, coords }) => {
@@ -109,23 +104,21 @@ const screenCoordListToObj = (obj, { name, coords }) => {
   return obj;
 };
 
-const makeDenser = (feature) => {
-  const denser = turf.lineChunk(feature, 0.5);
-  const asOne = denser.features.reduce(
-    (bigFeature, feature) => {
-      const { coordinates } = feature.geometry;
-      bigFeature.geometry.coordinates.push(coordinates);
-      return bigFeature;
-    },
-    {
-      properties: feature.properties,
-      id: feature.id,
-      geometry: { type: "LineString", coordinates: [] },
-    }
+export function getUserSelectedTrails({ zoom, box }) {
+  const userSelectedTrails = JSON.parse(
+    localStorage.getItem("topojoy:geojson.selectedtrailSegments") || "[]"
   );
-  asOne.geometry.coordinates = asOne.geometry.coordinates.flat();
-  return asOne;
-};
+  const userDrawnTrails = JSON.parse(
+    localStorage.getItem("topojoy:geojson.drawnTrails")
+  ).features;
+  // merge userSelectedTrails and userDrawnTrails
+  const merged = [...userSelectedTrails, ...userDrawnTrails];
+  console.log(merged);
+
+  const features = merged.map(featuresToScreenCoords(zoom, box, true));
+
+  return features;
+}
 
 export function getTrails({ box, zoom }, geoJSON, exclude, include) {
   const trails = geoJSON.features
@@ -181,15 +174,6 @@ export function getMountainFeatures({ box, zoom }, geoJSON) {
     )
     .map(featuresToScreenCoords(zoom, box))
     .reduce(screenCoordListToObj, {});
-}
-
-async function getGeoJSONFromShapefile(shapefilePath, { box, zoom }) {
-  const shp = new ShpToGeoJson({
-    remotePath: shapefilePath,
-  });
-  await shp.load();
-  let geoJSON = shp.getGeoJson();
-  return geoJSON;
 }
 
 export async function getGeoJSONFromOSM(

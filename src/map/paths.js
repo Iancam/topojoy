@@ -31,6 +31,7 @@ export function drawLines(
   { colorRange, weight, curveLength, style }
 ) {
   const slopeScale = chroma.scale(colorRange);
+  console.log(Array.isArray(lines), lines);
   let Lines = Array.isArray(lines)
     ? lines.map(({ coords }) => coords)
     : Object.values(lines).flat();
