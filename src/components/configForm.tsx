@@ -34,8 +34,129 @@ interface ConfigFormProps {
   renderSketch: () => p5;
 }
 
-// Reusable multistep form wrapper
+const RenderFormElement = ({
+  form,
+  onFormChange,
+  mountains,
+  trails,
+  waterFeatures,
+  props,
+  id,
+  elementType,
+  description,
+  label,
+}: {
+  form: any;
+  onFormChange: (key: string, value: any) => void;
+  mountains: any;
+  trails: any;
+  waterFeatures: any;
+  id: string;
+  elementType: FormElementType;
+  description: string;
+  label: string;
+  props?: { [key: string]: any };
+}): React.ReactElement | null => {
+  const TooltipWrapper = ({ children }: TooltipWrapperProps) => (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{children}</TooltipTrigger>
+        <TooltipContent>
+          <p>{description}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 
+  const value = form[id];
+  const options =
+    id === "mountain.keepList"
+      ? mountains
+      : id === "river.keepList"
+      ? waterFeatures
+      : id === "trail.keepList"
+      ? trails
+      : [];
+
+  const cases: Record<FormElementType, React.ReactElement> = {
+    text: (
+      <Input
+        type="text"
+        value={value}
+        onChange={(e) => onFormChange(id, e.target.value)}
+      />
+    ),
+    textarea: (
+      <textarea
+        className="border border-gray-300 rounded p-2 w-full"
+        rows={5}
+        cols={20}
+        value={value}
+        onChange={(e) => onFormChange(id, e.target.value)}
+      />
+    ),
+    number: (
+      <Input
+        type="number"
+        value={value}
+        {...props}
+        onChange={(e) => onFormChange(id, Number(e.target.value))}
+      />
+    ),
+    boolean: (
+      <Checkbox
+        checked={value}
+        onCheckedChange={(checked) => onFormChange(id, checked)}
+      />
+    ),
+    list: (
+      <MultiSelect
+        options={options}
+        value={value}
+        onChange={(v) => onFormChange(id, v)}
+      />
+    ),
+    range: (
+      <DualRangeSlider
+        min={0}
+        max={1}
+        step={0.01}
+        value={value}
+        onValueChange={(val) => onFormChange(id, val)}
+      />
+    ),
+    slider: (
+      <>
+        <Slider
+          min={0}
+          max={1}
+          step={0.01}
+          value={[Number(value)]}
+          onValueChange={([val]) => onFormChange(id, val)}
+          className="w-full"
+        />
+        <span className="text-sm w-12 text-right">
+          {Number(value).toFixed(2)}
+        </span>
+      </>
+    ),
+  };
+
+  const element = cases[elementType] || null;
+  return (
+    <div key={id} className="flex flex-col gap-2">
+      <label className="text-sm font-medium">{label}</label>
+      <div className="flex items-center space-x-2">
+        {element}
+        <TooltipWrapper>
+          <Info className={"h-4 w-4 tooltip-" + id.replace(".", "-")} />
+        </TooltipWrapper>
+      </div>
+    </div>
+  );
+};
+
+// Reusable multistep form wrapper
 export const ConfigForm = ({
   config,
   configs,
@@ -47,153 +168,49 @@ export const ConfigForm = ({
   onFormChange,
   renderSketch,
 }: ConfigFormProps) => {
-  const RenderFormElement = ({
-    id,
-    elementType,
-    description,
-    label,
-    props,
-  }: {
-    id: string;
-    elementType: FormElementType;
-    description: string;
-    label: string;
-    props?: { [key: string]: any };
-  }): React.ReactElement | null => {
-    const TooltipWrapper = ({ children }: TooltipWrapperProps) => (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>{children}</TooltipTrigger>
-          <TooltipContent>
-            <p>{description}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-
-    const value = form[id];
-    const options =
-      id === "mountain.keepList"
-        ? mountains
-        : id === "river.keepList"
-        ? waterFeatures
-        : id === "trail.keepList"
-        ? trails
-        : [];
-
-    const cases: Record<FormElementType, React.ReactElement> = {
-      text: (
-        <Input
-          type="text"
-          value={value}
-          onChange={(e) => onFormChange(id, e.target.value)}
-        />
-      ),
-      textarea: (
-        <textarea
-          className="border border-gray-300 rounded p-2 w-full"
-          rows={5}
-          cols={20}
-          value={value}
-          onChange={(e) => onFormChange(id, e.target.value)}
-        />
-      ),
-      number: (
-        <Input
-          type="number"
-          value={value}
-          {...props}
-          // min={props?.min}
-          // max={props?.max}
-          onChange={(e) => onFormChange(id, Number(e.target.value))}
-        />
-      ),
-      boolean: (
-        <Checkbox
-          checked={value}
-          onCheckedChange={(checked) => onFormChange(id, checked)}
-        />
-      ),
-      list: (
-        <MultiSelect
-          options={options}
-          value={value}
-          onChange={(v) => onFormChange(id, v)}
-        />
-      ),
-      range: (
-        <DualRangeSlider
-          min={0}
-          max={1}
-          step={0.01}
-          value={value}
-          onValueChange={(val) => onFormChange(id, val)}
-        />
-      ),
-      slider: (
-        <>
-          <Slider
-            min={0}
-            max={1}
-            step={0.01}
-            value={[Number(value)]}
-            onValueChange={([val]) => onFormChange(id, val)}
-            className="w-full"
-          />
-          <span className="text-sm w-12 text-right">
-            {Number(value).toFixed(2)}
-          </span>
-        </>
-      ),
-    };
-
-    const element = cases[elementType] || null;
-    return (
-      <div key={id} className="flex flex-col gap-2">
-        <label className="text-sm font-medium">{label}</label>
-        <div className="flex items-center space-x-2">
-          {element}
-          <TooltipWrapper>
-            <Info className={"h-4 w-4 tooltip-" + id.replace(".", "-")} />
-          </TooltipWrapper>
+  const steps = formJourney.map((step) => ({
+    title: step.title,
+    content: step.formElements.map((FormElement, i) => {
+      const [elementType, description, defaultValue, label, props] =
+        typeof FormElement === "string"
+          ? formElements[FormElement]
+          : ["", "", "", "", {}];
+      return (
+        <div
+          key={typeof FormElement === "string" ? FormElement : i}
+          className="flex flex-col gap-2 mt-4"
+        >
+          {typeof FormElement === "string" ? (
+            <RenderFormElement
+              form={form}
+              onFormChange={onFormChange}
+              mountains={mountains}
+              trails={trails}
+              waterFeatures={waterFeatures}
+              id={FormElement}
+              elementType={elementType}
+              description={description}
+              label={label}
+              props={props}
+            />
+          ) : (
+            <FormElement
+              config={config}
+              configs={configs}
+              renderFormElement={RenderFormElement}
+              onConfigChange={onConfigChange}
+              onFormChange={onFormChange}
+            />
+          )}
         </div>
-      </div>
-    );
-  };
+      );
+    }),
+  }));
 
   return (
     <>
       <MultiStepForm
-        steps={formJourney.map((step) => ({
-          title: step.title,
-          content: step.formElements.map((FormElement, i) => {
-            const [elementType, description, defaultValue, label, props] =
-              typeof FormElement === "string"
-                ? formElements[FormElement]
-                : ["", "", "", "", {}];
-            return (
-              <div key={i} className="flex flex-col gap-2 mt-4">
-                {typeof FormElement === "string" ? (
-                  <RenderFormElement
-                    id={FormElement}
-                    elementType={elementType}
-                    description={description}
-                    label={label}
-                    props={props}
-                  />
-                ) : (
-                  <FormElement
-                    config={config}
-                    configs={configs}
-                    renderFormElement={RenderFormElement}
-                    onConfigChange={onConfigChange}
-                    onFormChange={onFormChange}
-                  />
-                )}
-              </div>
-            );
-          }),
-        }))}
+        steps={steps}
         onSubmit={() => {
           console.log("Form submitted");
         }}

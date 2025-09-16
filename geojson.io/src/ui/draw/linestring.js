@@ -1,11 +1,23 @@
 // this mode extends the build-in linestring tool, displaying the current length
 // of the line as the user draws using a point feature and a symbol layer
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
-
+// import store from '../store.js';
 import { getDisplayMeasurements } from './util.js';
 
 const ExtendedLineStringMode = {
   ...MapboxDraw.modes.draw_line_string,
+
+  // onStop: function (state) {
+  // TODO: store this in the mobx store
+  // store.drawnTrails[state.line.id] = state.line.toGeoJSON();
+  // },
+
+  // onTrash: function (state) {
+  //   delete store.drawnTrails[state.line.id];
+  //   return MapboxDraw.modes.draw_line_string.onTrash.call(this, state);
+
+  //   this.deleteFeature([state.line.id], { silent: true });
+  // },
 
   toDisplayFeatures: function (state, geojson, display) {
     const isActiveLine = geojson.properties.id === state.line.id;
