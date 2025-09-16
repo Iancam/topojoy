@@ -220,7 +220,7 @@ export const App = () => {
                 Open Map Editor
               </a>
             </div>
-            <div className="flex items-center ml-auto">
+            {/* <div className="flex items-center ml-auto">
               <button
                 className={
                   "bg-indigo-500 hover:bg-indigo-700 start-tour text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200"
@@ -232,7 +232,7 @@ export const App = () => {
               >
                 Start Tour
               </button>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
