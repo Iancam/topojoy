@@ -12,6 +12,7 @@ export const formJourney: {
   title: string;
   description: string;
   formElements: (string | Function)[];
+  advanced?: (string | Function)[];
 }[] = [
   {
     title: "Basics",
@@ -26,7 +27,17 @@ export const formJourney: {
       "river.show",
       "river.streams",
       "trail.show",
-      "lakes.show",
+      "lake.show",
+    ],
+    advanced: [
+      "mountain.keepList",
+      "mountain.drop",
+      "trail.keepList",
+      "trail.drop",
+      "river.keepList",
+      "river.drop",
+      "lake.keepList",
+      "lake.drop",
     ],
   },
   {
@@ -41,11 +52,6 @@ export const formJourney: {
     ],
   },
   {
-    title: "Color Plan",
-    description: `Modify the elevation bands associated with each color set in the color plan.`,
-    formElements: [ColorPlan],
-  },
-  {
     title: "zoomLevel",
     description: `Choose the zoom level of the map. Probably best to choose from 13, 14, and 15.`,
     formElements: ["zoomLevel"],
@@ -53,17 +59,13 @@ export const formJourney: {
   {
     title: "Misc.",
     description: `Choose other options for the map.`,
-    formElements: [
-      "mountain.keepList",
-      "mountain.drop",
-      "curve.density",
-      "crossHatch",
-    ],
+    formElements: ["curve.density", "crossHatch"],
+    advanced: [ColorPlan],
   },
 ];
 
 export const basicFormElements: FormElements = {
-  "lakes.show": ["boolean", "show/hide lakes", false, "Show Lakes"],
+  "lake.show": ["boolean", "show/hide lakes", false, "Show Lakes"],
   "backgroundText.text": ["textarea", "the text in the background", "", "Text"],
   "backgroundText.elevationRange": [
     "range",
@@ -89,6 +91,27 @@ export const basicFormElements: FormElements = {
     "if checked, mountains not in the keepList will be dropped",
     false,
     "Remove Mountains Not in Keep List",
+  ],
+  "lake.keepList": ["list", "lakes to show", [], "LakeKeep List"],
+  "lake.drop": [
+    "boolean",
+    "if checked, lakes not in the keepList will be dropped",
+    false,
+    "Remove Lakes Not in Keep List",
+  ],
+  "trail.keepList": ["list", "trails to show", [], "TrailKeep List"],
+  "trail.drop": [
+    "boolean",
+    "if checked, trails not in the keepList will be dropped",
+    false,
+    "Remove Trails Not in Keep List",
+  ],
+  "river.keepList": ["list", "rivers to show", [], "RiverKeep List"],
+  "river.drop": [
+    "boolean",
+    "if checked, rivers not in the keepList will be dropped",
+    false,
+    "Remove Rivers Not in Keep List",
   ],
 
   "curve.density": [
