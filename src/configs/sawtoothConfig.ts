@@ -1,5 +1,5 @@
 import { darken, res } from "../map/colorUtils";
-import { MapConfig } from "../schema";
+import { MapConfig } from "./schema";
 import chroma from "chroma-js";
 const p = {
   orange: "#ed9228",

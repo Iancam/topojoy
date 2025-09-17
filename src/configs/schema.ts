@@ -50,6 +50,15 @@ const MountainConfigSchema = z.object({
   show: z.boolean(),
 });
 
+const LakeConfigSchema = z.object({
+  show: z.boolean(),
+  textColor: ColorSchema,
+  textSize: z.number().positive(),
+  lakeColor: ColorSchema,
+  keepList: z.array(z.string()),
+  drop: z.boolean(),
+});
+
 const BackgroundTextConfigSchema = z.object({
   font: z.string(),
   textSize: z.number().positive(),
@@ -67,6 +76,7 @@ export const MapConfigSchema = z.object({
   trail: TrailConfigSchema,
   mountain: MountainConfigSchema,
   river: RiverConfigSchema,
+  lake: LakeConfigSchema,
   backgroundText: BackgroundTextConfigSchema,
   colorPlan: z.array(
     z.object({

@@ -1,4 +1,4 @@
-import { MapConfig } from "../schema";
+import { MapConfig } from "./schema";
 
 import chroma from "chroma-js";
 const p = {

@@ -1,7 +1,7 @@
 import { darken, res } from "../map/colorUtils";
 import { weightedRandom } from "../libraries/utils";
 import chroma from "chroma-js";
-import { MapConfig } from "../schema";
+import { MapConfig } from "./schema";
 
 const p = {
   orange: "#ed9228",

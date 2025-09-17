@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import p5 from "p5";
-import { MapConfig } from "../schema";
+import { MapConfig } from "../configs/schema";
 import { Maximize2, Minimize2 } from "lucide-react";
 
 export const P5Canvas = ({
