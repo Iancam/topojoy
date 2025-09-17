@@ -6,11 +6,12 @@ import { sketchFactory } from "./map/sketch";
 import { formElements } from "./components/configFormData";
 
 // Import configs with correct paths
-import { SnowMesaConfig } from "./configs/snowMesaConfig.ts";
-import { EmeraldLakesConfig } from "./configs/emeraldLakesConfig.ts";
-import { LHKConfig } from "./configs/LHKConfig.ts";
-import { SawtoothConfig } from "./configs/sawtoothConfig.ts";
-import { MapConfig } from "./schema.ts";
+import { snowMesaConfig, emeraldLakesConfig } from "./configs/index.ts";
+// import { SnowMesaConfig } from "./configs/snowMesaConfig.ts";
+// import { EmeraldLakesConfig } from "./configs/emeraldLakesConfig.ts";
+// import { LHKConfig } from "./configs/LHKConfig.ts";
+// import { SawtoothConfig } from "./configs/sawtoothConfig.ts";
+import { MapConfig } from "./configs/schema.ts";
 import { ConfigForm } from "./components/configForm.tsx";
 import { P5Canvas } from "./components/p5Canvas.tsx";
 import {
@@ -27,10 +28,8 @@ interface Configs {
 }
 
 const configs: Configs = {
-  Original: SnowMesaConfig,
-  "Juniper Bark": EmeraldLakesConfig,
-  Mint: LHKConfig,
-  Sawtooth: SawtoothConfig,
+  Original: snowMesaConfig,
+  "Juniper Bark": emeraldLakesConfig,
 };
 
 export const App = () => {
@@ -95,7 +94,7 @@ export const App = () => {
       rivers: downstreamConfig.river.show,
       trails: downstreamConfig.trail.show,
       peaks: downstreamConfig.mountain.show,
-      lakes: downstreamConfig.lakes.show,
+      lakes: downstreamConfig.lake.show,
     }).then((geoJSON) => {
       const mountains = getMountainFeatures(bounds, geoJSON);
       const waterFeatures = getWaterFeatures(bounds, geoJSON);
@@ -180,6 +179,38 @@ export const App = () => {
     // p5Ref.current = myp5;
   };
 
+  // Trigger a PNG download from the latest rendered image
+  const saveImage = () => {
+    const container = p5Ref.current;
+    if (!container) return;
+
+    const download = () => {
+      const img = container.querySelector("img") as HTMLImageElement | null;
+      if (!img) return;
+      const a = document.createElement("a");
+      a.href = img.src;
+      a.download = `topojoy-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
+
+    // If an image is present, download immediately. Otherwise render then wait.
+    if (container.querySelector("img")) {
+      download();
+    } else {
+      const observer = new MutationObserver(() => {
+        const img = container.querySelector("img");
+        if (img) {
+          observer.disconnect();
+          download();
+        }
+      });
+      observer.observe(container, { childList: true });
+      renderSketch();
+    }
+  };
+
   const onFormChange = (key: string, value: any) => {
     // console.log(key, value);
     setForm({
@@ -255,9 +286,11 @@ export const App = () => {
             trails={trails}
             mountains={mountains}
             waterFeatures={waterFeatures}
+            lakes={lakes}
             onConfigChange={onConfigChange}
             onFormChange={onFormChange}
             renderSketch={renderSketch}
+            onSubmitSave={saveImage}
           />
         </div>
         {/* Main Content */}

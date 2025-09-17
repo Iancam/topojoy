@@ -16,7 +16,6 @@ import MultiSelect from "./ui/multiselect";
 import { FormElementType, formJourney, formElements } from "./configFormData";
 
 import { MultiStepForm } from "./multiStepForm";
-import { log } from "console";
 
 interface TooltipWrapperProps {
   children: React.ReactNode;
@@ -32,6 +31,7 @@ interface ConfigFormProps {
   onConfigChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onFormChange: (key: string, value: any) => void;
   renderSketch: () => p5;
+  onSubmitSave?: () => void;
 }
 
 const RenderFormElement = ({
@@ -40,6 +40,7 @@ const RenderFormElement = ({
   mountains,
   trails,
   waterFeatures,
+  lakes,
   props,
   id,
   elementType,
@@ -51,6 +52,7 @@ const RenderFormElement = ({
   mountains: any;
   trails: any;
   waterFeatures: any;
+  lakes: any;
   id: string;
   elementType: FormElementType;
   description: string;
@@ -76,6 +78,8 @@ const RenderFormElement = ({
       ? waterFeatures
       : id === "trail.keepList"
       ? trails
+      : id === "lake.keepList"
+      ? lakes
       : [];
 
   const cases: Record<FormElementType, React.ReactElement> = {
@@ -167,6 +171,7 @@ export const ConfigForm = ({
   onConfigChange,
   onFormChange,
   renderSketch,
+  onSubmitSave,
 }: ConfigFormProps) => {
   const steps = formJourney.map((step) => ({
     title: step.title,
@@ -212,8 +217,10 @@ export const ConfigForm = ({
       <MultiStepForm
         steps={steps}
         onSubmit={() => {
-          console.log("Form submitted");
+          onSubmitSave?.();
+          //put save image code here
         }}
+        submitLabel="Save Image"
         leftAction={
           <button
             id="render-sketch"
