@@ -70,7 +70,7 @@ export const sketchFactory = (
           rivers: config.river.show,
           trails: config.trail.show,
           peaks: config.mountain.show,
-          lakes: config.lakes.show,
+          lakes: config.lake.show,
         });
 
         const curvePixelCount =
@@ -154,7 +154,7 @@ export const sketchFactory = (
           namedLines(
             sketch,
             waterFeatures,
-            [],
+            config.river.keepList || [],
             "river",
             {
               ...config.river,
@@ -167,7 +167,7 @@ export const sketchFactory = (
           namedLines(
             sketch,
             trails,
-            [],
+            config.trail.keepList || [],
             "trail",
             {
               ...config.trail,
@@ -180,7 +180,7 @@ export const sketchFactory = (
           lakesLabels(
             sketch,
             lakes,
-            [],
+            config.lake.keepList || [],
             {
               font: courier,
               textSize: config.river.textSize * textSizeMultiplier,

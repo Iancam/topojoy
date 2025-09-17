@@ -89,7 +89,6 @@ const featuresToScreenCoords = (zoom, box) => (feature) => {
     coords = coordinates.map(processCoords);
   } else {
     coords = processCoords(coordinates);
-    console.log({ coordinates, coords });
   }
   return { ...properties, coords };
 };
