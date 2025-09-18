@@ -151,13 +151,31 @@ export class Store {
     // delete this.selectedtrailSegments[id];
   }
   addSelectedtrailSegmentId(id) {
-    this.selectedtrailSegmentIds.add(id);
+    this.selectedtrailSegmentIds.add(Number(id));
+    console.log(this.selectedtrailSegmentIds);
+    console.log(this.selectedtrailSegments);
+    console.log(this.getSelectedTrailSegments());
     // this.selectedtrailSegments[id] = this.bboxTrails[id];
   }
   getSelectedTrailSegments() {
     return Object.values(this.selectedtrailSegments).filter((f) =>
-      this.selectedtrailSegmentIds.has(f.id)
+      this.selectedtrailSegmentIds.has(Number(f.id))
     );
+  }
+
+  /**
+   * Clears all TopoJoy editor state related to bbox/trails selection.
+   * Does not touch external map layers/sources; the UI button will handle that.
+   */
+  clearTopojoy() {
+    this.interfaceState = interfaceStates.BBOX;
+    this.bbox = null;
+    this.bboxTrails = [];
+    this.selectedTrailIndices = new Set();
+    this.selectedTrails = {};
+    this.selectedVertices = {};
+    this.selectedtrailSegments = {};
+    this.selectedtrailSegmentIds = new Set();
   }
 }
 

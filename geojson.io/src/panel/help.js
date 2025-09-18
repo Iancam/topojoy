@@ -70,6 +70,8 @@ const selectSegmentsMD = `
 
 Select the segments you want to keep.
 
+go <button id="toTrailVertices" class="bg-indigo-500 hover:bg-indigo-700 text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">Back</button>
+
 When you're finished selecting, click <button id="toApp" class="bg-indigo-500 hover:bg-indigo-700 text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">Next</button>
 
 `;
@@ -91,8 +93,6 @@ function setTrailsLayerInteraction(map, interactive) {
 export default function (context) {
   const onToSelectTrailsVertices = () => {
     store.setInterfaceState(interfaceStates.VERTICES);
-    addVertexLayer(context.map, store);
-    setTrailsLayerInteraction(context.map, false);
   };
 
   const onToSelectSegments = () => {
@@ -103,7 +103,6 @@ export default function (context) {
   };
 
   const onToSelectTrails = () => {
-    console.log(context);
     store.setInterfaceState(interfaceStates.TRAILS);
     removeVertexLayer(context.map);
     setTrailsLayerInteraction(context.map, true);
@@ -166,6 +165,8 @@ export default function (context) {
     [interfaceStates.VERTICES]: [
       marked(editTrailVerticesMD),
       () => {
+        addVertexLayer(context.map, store);
+        setTrailsLayerInteraction(context.map, false);
         document
           .querySelector('#toSelectTrails')
           .addEventListener('click', onToSelectTrails);
@@ -174,6 +175,8 @@ export default function (context) {
           .addEventListener('click', onToSelectSegments);
       },
       () => {
+        removeVertexLayer(context.map);
+
         document
           .querySelector('#toSelectTrails')
           .removeEventListener('click', onToSelectTrails);
@@ -185,6 +188,9 @@ export default function (context) {
     [interfaceStates.TRAIL_SECTIONS]: [
       marked(selectSegmentsMD),
       () => {
+        document
+          .querySelector('#toTrailVertices')
+          .addEventListener('click', onToSelectTrailsVertices);
         document.querySelector('#toApp').addEventListener('click', onToApp);
       },
       () => {

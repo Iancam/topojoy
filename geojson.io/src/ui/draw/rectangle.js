@@ -1,5 +1,4 @@
-import { getGeoJSONFromOSM } from '../../../../src/map/trails.js';
-import { tilesForFeatures } from '../../../../src/map/processImage.js';
+import { addTrails } from './addTrails.js';
 import store, { interfaceStates } from '../../store.js';
 
 // from https://github.com/thegisdev/mapbox-gl-draw-rectangle-mode
@@ -127,27 +126,11 @@ const DrawRectangle = {
       // this.map.fire('draw.create', {
       //   features: [state.rectangle.toGeoJSON()]
       // });
-      store.setBBox(state.rectangle.toGeoJSON());
 
       this.deleteFeature([state.rectangle.id], { silent: true });
       this.changeMode('simple_select', {}, { silent: true });
 
-      showNoninteractiveBBox(this.map, state.rectangle.toGeoJSON());
-
-      // download all the trails within the bbox
-      const { bounds } = tilesForFeatures(state.rectangle.toGeoJSON(), 13);
-      // caches result, so we get all features to save another download
-      getGeoJSONFromOSM(bounds.latLngbox, {
-        streams: true,
-        rivers: true,
-        trails: true,
-        peaks: true,
-        lakes: true
-      }).then((geoJSON) => {
-        // load the trails into the map and the store
-
-        addTrails(geoJSON, this.map, store);
-      });
+      addTrails(state.rectangle.toGeoJSON(), this.map, store);
     } else {
       this.deleteFeature([state.rectangle.id], { silent: true });
       this.changeMode('simple_select', {}, { silent: true });
@@ -165,160 +148,6 @@ const DrawRectangle = {
   onTrash: function (state) {
     this.deleteFeature([state.rectangle.id], { silent: true });
     this.changeMode('simple_select');
-  }
-};
-
-const showNoninteractiveBBox = (map, bboxFeature) => {
-  const bboxSourceId = 'topojoy-bbox';
-  const bboxLayerId = 'topojoy-bbox-outline';
-
-  if (!map.getSource(bboxSourceId)) {
-    map.addSource(bboxSourceId, { type: 'geojson', data: bboxFeature });
-    map.addLayer({
-      id: bboxLayerId,
-      type: 'line',
-      source: bboxSourceId,
-      paint: {
-        'line-color': '#4b5563', // slate-600
-        'line-width': 2,
-        'line-dasharray': [2, 2]
-      },
-      layout: { 'line-cap': 'butt', 'line-join': 'miter' }
-    }); // optionally insert below the trails line layer
-  } else {
-    map.getSource(bboxSourceId).setData(bboxFeature);
-  }
-};
-
-// expects the selected trailsFC, not all of the bbox trails
-
-const addTrails = (geoJSON, map, store) => {
-  const sourceId = 'topojoy-trails';
-  const layerId = 'topojoy-trails-line';
-
-  // what to do when trails overlap?
-
-  // Filter to likely trails and ensure each feature has a stable id
-  const lineFeatures = (geoJSON.features || [])
-    .filter(
-      (f) =>
-        f.geometry?.type === 'LineString' &&
-        (f.properties?.highway === 'path' ||
-          f.properties?.highway === 'footway' ||
-          f.properties?.highway === 'track' ||
-          f.properties?.highway === 'trail' ||
-          f.properties?.route === 'hiking')
-    )
-    .map((f, i) => ({
-      ...f,
-      id: i
-    }));
-
-  // TODO: constrain trails so that they fit on the selected portion of the map
-  // (cut off coords outside of bbox area)
-
-  store.setBBoxTrails(lineFeatures);
-
-  // add the trails to the map
-  const trailsFC = {
-    type: 'FeatureCollection',
-    features: lineFeatures
-  };
-
-  if (map.getSource(sourceId)) {
-    map.getSource(sourceId).setData(trailsFC);
-  } else {
-    map.addSource(sourceId, {
-      type: 'geojson',
-      data: trailsFC
-    });
-
-    map.addLayer({
-      id: layerId,
-      type: 'line',
-      source: sourceId,
-      paint: {
-        // Highlight when selected or hovered using feature-state
-        'line-color': [
-          'case',
-          ['boolean', ['feature-state', 'selected'], false],
-          '#ffeb3b',
-          ['boolean', ['feature-state', 'hover'], false],
-          '#ffffff',
-          '#e91e63'
-        ],
-        'line-width': [
-          'case',
-          ['boolean', ['feature-state', 'selected'], false],
-          4,
-          ['boolean', ['feature-state', 'hover'], false],
-          3,
-          2
-        ],
-        'line-opacity': 0.95
-      },
-      layout: {
-        'line-join': 'round',
-        'line-cap': 'round'
-      }
-    });
-
-    // Attach hover + click handlers once per map instance
-    if (!map.__topojoyTrailsHandlersAttached) {
-      map.__topojoyTrailsHandlersAttached = true;
-      map.__topojoyTrailsInteractive = true;
-      let hoveredId = null;
-      map.on('mousemove', layerId, (e) => {
-        if (!map.__topojoyTrailsInteractive) return;
-        const f = e.features && e.features[0];
-        const newId = f?.id;
-        if (hoveredId !== null && hoveredId !== newId) {
-          map.setFeatureState(
-            { source: sourceId, id: hoveredId },
-            { hover: false }
-          );
-        }
-        if (newId !== undefined && newId !== null) {
-          map.setFeatureState({ source: sourceId, id: newId }, { hover: true });
-          hoveredId = newId;
-          map.getCanvas().style.cursor = 'pointer';
-        }
-      });
-
-      map.on('mouseleave', layerId, () => {
-        if (!map.__topojoyTrailsInteractive) return;
-        if (hoveredId !== null) {
-          map.setFeatureState(
-            { source: sourceId, id: hoveredId },
-            { hover: false }
-          );
-          hoveredId = null;
-        }
-        map.getCanvas().style.cursor = '';
-      });
-
-      map.on('click', layerId, (e) => {
-        if (!map.__topojoyTrailsInteractive) return;
-        const f = e.features && e.features[0];
-        const fIndex = f?.id;
-        if (fIndex === undefined || fIndex === null) return;
-        if (store.selectedTrailIndices.has(fIndex)) {
-          store.deleteSelectedTrailIndex(fIndex);
-          map.setFeatureState(
-            { source: sourceId, id: fIndex },
-            { selected: false }
-          );
-        } else {
-          store.addSelectedTrailIndex(fIndex);
-          map.setFeatureState(
-            { source: sourceId, id: fIndex },
-            { selected: true }
-          );
-        }
-        // Optional: persist selection
-        // localStorage.setItem('topojoy:selectedTrails', JSON.stringify([...selectedIds]));
-      });
-    }
   }
 };
 
