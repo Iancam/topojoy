@@ -48,6 +48,7 @@
     "lodash": "^4.17.21",
     "lodash-es": "^4.17.21",
     "lucide-react": "^0.479.0",
+    "mobx-shallow-undo": "^1.1.0",
     "osmtogeojson": "^3.0.0-beta.5",
     "p5": "^1.11.3",
     "react": "^19.0.0",
