@@ -1,6 +1,17 @@
 import { Component } from "react";
 import { ColorPlan } from "./ColorPlan";
 import { ConfigSelect } from "./ConfigSelect";
+import type { MapConfig } from "@/configs/schema";
+
+// Props passed to advanced form components (e.g., ColorPlan)
+export interface AdvancedFormElementProps {
+  config: string;
+  configs: { [key: string]: MapConfig };
+  renderFormElement: (props: any) => React.ReactNode;
+  onConfigChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  onFormChange: (key: string, value: any) => void;
+  form: any;
+}
 
 export interface FormElements {
   [key: string]:
@@ -11,8 +22,8 @@ export interface FormElements {
 export const formJourney: {
   title: string;
   description: string;
-  formElements: (string | Function)[];
-  advanced?: (string | Function)[];
+  formElements: (string | React.ComponentType<any>)[];
+  advanced?: (string | React.ComponentType<any>)[];
 }[] = [
   {
     title: "Basics",
@@ -85,28 +96,28 @@ export const basicFormElements: FormElements = {
   "river.show": ["boolean", "show/hide rivers", true, "Show Rivers"],
   "mountain.show": ["boolean", "show/hide mountains", true, "Show Mountains"],
   "trail.show": ["boolean", "show/hide trails", true, "Show Trails"],
-  "mountain.keepList": ["list", "mountains to show", [], "MountainKeep List"],
+  "mountain.keepList": ["list", "mountains to show", [], "Mountain Keep List"],
   "mountain.drop": [
     "boolean",
     "if checked, mountains not in the keepList will be dropped",
     false,
     "Remove Mountains Not in Keep List",
   ],
-  "lake.keepList": ["list", "lakes to show", [], "LakeKeep List"],
+  "lake.keepList": ["list", "lakes to show", [], "Lake Keep List"],
   "lake.drop": [
     "boolean",
     "if checked, lakes not in the keepList will be dropped",
     false,
     "Remove Lakes Not in Keep List",
   ],
-  "trail.keepList": ["list", "trails to show", [], "TrailKeep List"],
+  "trail.keepList": ["list", "trails to show", [], "Trail Keep List"],
   "trail.drop": [
     "boolean",
     "if checked, trails not in the keepList will be dropped",
     false,
     "Remove Trails Not in Keep List",
   ],
-  "river.keepList": ["list", "rivers to show", [], "RiverKeep List"],
+  "river.keepList": ["list", "rivers to show", [], "River Keep List"],
   "river.drop": [
     "boolean",
     "if checked, rivers not in the keepList will be dropped",

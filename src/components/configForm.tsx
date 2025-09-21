@@ -12,7 +12,7 @@ import {
 import { Config } from "../types";
 import { Slider } from "./ui/slider";
 import p5 from "p5";
-import MultiSelect from "./ui/multiselect";
+import { MultiSelect } from "./multi-select";
 import { FormElementType, formJourney, formElements } from "./configFormData";
 
 import { MultiStepForm } from "./multiStepForm";
@@ -27,6 +27,7 @@ interface ConfigFormProps {
   form: any;
   trails: any;
   mountains: any;
+  lakes: any;
   waterFeatures: any;
   onConfigChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onFormChange: (key: string, value: any) => void;
@@ -49,10 +50,10 @@ const RenderFormElement = ({
 }: {
   form: any;
   onFormChange: (key: string, value: any) => void;
-  mountains: any;
-  trails: any;
-  waterFeatures: any;
-  lakes: any;
+  mountains?: any;
+  trails?: any;
+  waterFeatures?: any;
+  lakes?: any;
   id: string;
   elementType: FormElementType;
   description: string;
@@ -71,17 +72,18 @@ const RenderFormElement = ({
   );
 
   const value = form[id];
-  const options =
-    id === "mountain.keepList"
-      ? mountains
-      : id === "river.keepList"
-      ? waterFeatures
-      : id === "trail.keepList"
-      ? trails
-      : id === "lake.keepList"
-      ? lakes
-      : [];
-
+  const options = (
+    {
+      mountain: mountains,
+      river: waterFeatures,
+      trail: trails,
+      lake: lakes,
+    }[id.split(".")[0]] || []
+  ).map((feature: string) => ({
+    value: feature,
+    label: feature,
+  }));
+  console.log(options);
   const cases: Record<FormElementType, React.ReactElement> = {
     text: (
       <Input
@@ -117,7 +119,7 @@ const RenderFormElement = ({
       <MultiSelect
         options={options}
         value={value}
-        onChange={(v) => onFormChange(id, v)}
+        onValueChange={(v) => onFormChange(id, v)}
       />
     ),
     range: (
@@ -167,49 +169,76 @@ export const ConfigForm = ({
   form,
   trails,
   mountains,
+  lakes,
   waterFeatures,
   onConfigChange,
   onFormChange,
   renderSketch,
   onSubmitSave,
 }: ConfigFormProps) => {
+  const toFormElement = (
+    FormElement: string | React.ComponentType<any>,
+    i: number
+  ) => {
+    const [elementType, description, defaultValue, label, props] =
+      typeof FormElement === "string"
+        ? formElements[FormElement]
+        : ["", "", "", "", {}];
+    return (
+      <div
+        key={typeof FormElement === "string" ? FormElement : i}
+        className="flex flex-col gap-2 mt-4"
+      >
+        {typeof FormElement === "string" ? (
+          <RenderFormElement
+            form={form}
+            onFormChange={onFormChange}
+            mountains={mountains}
+            trails={trails}
+            waterFeatures={waterFeatures}
+            lakes={lakes}
+            id={FormElement}
+            elementType={elementType}
+            description={description}
+            label={label}
+            props={props}
+          />
+        ) : (
+          <FormElement
+            config={config}
+            configs={configs}
+            renderFormElement={RenderFormElement}
+            onConfigChange={onConfigChange}
+            onFormChange={onFormChange}
+            form={form}
+          />
+        )}
+      </div>
+    );
+  };
+
   const steps = formJourney.map((step) => ({
     title: step.title,
-    content: step.formElements.map((FormElement, i) => {
-      const [elementType, description, defaultValue, label, props] =
-        typeof FormElement === "string"
-          ? formElements[FormElement]
-          : ["", "", "", "", {}];
-      return (
-        <div
-          key={typeof FormElement === "string" ? FormElement : i}
-          className="flex flex-col gap-2 mt-4"
-        >
-          {typeof FormElement === "string" ? (
-            <RenderFormElement
-              form={form}
-              onFormChange={onFormChange}
-              mountains={mountains}
-              trails={trails}
-              waterFeatures={waterFeatures}
-              id={FormElement}
-              elementType={elementType}
-              description={description}
-              label={label}
-              props={props}
-            />
-          ) : (
-            <FormElement
-              config={config}
-              configs={configs}
-              renderFormElement={RenderFormElement}
-              onConfigChange={onConfigChange}
-              onFormChange={onFormChange}
-            />
-          )}
+    content: (
+      <>
+        <div className="flex flex-col gap-2 mt-4">
+          {step.formElements.map(toFormElement)}
         </div>
-      );
-    }),
+        {step.advanced && step.advanced.length > 0 && (
+          <details className="mt-4 group">
+            <summary className="cursor-pointer select-none text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center">
+              Advanced
+              <span className="ml-2 transition-transform group-open:rotate-90">
+                ›
+              </span>
+            </summary>
+            <div className="pl-4 mt-2 flex flex-col gap-2">
+              {step.advanced.map(toFormElement)}
+            </div>
+          </details>
+        )}
+      </>
+    ),
   }));
 
   return (

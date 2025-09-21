@@ -187,9 +187,12 @@ export const App = () => {
     const download = () => {
       const img = container.querySelector("img") as HTMLImageElement | null;
       if (!img) return;
+      // console.log(form);
+      //human readable date
+      const date = new Date().toISOString();
       const a = document.createElement("a");
       a.href = img.src;
-      a.download = `topojoy-${Date.now()}.png`;
+      a.download = `topojoy-${form["title.text"]}-${date}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -199,15 +202,15 @@ export const App = () => {
     if (container.querySelector("img")) {
       download();
     } else {
-      const observer = new MutationObserver(() => {
-        const img = container.querySelector("img");
-        if (img) {
-          observer.disconnect();
-          download();
-        }
-      });
-      observer.observe(container, { childList: true });
-      renderSketch();
+      // const observer = new MutationObserver(() => {
+      //   const img = container.querySelector("img");
+      //   if (img) {
+      //     observer.disconnect();
+      //     download();
+      //   }
+      // });
+      // observer.observe(container, { childList: true });
+      // renderSketch();
     }
   };
 

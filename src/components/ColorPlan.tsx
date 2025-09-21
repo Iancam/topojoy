@@ -1,9 +1,22 @@
+import { MapConfig } from "@/configs/schema";
 import React from "react";
 interface ColorPlan {
   height: number;
   colors: string | string[] | ((params: any) => string);
 }
-export const ColorPlan = ({ config, configs, renderFormElement }: any) => (
+export const ColorPlan = ({
+  config,
+  configs,
+  renderFormElement,
+  form,
+  onFormChange,
+}: {
+  config: string;
+  configs: { [key: string]: MapConfig };
+  renderFormElement: (props: any) => React.ReactNode;
+  form: any;
+  onFormChange: (key: string, value: any) => void;
+}) => (
   <>
     <h2 className="text-lg font-semibold color-height">Color Plans</h2>
     {configs[config].colorPlan.map((colorPlan: ColorPlan, index: number) => (
@@ -15,6 +28,8 @@ export const ColorPlan = ({ config, configs, renderFormElement }: any) => (
           </span>
         </div>
         {renderFormElement({
+          form,
+          onFormChange,
           id: `colorPlan.${index}.height`,
           elementType: "slider",
           description: `Set the height value for color plan ${index + 1}`,

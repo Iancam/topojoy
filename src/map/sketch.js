@@ -95,6 +95,19 @@ export const sketchFactory = (
         const lakes = getLakes(bounds, geoJSON);
         const userSelectedTrails = getUserSelectedTrails(bounds);
 
+        // creat a histogram of slopes in topo.pixels
+        // const slopeHistogram = topo.pixels.reduce((acc, row) => {
+        //   row.forEach((pixel) => {
+        //     const slope = Math.round(pixel[1]);
+        //     if (acc[slope]) {
+        //       acc[slope]++;
+        //     } else {
+        //       acc[slope] = 1;
+        //     }
+        //   });
+        //   return acc;
+        // }, {});
+
         const genCurve = (topo) => () => {
           const angleTransforms = [
             (aspect) => aspect + 180,
@@ -102,10 +115,16 @@ export const sketchFactory = (
             (aspect) => aspect + 90,
             (aspect) => aspect - 90,
           ];
-
+          const x = Math.floor(sketch.random(0, topo.width - 1));
+          const y = Math.floor(sketch.random(0, topo.height - 1));
+          const [elevation, slope, aspect, cosIncidence] = topo.pixels[y][x];
+          const random = sketch.random();
+          if (slope / 70 < random) {
+            return null;
+          }
           return makeCurve(
-            Math.floor(sketch.random(0, topo.width - 1)),
-            Math.floor(sketch.random(0, topo.height - 1)),
+            x,
+            y,
             config.curve.stepCount,
             config.curve.stepLength,
             topo,
@@ -119,6 +138,7 @@ export const sketchFactory = (
           );
         };
         const colorAndDrawCurve = (colorAt) => (c) => {
+          if (!c) return;
           const col1 = colorAt(c[0]);
           const col = sketch.color(col1);
           col.setAlpha(128);
