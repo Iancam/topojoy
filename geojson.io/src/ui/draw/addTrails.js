@@ -49,8 +49,41 @@ const showNoninteractiveBBox = (map, bboxFeature) => {
 const _addTrails = (geoJSON, map, store) => {
   const sourceId = 'topojoy-trails';
   const layerId = 'topojoy-trails-line';
-
-  // what to do when trails overlap?
+  const ensureLabelLayer = () => {
+    const labelLayerId = 'topojoy-trails-label';
+    // if (!map.getLayer(labelLayerId)) {
+    map.addLayer({
+      id: labelLayerId,
+      type: 'symbol',
+      source: sourceId,
+      minzoom: 9,
+      layout: {
+        'symbol-placement': 'line',
+        'symbol-spacing': 250,
+        // 'text-field': '{name}',
+        'text-field': ['coalesce', ['get', 'name'], ['get', 'ref']],
+        'text-size': 12,
+        'text-font': ['DIN Pro Regular', 'Arial Unicode MS Regular'],
+        'text-allow-overlap': false,
+        'text-pitch-alignment': 'map'
+      },
+      paint: {
+        'text-color': [
+          'case',
+          ['boolean', ['feature-state', 'selected'], false],
+          '#ffeb3b',
+          ['boolean', ['feature-state', 'hover'], false],
+          '#ffffff',
+          '#111827'
+        ]
+        // 'text-halo-color': '#000000',
+        // 'text-halo-width': 1,
+        // 'text-halo-blur': 0.25,
+        // 'text-opacity': 0.95
+      }
+    });
+    // }
+  };
 
   // Filter to likely trails and ensure each feature has a stable id
   const lineFeatures = (geoJSON.features || [])
@@ -76,8 +109,11 @@ const _addTrails = (geoJSON, map, store) => {
     features: lineFeatures
   };
 
+  console.log(trailsFC.features.filter((f) => f.properties?.name));
+
   if (map.getSource(sourceId)) {
     map.getSource(sourceId).setData(trailsFC);
+    ensureLabelLayer();
   } else {
     map.addSource(sourceId, {
       type: 'geojson',
@@ -113,6 +149,7 @@ const _addTrails = (geoJSON, map, store) => {
         'line-cap': 'round'
       }
     });
+    ensureLabelLayer();
 
     // Attach hover + click handlers once per map instance
     if (!map.__topojoyTrailsHandlersAttached) {

@@ -4,7 +4,7 @@ import 'qs-hash';
 import geojsonRewind from '@mapbox/geojson-rewind';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
-
+import { NominatimSearchControl } from './controls';
 import DrawLineString from '../draw/linestring';
 import DrawRectangle from '../draw/rectangle';
 import DrawCircle from '../draw/circle';
@@ -116,11 +116,21 @@ export default function (context, readonly) {
     });
 
     if (writable) {
+      // context.map.addControl(
+      //   new MapboxGeocoder({
+      //     accessToken: mapboxgl.accessToken,
+      //     mapboxgl,
+      //     marker: true
+      //   })
+      // );
+
       context.map.addControl(
-        new MapboxGeocoder({
-          accessToken: mapboxgl.accessToken,
-          mapboxgl,
-          marker: true
+        new NominatimSearchControl({
+          limit: 10,
+          placeholder: 'Search places…',
+          endpoint: 'https://nominatim.openstreetmap.org/search',
+          format: 'geojson',
+          debounceMs: 500
         })
       );
 

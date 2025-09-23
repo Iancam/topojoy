@@ -5,12 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="/src/index.css" rel="stylesheet" />
     <title>TopoJoy</title>
-    <script type="module" src="src/index.tsx"></script>
+    <!-- <script type="module" src="src/index.tsx"></script> -->
     <link rel="stylesheet" href="src/front-page.css" />
-    <script type="module">
-      import { html } from "./src/content/about.md";
-      document.getElementById("about").innerHTML = html;
-    </script>
   </head>
   <body>
     <nav>
@@ -27,7 +23,21 @@
       </p>
       <a href="geojson.io/index.html" class="main-action">Open Map Editor</a>
       <a href="app.html" class="secondary-action">View App</a>
+      <button id="myButton" class="secondary-action">Test Function</button>
     </div>
     <section id="about"></section>
   </body>
+  <script type="module">
+    import { html } from "./src/content/about.md";
+    document.getElementById("about").innerHTML = html;
+    document.getElementById("myButton").addEventListener("click", testFunction);
+    function testFunction() {
+      fetch("/.netlify/functions/hello_world")
+        .then((response) => {
+          console.log(response);
+          return response.json();
+        })
+        .then((data) => console.log(data));
+    }
+  </script>
 </html>

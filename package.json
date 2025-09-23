@@ -31,6 +31,8 @@
   "dependencies": {
     "@iancam/tile-cover": "^3.0.2",
     "@mapbox/tilebelt": "^2.0.2",
+    "@prisma/client": "^6.16.2",
+    "@prisma/extension-accelerate": "^2.0.2",
     "@radix-ui/react-checkbox": "^1.1.4",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-popover": "^1.1.15",
@@ -51,6 +53,8 @@
     "mobx-shallow-undo": "^1.1.0",
     "osmtogeojson": "^3.0.0-beta.5",
     "p5": "^1.11.3",
+    "pg": "^8.16.3",
+    "prisma": "^6.16.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "rollup-plugin-copy": "^3.5.0",

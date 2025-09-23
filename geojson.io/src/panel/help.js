@@ -49,6 +49,9 @@ const selectTrailsMD = `
 Select the trails you want to highlight in the map. If you want to
 select only part of a trail, you can make edits in the next step.
 
+To see the name of a trail, zoom in close. If the trail has a name, it will
+appear as a label.
+
 When you're finished selecting, click <button id="toTrailVertices" class="bg-indigo-500 hover:bg-indigo-700 text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">Next</button>
 `;
 

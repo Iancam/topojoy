@@ -45,6 +45,7 @@ export class Store {
   }
   setBBox(bbox) {
     this.bbox = bbox;
+    localStorage.setItem('topojoy:geojson.bbox', JSON.stringify(bbox));
   }
   // changes selected trails from an object indexed on indices
   // from the bboxTrails
