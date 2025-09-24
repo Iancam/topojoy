@@ -35,9 +35,6 @@ corner, below 10km. Any larger and your map will be huge.
 Select the rectangle tool to the right of the map. Click and
 release to place the first point, then click again to place 
 the second point. **Don't click and drag. This moves the map.**
-
-When you're finished selecting, click <button id="toSelectTrails" class="bg-indigo-500 hover:bg-indigo-700 text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">Next</button>
-
 `;
 
 const selectTrailsMD = `
@@ -51,32 +48,27 @@ select only part of a trail, you can make edits in the next step.
 
 To see the name of a trail, zoom in close. If the trail has a name, it will
 appear as a label.
-
-When you're finished selecting, click <button id="toTrailVertices" class="bg-indigo-500 hover:bg-indigo-700 text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">Next</button>
 `;
 
 const editTrailVerticesMD = `
-## 4. Edit your selected trails
+## 4. Select where to split trails
 
-Click on the trail where you'd like to split.
+Click on the trails where you'd like to split.
 
-You can click multiple times.
+You can select multiple vertices.
 
-You can also go back to the previous step by clicking <button id="toSelectTrails" class="bg-indigo-500 hover:bg-indigo-700 text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">Back</button>
-
-When you're done, click <button id="toSelectSegments" class="bg-indigo-500 hover:bg-indigo-700 text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">Next</button>
-
+We'll select the segments you want to keep in the next step.
 `;
 
 const selectSegmentsMD = `
 ## 5. Select segments
 
-Select the segments you want to keep.
+All the segments are selected. Click unwanted segments
+to deselect them.
 
-go <button id="toTrailVertices" class="bg-indigo-500 hover:bg-indigo-700 text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">Back</button>
+Leave the segments you want to keep selected.
 
-When you're finished selecting, click <button id="toApp" class="bg-indigo-500 hover:bg-indigo-700 text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">Next</button>
-
+When you're finished selecting, go to the app.
 `;
 
 function setTrailsLayerInteraction(map, interactive) {
@@ -85,9 +77,7 @@ function setTrailsLayerInteraction(map, interactive) {
     const sourceId = 'topojoy-trails';
     map.__topojoyTrailsInteractive = interactive;
     map.getCanvas().style.cursor = '';
-    try {
-      map.removeFeatureState({ source: sourceId, layer: layerId });
-    } catch (e) {}
+    map.removeFeatureState({ source: sourceId, layer: layerId });
   } catch (e) {
     console.error(e);
   }
@@ -138,67 +128,28 @@ export default function (context) {
   };
 
   const StateToHtml = {
-    [interfaceStates.BBOX]: [
-      marked(selectRectMD),
-      () => {
-        document
-          .querySelector('#toSelectTrails')
-          .addEventListener('click', onToSelectTrails);
-      },
-      () => {
-        document
-          .querySelector('#toSelectTrails')
-          .removeEventListener('click', onToSelectTrails);
-      }
-    ],
+    [interfaceStates.BBOX]: [marked(selectRectMD), () => {}, () => {}],
     [interfaceStates.TRAILS]: [
       marked(selectTrailsMD),
       () => {
-        // select button where Id is toTrailVertices
-        document
-          .querySelector('#toTrailVertices')
-          .addEventListener('click', onToSelectTrailsVertices);
+        setTrailsLayerInteraction(context.map, true);
       },
-      () => {
-        document
-          .querySelector('#toTrailVertices')
-          .removeEventListener('click', onToSelectTrailsVertices);
-      }
+      () => {}
     ],
     [interfaceStates.VERTICES]: [
       marked(editTrailVerticesMD),
       () => {
         addVertexLayer(context.map, store);
         setTrailsLayerInteraction(context.map, false);
-        document
-          .querySelector('#toSelectTrails')
-          .addEventListener('click', onToSelectTrails);
-        document
-          .querySelector('#toSelectSegments')
-          .addEventListener('click', onToSelectSegments);
       },
       () => {
         removeVertexLayer(context.map);
-
-        document
-          .querySelector('#toSelectTrails')
-          .removeEventListener('click', onToSelectTrails);
-        document
-          .querySelector('#toSelectSegments')
-          .removeEventListener('click', onToSelectSegments);
       }
     ],
     [interfaceStates.TRAIL_SECTIONS]: [
       marked(selectSegmentsMD),
-      () => {
-        document
-          .querySelector('#toTrailVertices')
-          .addEventListener('click', onToSelectTrailsVertices);
-        document.querySelector('#toApp').addEventListener('click', onToApp);
-      },
-      () => {
-        document.querySelector('#toApp').removeEventListener('click', onToApp);
-      }
+      () => {},
+      () => {}
     ]
   };
 
@@ -208,7 +159,10 @@ export default function (context) {
     const container = selection
       .html('')
       .append('div')
-      .attr('class', 'pad2 prose');
+      // Make the help panel a flex column so sticky footer behaves well
+      .attr('class', 'pad2 prose flex flex-col')
+      // Ensure the container forms the scroll context for sticky
+      .style('min-height', '100%');
     let onExit = null;
     const update = () => {
       if (onExit) {
@@ -220,6 +174,59 @@ export default function (context) {
       container.html(html);
       onEnter && onEnter();
       onExit = onExitFn;
+
+      // footer navigation (Back / Next)
+      const footer = container
+        .append('div')
+        .attr(
+          'class',
+          'mt-4 pt-3 border-t border-gray-200 flex justify-between fixed bottom-0 bg-white'
+        );
+      // Redundant inline styles to guarantee sticky in case utility classes are unavailable
+      // .style('position', 'fixed')
+      // .style('bottom', '0')
+      // .style('background', 'white');
+
+      const backBtn = footer
+        .append('button')
+        .attr('id', 'help-back')
+        .attr(
+          'class',
+          'bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold py-1 px-4 rounded disabled:opacity-50'
+        )
+        .text('Back');
+
+      const nextBtn = footer
+        .append('button')
+        .attr('id', 'help-next')
+        .attr(
+          'class',
+          'bg-indigo-500 hover:bg-indigo-700 text-white text-xs font-bold py-1 px-4 rounded'
+        )
+        .text('Next');
+
+      const state = store.interfaceState;
+
+      // configure buttons per state
+      if (state === interfaceStates.BBOX) {
+        backBtn.attr('disabled', true);
+        nextBtn.on('click', onToSelectTrails);
+      } else if (state === interfaceStates.TRAILS) {
+        backBtn.on('click', () =>
+          store.setInterfaceState(interfaceStates.BBOX)
+        );
+        nextBtn.on('click', () =>
+          store.setInterfaceState(interfaceStates.VERTICES)
+        );
+      } else if (state === interfaceStates.VERTICES) {
+        backBtn.on('click', onToSelectTrails);
+        nextBtn.on('click', onToSelectSegments);
+      } else if (state === interfaceStates.TRAIL_SECTIONS) {
+        backBtn.on('click', () =>
+          store.setInterfaceState(interfaceStates.VERTICES)
+        );
+        nextBtn.text('Open App').on('click', onToApp);
+      }
     };
     update();
     if (!renderHasBeenCalled) {

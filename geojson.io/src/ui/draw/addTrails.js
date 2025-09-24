@@ -154,7 +154,7 @@ const _addTrails = (geoJSON, map, store) => {
     // Attach hover + click handlers once per map instance
     if (!map.__topojoyTrailsHandlersAttached) {
       map.__topojoyTrailsHandlersAttached = true;
-      map.__topojoyTrailsInteractive = true;
+      map.__topojoyTrailsInteractive = false;
       let hoveredId = null;
       map.on('mousemove', layerId, (e) => {
         if (!map.__topojoyTrailsInteractive) return;

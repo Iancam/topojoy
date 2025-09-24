@@ -151,10 +151,10 @@ export const addSegmentLayer = (map, store) => {
         // Highlight when selected or hovered using feature-state
         'line-color': [
           'case',
-          ['boolean', ['feature-state', 'selected'], false],
-          '#ffeb3b',
           ['boolean', ['feature-state', 'hover'], false],
           '#ffffff',
+          ['boolean', ['feature-state', 'selected'], false],
+          '#ffeb3b',
           '#e91e63'
         ],
         'line-width': [
@@ -171,6 +171,13 @@ export const addSegmentLayer = (map, store) => {
   } else {
     map.getSource(segmentSourceId).setData(segments);
   }
+
+  // select all segments by default
+  for (const { id } of segments.features) {
+    store.addSelectedtrailSegmentId(id);
+    map.setFeatureState({ source: segmentSourceId, id }, { selected: true });
+  }
+
   if (!map.__topojoySegmentsHandlersAttached) {
     map.__topojoySegmentsHandlersAttached = true;
     let hoveredId = null;
