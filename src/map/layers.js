@@ -72,6 +72,89 @@ export function drawCurve(sketch, curve, weight) {
   sketch.endShape();
 }
 
+// Draws a text string along a polyline by placing each character at
+// a path position and rotating to the local tangent.
+function drawTextAlongLine(sketch, text, coords, { font, textSize, color }) {
+  if (!coords || coords.length < 2 || !text) return;
+
+  // Ensure rendering context
+  sketch.push();
+  if (font) sketch.textFont(font);
+  if (textSize) sketch.textSize(textSize);
+  if (color) sketch.fill(color);
+  sketch.noStroke();
+  sketch.textAlign(sketch.CENTER, sketch.CENTER);
+
+  // Precompute segment lengths and cumulative lengths
+  const segs = [];
+  let totalLen = 0;
+  for (let i = 0; i < coords.length - 1; i++) {
+    const [x1, y1] = coords[i];
+    const [x2, y2] = coords[i + 1];
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.hypot(dx, dy);
+    if (len > 0.0001) {
+      segs.push({ x1, y1, x2, y2, len });
+      totalLen += len;
+    }
+  }
+  if (!segs.length) {
+    sketch.pop();
+    return;
+  }
+
+  // Measure entire string width
+  const charWidths = [];
+  let textWidth = 0;
+  for (const ch of text) {
+    const w = sketch.textWidth(ch);
+    charWidths.push(w);
+    textWidth += w;
+  }
+
+  // Center the text along the path
+  let offset = Math.max(0, (totalLen - textWidth) / 2);
+
+  // Helper: get point and angle at distance d along the polyline
+  function pointAtDistance(d) {
+    let acc = 0;
+    for (const s of segs) {
+      if (acc + s.len >= d) {
+        const t = (d - acc) / s.len;
+        const x = s.x1 + t * (s.x2 - s.x1);
+        const y = s.y1 + t * (s.y2 - s.y1);
+        const angle = Math.atan2(s.y2 - s.y1, s.x2 - s.x1);
+        return { x, y, angle };
+      }
+      acc += s.len;
+    }
+    const last = segs[segs.length - 1];
+    return {
+      x: last.x2,
+      y: last.y2,
+      angle: Math.atan2(last.y2 - last.y1, last.x2 - last.x1),
+    };
+  }
+
+  // Place characters along the path
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const w = charWidths[i];
+    const mid = offset + w / 2;
+    const { x, y, angle } = pointAtDistance(mid);
+    sketch.push();
+    sketch.translate(x, y);
+    sketch.rotate(angle);
+    sketch.text(ch, 0, 0);
+    sketch.pop();
+    offset += w;
+    if (offset > totalLen) break;
+  }
+
+  sketch.pop();
+}
+
 export function textsLayer(
   sketch,
   topo,
