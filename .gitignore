@@ -35,3 +35,6 @@ dist
 .netlify
 
 /generated/prisma
+
+/.react-router/
+/build/

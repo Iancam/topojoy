@@ -6,7 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
+  // output   = "../generated/prisma"
 }
 
 datasource db {
@@ -16,12 +16,56 @@ datasource db {
 
 model User {
   id    String @id @default(cuid())
-  email String @unique
-  name  String
+  clerkId String @unique @db.VarChar(255)
+  email String @unique @db.VarChar(255)
+  name  String @db.VarChar(255)
+  mapConfigs MapConfig[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-model Map {
+enum featureType {
+  mountain
+  river
+  trail
+  lake
+}
+
+model Feature {
   id    String @id @default(cuid())
-  title String
+  name  String @db.VarChar(255)
+  mapConfigId String
+  selected Boolean @default(false)
+  type featureType @default(mountain)
+  mapConfig MapConfig @relation(fields: [mapConfigId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MapConfig {
+  id    String @id @default(cuid())
+  user  User @relation(fields: [userId], references: [id])
+  userId String
   
+  title String @db.VarChar(128)
+  config String @db.VarChar(64)
+  zoomLevel Int
+  curveDensity Int
+
+  features Feature[]
+  bbox Json 
+  selectedTrails Json? 
+  
+
+
+  backgroundText String?
+  backgroundTextElevationRange0 Float
+  backgroundTextElevationRange1 Float
+  backgroundTextHighContrast Boolean
+
+  crossHatch Boolean
+  colorPlan String @db.VarChar(255)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

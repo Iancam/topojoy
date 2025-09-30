@@ -27,28 +27,17 @@ export const formJourney: {
 }[] = [
   {
     title: "Basics",
-    description: `Add a title to the map, and choose a color scheme.`,
-    formElements: ["title.text", ConfigSelect],
+    description: `Add a title, choose a color scheme, set the curve density, and adjust the zoom level.`,
+    formElements: [ConfigSelect, "title.text", "curve.density", "zoomLevel"],
   },
   {
     title: "features",
     description: `Choose which features to show on the map.`,
     formElements: [
-      "mountain.show",
-      "river.show",
-      "river.streams",
-      "trail.show",
-      "lake.show",
-    ],
-    advanced: [
       "mountain.keepList",
-      "mountain.drop",
       "trail.keepList",
-      "trail.drop",
       "river.keepList",
-      "river.drop",
       "lake.keepList",
-      "lake.drop",
     ],
   },
   {
@@ -63,14 +52,9 @@ export const formJourney: {
     ],
   },
   {
-    title: "zoomLevel",
-    description: `Choose the zoom level of the map. Probably best to choose from 13, 14, and 15.`,
-    formElements: ["zoomLevel"],
-  },
-  {
     title: "Misc.",
     description: `Choose other options for the map.`,
-    formElements: ["curve.density", "crossHatch"],
+    formElements: ["crossHatch"],
     advanced: [ColorPlan],
   },
 ];

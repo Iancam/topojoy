@@ -4,9 +4,19 @@ import copy from "rollup-plugin-copy";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { plugin as md } from "vite-plugin-markdown";
+import { reactRouter } from "@react-router/dev/vite";
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    allowedHosts: [
+      "localhost",
+      "127.0.0.1",
+      "::1",
+      "3ca39b6aa3f8.ngrok-free.app",
+      "overintense-semicapitalistically-roberta.ngrok-free.dev",
+    ],
+  },
   build: {
     rollupOptions: {
       input: {
