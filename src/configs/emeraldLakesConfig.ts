@@ -1,5 +1,5 @@
 import { darken, res } from "../map/colorUtils";
-import { weightedRandom } from "../libraries/utils";
+import { weightedRandom } from "../lib/map/utils";
 import chroma from "chroma-js";
 import { MapConfig } from "./schema";
 

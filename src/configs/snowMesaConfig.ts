@@ -274,15 +274,16 @@ export const SnowMesaConfig: MapConfig = {
     textSize: 2.5 * 8.001,
     bbox: [0, 0, 0, 0],
     alpha: 200,
+    highContrast: false,
     text: [texts.HalfMountain, texts.netherlands].join("\n"),
     elevationRange: [0.7, 1],
   },
   colorPlan: [
     { height: 1 - 1.1, colors: [p.orange, p.aquamarine] },
-    { height: 1 - 0.9, colors: p.sienna },
-    { height: 1 - 0.8, colors: [p.orange, p.siennaBright, p.sienna] },
+    { height: 1 - 0.98, colors: p.sienna },
+    { height: 1 - 0.75, colors: [p.orange, p.siennaBright, p.sienna] },
 
-    { height: 1 - 0.65, colors: ["#53C1EB", p.fgBlue, p.darkness] },
+    { height: 1 - 0.5, colors: ["#53C1EB", p.fgBlue, p.darkness] },
     { height: 1 - 0.3, colors: chroma(p.fgBlue).darken(1).hex() },
     { height: 1 - 0.3, colors: p.white },
 

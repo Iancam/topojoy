@@ -65,6 +65,7 @@ const BackgroundTextConfigSchema = z.object({
   bbox: z.array(z.number().positive()).min(4).max(4),
   alpha: z.number().positive(),
   text: z.string(),
+  highContrast: z.boolean(),
   elevationRange: z.array(z.number().min(0).max(1)).min(2).max(2),
 });
 
@@ -72,6 +73,9 @@ const BackgroundTextConfigSchema = z.object({
 export const MapConfigSchema = z.object({
   name: z.string(),
   zoomLevel: z.number().positive(),
+  title: z.object({
+    text: z.string(),
+  }),
   curve: CurveConfigSchema,
   trail: TrailConfigSchema,
   mountain: MountainConfigSchema,

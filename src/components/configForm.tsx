@@ -83,7 +83,11 @@ const RenderFormElement = ({
     value: feature,
     label: feature,
   }));
-  console.log(options);
+  if (elementType === "list") {
+    console.log(id);
+    console.log(value);
+    console.log(options);
+  }
   const cases: Record<FormElementType, React.ReactElement> = {
     text: (
       <Input

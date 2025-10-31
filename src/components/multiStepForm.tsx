@@ -1,5 +1,6 @@
 import React from "react";
 import { cn } from "../lib/utils";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 export type MultiStepFormStep = {
   title: string;
   content: React.ReactNode;
@@ -117,25 +118,35 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
               onClick={goPrev}
               disabled={isFirst}
               className={cn(
-                "px-4 py-2 rounded-md border text-sm font-medium transition-colors",
+                "px-4 py-2 rounded-md border text-sm font-medium transition-colors inline-flex items-center justify-center gap-1",
                 isFirst
                   ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
                   : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
               )}
+              aria-label={prevLabel}
             >
-              {prevLabel}
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              <span className="sr-only">{prevLabel}</span>
             </button>
             <button
               type="button"
               onClick={goNext}
               className={cn(
-                "px-4 py-2 rounded-md text-white text-sm font-medium transition-colors",
+                "px-4 py-2 rounded-md text-white text-sm font-medium transition-colors inline-flex items-center justify-center gap-1",
                 isLast
                   ? "bg-green-600 hover:bg-green-700"
                   : "bg-blue-600 hover:bg-blue-700"
               )}
+              aria-label={isLast ? submitLabel : nextLabel}
             >
-              {isLast ? submitLabel : nextLabel}
+              {isLast ? (
+                submitLabel
+              ) : (
+                <>
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  <span className="sr-only">{nextLabel}</span>
+                </>
+              )}
             </button>
           </div>
         </div>
