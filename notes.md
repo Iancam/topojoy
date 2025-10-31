@@ -26,4 +26,10 @@ TODO: reduce the density of vertices so that a user can unselect them easily
 
 TODO: When getting OSM geojson, it would be good to be able to get all features, cache them, and then filter from the cache when we want less than all features.
 
-TODO: when the user switches the geojsonBbox, we should clear the database cache
+# database
+
+should we have people sign up first or let them create a map first?
+
+Maps are in local storage to start, and this works well. Only when the user saves an image should we prompt for them to create an account.
+
+do we have a user story where they never create an account?

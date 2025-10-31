@@ -5,7 +5,7 @@ import {
   times,
   distance,
   windowForEach,
-} from "../libraries/utils";
+} from "../lib/map/utils";
 import { res } from "./colorUtils";
 import { drawCurve, makeCurve } from "./layers";
 
@@ -36,7 +36,9 @@ export function drawLines(
     : Object.values(lines).flat();
   // lines will be an array of arrays of [x, y] coordinates
 
-  if (style === "sketched") {
+  if (style === "basic") {
+    basicLines(sketch, Lines, slopeScale, textSizeMultiplier);
+  } else if (style === "sketched") {
     sketchedLines(sketch, Lines, slopeScale, topo, curveLength, weight);
   } else if (style === "watercolor") {
     for (const line of Lines) {
@@ -46,6 +48,18 @@ export function drawLines(
     sketchedLines(sketch, Lines, slopeScale, topo, curveLength, weight);
   }
 }
+
+const basicLines = function (sketch, lines, slopeScale, textSizeMultiplier) {
+  lines.forEach((coords) => {
+    sketch.beginShape();
+    sketch.stroke(...res(slopeScale(1 / 60)), 255);
+    sketch.strokeWeight(2 * textSizeMultiplier);
+    coords.forEach(([x, y]) => {
+      sketch.vertex(x, y);
+    });
+    sketch.endShape();
+  });
+};
 
 const waterColorLine = function (
   sketch,

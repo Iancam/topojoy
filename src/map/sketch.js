@@ -19,13 +19,15 @@ import {
   getWaterFeatures,
   getLakes,
   getUserSelectedTrails,
+  featuresToScreenCoords,
 } from "./trails";
-import { times } from "../libraries/utils";
+import { times } from "../lib/map/utils";
 import { createWebGLFlowField } from "../contourExploration/terrainFlowField";
 import { drawTitle } from "./title";
 import chroma from "chroma-js";
 export const sketchFactory = (
   boundsGeojson,
+  selectedTrails,
   config,
   callback,
   options = {}
@@ -52,11 +54,11 @@ export const sketchFactory = (
         // this is significantly simpler, and still easy to reason about
         const baseConfigTransforms = {
           backgroundTextBBox: (config) => {
-            config.backgroundText.bbox = config.backgroundText.bbox.reduce(
-              (a, b) => a + b
-            )
-              ? config.backgroundText.bbox
-              : [0, 0, canvas.width, canvas.height];
+            config.backgroundText.bbox =
+              config.backgroundText.bbox &&
+              config.backgroundText.bbox.reduce((a, b) => a + b)
+                ? config.backgroundText.bbox
+                : [0, 0, canvas.width, canvas.height];
           },
         };
 
@@ -93,7 +95,9 @@ export const sketchFactory = (
         const waterFeatures = getWaterFeatures(bounds, geoJSON);
         const trails = getTrails(bounds, geoJSON);
         const lakes = getLakes(bounds, geoJSON);
-        const userSelectedTrails = getUserSelectedTrails(bounds);
+        const userSelectedTrails = selectedTrails.map(
+          featuresToScreenCoords(config.zoomLevel, bounds.box, true)
+        );
 
         // creat a histogram of slopes in topo.pixels
         // const slopeHistogram = topo.pixels.reduce((acc, row) => {
@@ -219,11 +223,11 @@ export const sketchFactory = (
             });
           drawLines(sketch, topo, waterFeatures, textSizeMultiplier, {
             ...config.river,
-            style: "watercolor",
+            style: "basic",
           });
           drawLines(sketch, topo, trails, textSizeMultiplier, {
             ...config.trail,
-            style: "watercolor",
+            style: "basic",
           });
 
           drawLines(sketch, topo, userSelectedTrails, textSizeMultiplier, {
@@ -232,7 +236,7 @@ export const sketchFactory = (
               chroma("#e91e63").brighten(0.5).hex(),
               chroma("#e91e63").darken(0.5).hex(),
             ],
-            style: "watercolor",
+            style: "basic",
           });
           drawLakes(sketch, lakes, { color: config.river.colorRange[0] });
 

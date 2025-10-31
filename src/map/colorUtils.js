@@ -5,7 +5,7 @@ import {
   randomGaussian,
   times,
   weightedRandom,
-} from "../libraries/utils";
+} from "../lib/map/utils";
 export function luminanceContrastRatio(color1, color2) {
   const luminance1 = chroma(color1).luminance();
   const luminance2 = chroma(color2).luminance();

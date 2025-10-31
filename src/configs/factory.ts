@@ -23,7 +23,7 @@ export type MapConfigOverride = DeepPartial<MapConfig> & RequiredOverride;
 // Shared defaults across maps. Purposely omit the required fields listed above.
 const baseDefaults: Omit<MapConfig, "name" | "background" | "colorPlan"> = {
   zoomLevel: 13,
-  curve: { stepCount: 20, stepLength: 5, density: 0.5 },
+  curve: { stepCount: 20, stepLength: 5, density: 5 },
   trail: {
     // colorRange intentionally omitted (must be provided in override)
     textColor: "#ed9228", // orange

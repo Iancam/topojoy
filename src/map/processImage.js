@@ -1,7 +1,7 @@
 import cover from "@iancam/tile-cover";
 import { tileToBBOX } from "@mapbox/tilebelt";
-import { times } from "../libraries/utils";
-import { getMetersPerPixelAtLatitude } from "../libraries/utils";
+import { times } from "../lib/map/utils";
+import { getMetersPerPixelAtLatitude } from "../lib/map/utils";
 
 const N_SLICES = 4;
 
@@ -161,12 +161,19 @@ export function processPixels(image, metersPerPixel, sunAz, sunEl, vert) {
   //     .sort((a, b) => a[0] - b[0]) // sort by bucket key
   //     .map(([bucket, count]) => ({ elevation: bucket, count }))
   // );
-  const significantBuckets = [...histogram.entries()].filter(
-    ([bucket, count]) => count > 100
-  );
+  const entries = [...histogram.entries()].sort((a, b) => a[0] - b[0]);
+  const total = width * height;
+  const pct = (p) => {
+    let acc = 0;
+    for (let i = 0; i < entries.length; i++) {
+      acc += entries[i][1];
+      if (acc / total >= p) return entries[i][0];
+    }
+    return entries.length ? entries[entries.length - 1][0] : 0;
+  };
 
-  const min = significantBuckets.reduce((a, b) => (a[0] < b[0] ? a : b))[0];
-  const max = significantBuckets.reduce((a, b) => (a[0] > b[0] ? a : b))[0];
+  const min = pct(0.02);
+  const max = pct(0.98);
 
   return {
     min,

@@ -4,7 +4,7 @@ import {
   lerpAngle,
   collision,
   ringOrientation,
-} from "../libraries/utils";
+} from "../lib/map/utils";
 import {
   contrastingLuminance,
   luminanceContrastRatio,
