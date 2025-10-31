@@ -5,12 +5,9 @@ import { sketchFactory } from "./map/sketch";
 
 import { formElements } from "./components/configFormData";
 
+import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
 // Import configs with correct paths
 import { snowMesaConfig, emeraldLakesConfig } from "./configs/index.ts";
-// import { SnowMesaConfig } from "./configs/snowMesaConfig.ts";
-// import { EmeraldLakesConfig } from "./configs/emeraldLakesConfig.ts";
-// import { LHKConfig } from "./configs/LHKConfig.ts";
-// import { SawtoothConfig } from "./configs/sawtoothConfig.ts";
 import { MapConfig } from "./configs/schema.ts";
 import { ConfigForm } from "./components/configForm.tsx";
 import { P5Canvas } from "./components/p5Canvas.tsx";
@@ -19,10 +16,15 @@ import {
   getLakes,
   getMountainFeatures,
   getTrails,
+  getUserSelectedTrailsLatLng,
   getWaterFeatures,
 } from "./map/trails.js";
 import { tilesForFeatures } from "./map/processImage.js";
-
+import { getMapConfig } from "./api.ts";
+import { saveMapConfig } from "./lib/utils";
+import { useUser } from "@clerk/clerk-react";
+import { Link, useSearchParams } from "react-router";
+import { addHeightsToForm, convertToNestedObject } from "./lib/utils";
 interface Configs {
   [key: string]: MapConfig;
 }
@@ -33,27 +35,16 @@ const configs: Configs = {
 };
 
 export const App = () => {
+  // get config id from url
+  const configId = useSearchParams()[0].get("configId");
   const [config, setConfig] = useState(() => {
     // Load previously selected config from localStorage if it exists
     const saved = localStorage.getItem("topojoy:config");
     return saved && Object.keys(configs).includes(saved) ? saved : "Original";
   });
+  const [loadedConfig, setLoadedConfig] = useState<MapConfig | null>(null);
+  const { isSignedIn, user } = useUser();
 
-  // use when you want to delete old values from the heights, IE, when you're
-  //changing configs.
-  const addHeightsToForm = (config: MapConfig, form: {}) => {
-    const heights = config.colorPlan.reduce((obj, { height }, i) => {
-      const key = `colorPlan.${i}.height`;
-      obj[key] = height;
-      return obj;
-    }, {});
-    Object.keys(form)
-      .filter((k) => k.startsWith("colorPlan"))
-      .forEach((k) => {
-        delete form[k];
-      });
-    return { ...form, ...heights };
-  };
   const preForm = Object.entries(formElements).reduce(
     (obj, [key, [_, __, value]]) => {
       obj[key] = value;
@@ -79,32 +70,70 @@ export const App = () => {
   const [waterFeatures, setWaterFeatures] = useState<string[]>([]);
   const [lakes, setLakes] = useState<string[]>([]);
 
+  const [bbox, setBbox] = useState<any>(null);
+  const [selectedTrails, setSelectedTrails] = useState<string[]>([]);
+
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const p5Ref = useRef<HTMLDivElement>(null);
   const [isRendering, setIsRendering] = useState(false);
 
   useEffect(() => {
-    const downstreamConfig = getDownstreamConfig();
-    const geoJSON = JSON.parse(
-      localStorage.getItem("topojoy:geojson.bbox") || "{}"
-    );
-    const { bounds } = tilesForFeatures(geoJSON, downstreamConfig.zoomLevel);
-    getGeoJSONFromOSM(bounds.latLngbox, {
-      streams: downstreamConfig.river.streams,
-      rivers: downstreamConfig.river.show,
-      trails: downstreamConfig.trail.show,
-      peaks: downstreamConfig.mountain.show,
-      lakes: downstreamConfig.lake.show,
-    }).then((geoJSON) => {
-      const mountains = getMountainFeatures(bounds, geoJSON);
-      const waterFeatures = getWaterFeatures(bounds, geoJSON);
-      const trails = getTrails(bounds, geoJSON);
-      const lakes = getLakes(bounds, geoJSON);
-      setMountains(Object.keys(mountains));
-      setWaterFeatures(Object.keys(waterFeatures));
-      setTrails(Object.keys(trails));
-      setLakes(Object.keys(lakes));
-    });
+    if (configId) {
+      console.log(configId);
+      // get config from db
+      getMapConfig(user?.id!, configId).then((config) => {
+        console.log(config);
+        setLoadedConfig(config);
+        setConfig(config.config);
+        setForm({ ...preForm, ...config });
+        setSelectedTrails(config.selectedTrails);
+        setBbox(config.bbox);
+        // set fealures
+        setMountains(
+          config.features
+            .filter((feat) => feat.type === "mountain")
+            .map((feat) => feat.name)
+        );
+        setWaterFeatures(
+          config.features
+            .filter((feat) => feat.type === "river")
+            .map((feat) => feat.name)
+        );
+        setTrails(
+          config.features
+            .filter((feat) => feat.type === "trail")
+            .map((feat) => feat.name)
+        );
+        setLakes(
+          config.features
+            .filter((feat) => feat.type === "lake")
+            .map((feat) => feat.name)
+        );
+      });
+    } else {
+      const downstreamConfig = convertToNestedObject(form, configs[config]);
+      const bbox = JSON.parse(
+        localStorage.getItem("topojoy:geojson.bbox") || "{}"
+      );
+      const { bounds } = tilesForFeatures(bbox, downstreamConfig.zoomLevel);
+      getGeoJSONFromOSM(bounds.latLngbox, {
+        streams: downstreamConfig.river.streams,
+        rivers: downstreamConfig.river.show,
+        trails: downstreamConfig.trail.show,
+        peaks: downstreamConfig.mountain.show,
+        lakes: downstreamConfig.lake.show,
+      }).then((geoJSON) => {
+        const mountains = getMountainFeatures(bounds, geoJSON);
+        const waterFeatures = getWaterFeatures(bounds, geoJSON);
+        const trails = getTrails(bounds, geoJSON);
+        const lakes = getLakes(bounds, geoJSON);
+        setMountains(Object.keys(mountains));
+        setWaterFeatures(Object.keys(waterFeatures));
+        setTrails(Object.keys(trails));
+        setLakes(Object.keys(lakes));
+      });
+    }
   }, [
     form["river.streams"],
     form["river.show"],
@@ -115,28 +144,19 @@ export const App = () => {
 
   const tour = TourMap();
 
-  const getDownstreamConfig = () => {
-    let downstreamConfig = configs[config];
-    for (const [key, value] of Object.entries(form)) {
-      const keys = key.split(".");
-      const lastKey = keys.pop()!;
-      let current = downstreamConfig;
-      for (const k of keys) {
-        // allow configFormData to create new fields without having to edit
-        // config Files
-        if (!current[k]) {
-          current[k] = {};
-        }
-        current = current[k];
-      }
-      current[lastKey] = value;
-    }
-    return downstreamConfig;
-  };
-
   const renderSketch = () => {
-    const downstreamConfig = getDownstreamConfig();
+    const nestedForm = convertToNestedObject(form, configs[config]);
     if (!p5Ref.current) return;
+    let myBbox = bbox;
+    let mySelectedTrails = selectedTrails;
+    if (!myBbox) {
+      console.log("loading bbox from localStorage");
+      myBbox = JSON.parse(localStorage.getItem("topojoy:geojson.bbox") || "{}");
+    }
+    if (!mySelectedTrails.length) {
+      console.log("loading selectedTrails from localStorage");
+      mySelectedTrails = getUserSelectedTrailsLatLng();
+    }
 
     // show loading while rendering
     setIsRendering(true);
@@ -144,17 +164,15 @@ export const App = () => {
     while (p5Ref.current.firstChild) {
       p5Ref.current.removeChild(p5Ref.current.firstChild);
     }
-    const geoJSON = JSON.parse(
-      localStorage.getItem("topojoy:geojson.bbox") || "{}"
-    );
+
     const { sketch } = sketchFactory(
-      geoJSON,
-      downstreamConfig,
-      (canvas: { elt: HTMLCanvasElement }, sketch: p5) => {
+      myBbox,
+      mySelectedTrails,
+      nestedForm,
+      (canvas: { elt: HTMLCanvasElement }, sketch: p5, features: any) => {
         const png = canvas.elt.toDataURL("image/png");
         const img = new Image();
         img.src = png!;
-
         img.width = sketch.width;
         img.height = sketch.height;
         img.style.width = `${sketch.width}px`;
@@ -167,6 +185,7 @@ export const App = () => {
         img.style.maxWidth = `${sketch.width}px`;
         p5Ref.current?.appendChild(img); // 2. use <img>, not <canvas>
         sketch.remove();
+
         // hide loading once image is ready
         setIsRendering(false);
       }
@@ -175,8 +194,10 @@ export const App = () => {
     const myp5 = new p5(sketch, p5Ref.current);
     myp5.noLoop();
 
+    // save form, geojson.bbox, geojson.trails, config,
+    // to database using api
+
     return myp5;
-    // p5Ref.current = myp5;
   };
 
   // Trigger a PNG download from the latest rendered image
@@ -201,16 +222,6 @@ export const App = () => {
     // If an image is present, download immediately. Otherwise render then wait.
     if (container.querySelector("img")) {
       download();
-    } else {
-      // const observer = new MutationObserver(() => {
-      //   const img = container.querySelector("img");
-      //   if (img) {
-      //     observer.disconnect();
-      //     download();
-      //   }
-      // });
-      // observer.observe(container, { childList: true });
-      // renderSketch();
     }
   };
 
@@ -238,9 +249,10 @@ export const App = () => {
 
   return (
     <>
+      {/* Header */}
       <div className="text-white bg-slate-800 font-sans px-3 flex justify-between h-15 fixed top-0 left-0 right-0">
         <div className="font-extrabold flex items-center tracking-wide text-base">
-          TopoJoy
+          <Link to="/">TopoJoy</Link>
         </div>
         <div className="flex-grow flex justify-end">
           <div style={{ height: "42px" }}></div>
@@ -259,29 +271,26 @@ export const App = () => {
                 Open Map Editor
               </a>
             </div>
-            {/* <div className="flex items-center ml-auto">
-              <button
-                className={
-                  "bg-indigo-500 hover:bg-indigo-700 start-tour text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200"
-                }
-                onClick={() => {
-                  tour.start();
-                  console.log("Tour started");
-                }}
-              >
-                Start Tour
-              </button>
-            </div> */}
+            <div className="pr-3"></div>
+            <SignedIn>
+              <Link to="/my-maps">
+                {/* make it look good */}
+                <span className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
+                  My Maps
+                </span>
+              </Link>
+              <UserButton afterSignOutUrl="/sign-in" />
+            </SignedIn>
+            <SignedOut>
+              <Link to="/sign-in">Sign In</Link>
+            </SignedOut>
           </div>
         </div>
       </div>
 
       <div className="flex h-screen">
         {/* Sidebar */}
-        <div
-          className={`w-80 fixed top-15 left-0 h-full overflow-y-auto border-r bg-white p-4 flex-shrink-0
-          }`}
-        >
+        <div className="w-80 fixed top-15 left-0 h-full overflow-y-auto border-r bg-white p-4 flex-shrink-0">
           <ConfigForm
             config={config}
             configs={configs}

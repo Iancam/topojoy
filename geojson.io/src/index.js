@@ -38,6 +38,55 @@ import repo from './core/repo';
 import user from './core/user';
 import api from './core/api';
 import store from 'store';
+import { Clerk } from '@clerk/clerk-js';
+
+async function initClerk() {
+  const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+  const clerk = new Clerk(clerkPubKey);
+  await clerk.load();
+
+  if (clerk.isSignedIn) {
+    document.getElementById('header-right').innerHTML = `
+    <div id="user-button"></div>
+  `;
+
+    const userButtonDiv = document.getElementById('user-button');
+
+    clerk.mountUserButton(userButtonDiv);
+  } else {
+    const openModalBtn = document.getElementById('openModalBtn');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const authModalOverlay = document.getElementById('authModalOverlay');
+    const clerkAuthContainer = document.getElementById('clerk-auth-container');
+    // const mapContainer = document.getElementsByClassName('geojsonio');
+    // Function to show the modal
+    const showModal = () => {
+      authModalOverlay.classList.remove('hidden');
+      // mapContainer[0].classList.add('hidden');
+      // Render the sign-in component inside the modal
+      clerk.mountSignIn(clerkAuthContainer);
+    };
+
+    // Function to hide the modal
+    const hideModal = () => {
+      authModalOverlay.classList.add('hidden');
+      // Unmount the Clerk component to prevent memory leaks
+      clerk.unmountSignIn(clerkAuthContainer);
+    };
+
+    // Event listeners for opening and closing the modal
+    openModalBtn.addEventListener('click', showModal);
+    closeModalBtn.addEventListener('click', hideModal);
+
+    // Close modal when clicking outside of it
+    authModalOverlay.addEventListener('click', (event) => {
+      if (event.target === authModalOverlay) {
+        hideModal();
+      }
+    });
+  }
+}
 
 function geojsonIO() {
   const context = {};
@@ -74,12 +123,14 @@ function init() {
       gjIO.recovery = recovery(gjIO);
       gjIO.router.on();
       api(gjIO);
+      initClerk();
     });
   } else {
     d3.select('.geojsonio').call(gjUI);
     gjIO.recovery = recovery(gjIO);
     gjIO.router.on();
     api(gjIO);
+    initClerk();
   }
 }
 
