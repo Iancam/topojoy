@@ -5,6 +5,7 @@
   "main": "index.html",
   "type": "module",
   "dependencies": {
+    "@clerk/clerk-js": "^5.97.0",
     "@fortawesome/fontawesome-free": "^6.2.0",
     "@mapbox/geojson-extent": "^1.0.1",
     "@mapbox/geojson-normalize": "0.0.1",
