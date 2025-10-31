@@ -17,7 +17,7 @@ datasource db {
 model User {
   id    String @id @default(cuid())
   clerkId String @unique @db.VarChar(255)
-  email String @unique @db.VarChar(255)
+  email String? @db.VarChar(255)
   name  String @db.VarChar(255)
   mapConfigs MapConfig[]
   createdAt DateTime @default(now())
@@ -32,19 +32,22 @@ enum featureType {
 }
 
 model Feature {
-  id    String @id @default(cuid())
-  name  String @db.VarChar(255)
+  // id    String @id @default(cuid())
   mapConfigId String
+  
+  name  String @db.VarChar(255)
   selected Boolean @default(false)
   type featureType @default(mountain)
+  
   mapConfig MapConfig @relation(fields: [mapConfigId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  @@id([name, mapConfigId, type])
 }
 
 model MapConfig {
   id    String @id @default(cuid())
-  user  User @relation(fields: [userId], references: [id])
+  user  User @relation(fields: [userId], references: [clerkId])
   userId String
   
   title String @db.VarChar(128)
@@ -55,8 +58,6 @@ model MapConfig {
   features Feature[]
   bbox Json 
   selectedTrails Json? 
-  
-
 
   backgroundText String?
   backgroundTextElevationRange0 Float
