@@ -141,7 +141,7 @@ export function getTrails({ box, zoom }, geoJSON, exclude, include) {
   return trails;
 }
 
-export function getWaterFeatures({ box, zoom }, geoJSON) {
+export function getRivers({ box, zoom }, geoJSON) {
   return (
     geoJSON.features
       .filter(({ properties }) => properties.waterway)
@@ -180,10 +180,16 @@ export function getMountainFeatures({ box, zoom }, geoJSON) {
     .reduce(screenCoordListToObj, {});
 }
 
-export async function getGeoJSONFromOSM(
-  latLongBox,
-  { rivers, streams, peaks, lakes, trails }
-) {
+export function getFeatures({ box, zoom }, geoJSON) {
+  return {
+    trails: getTrails({ box, zoom }, geoJSON),
+    rivers: getRivers({ box, zoom }, geoJSON),
+    lakes: getLakes({ box, zoom }, geoJSON),
+    mountains: getMountainFeatures({ box, zoom }, geoJSON),
+  };
+}
+
+export async function getGeoJSONFromOSM(latLongBox) {
   const hiking = `
   way["highway"="trail"](${latLongBox.join(",")});
   way["highway"="path"](${latLongBox.join(",")});
@@ -192,18 +198,16 @@ export async function getGeoJSONFromOSM(
   nwr["route"="hiking"](${latLongBox.join(",")});
   `;
 
-  const water = `
-  ${rivers ? "" : "//"} way["waterway"="river"](${latLongBox.join(",")});
-  ${streams ? "" : "//"} way["waterway"="stream"](${latLongBox.join(",")});
-  ${
-    !lakes
-      ? ""
-      : `way[natural=water](${latLongBox.join(",")});
-         way[water=lake](${latLongBox.join(",")});
-         way[natural=lake](${latLongBox.join(",")});`
-  }`;
+  const rivers = `
+    way["waterway"="river"](${latLongBox.join(",")});
+    way["waterway"="stream"](${latLongBox.join(",")});
+    way[natural=water](${latLongBox.join(",")});
+`;
+  const lakes = `
+    way[water=lake](${latLongBox.join(",")});
+    way[natural=lake](${latLongBox.join(",")});`;
   const mountains = `
-  ${peaks ? "" : "//"} node["natural"="peak"](${latLongBox.join(",")});
+    node["natural"="peak"](${latLongBox.join(",")});
   // node["natural"="mountain"](${latLongBox.join(",")});
   // node["natural"="volcano"](${latLongBox.join(",")});
   // node["natural"="ridge"](${latLongBox.join(",")});
@@ -211,8 +215,9 @@ export async function getGeoJSONFromOSM(
   const query = `
   [out:json];
 (
-  ${trails ? hiking : ""}
-  ${water}
+  ${hiking}
+  ${rivers}
+  ${lakes}
   ${mountains}
   
 );

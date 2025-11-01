@@ -233,9 +233,18 @@ export const colorAtFactory = (colorPlanData, topo) => {
       colorFunc,
     ];
   });
-
-  return ([x, y]) => {
-    const [height, slope, aspect, shade] = topo.pixels[y][x];
+  /**
+   * takes a point or value between 0 and 1 and returns the color for that point
+   */
+  return (point) => {
+    let height;
+    if (!point.length && point) {
+      height = point * topo.magnitude + topo.min;
+    } else {
+      const [x, y] = point;
+      // height, slope, aspect, shade
+      [height] = topo.pixels[y][x];
+    }
     for (let [compHeight, clar] of colorPlan) {
       const cmpHeight = compHeight();
       if (height < cmpHeight) {

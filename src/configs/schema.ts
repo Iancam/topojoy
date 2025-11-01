@@ -22,6 +22,7 @@ const CurveConfigSchema = z.object({
 const TrailConfigSchema = z.object({
   colorRange: z.array(ColorSchema).min(2),
   textColor: ColorSchema,
+  selectedTrailColor: ColorSchema,
   textSize: z.number().positive(),
   stepLength: z.number().positive(),
   stepCount: z.number().positive(),

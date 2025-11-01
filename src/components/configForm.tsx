@@ -25,10 +25,7 @@ interface ConfigFormProps {
   config: string;
   configs: { [key: string]: Config };
   form: any;
-  trails: any;
-  mountains: any;
-  lakes: any;
-  waterFeatures: any;
+  features: { [key: string]: string[] };
   onConfigChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onFormChange: (key: string, value: any) => void;
   renderSketch: () => p5;
@@ -38,10 +35,7 @@ interface ConfigFormProps {
 const RenderFormElement = ({
   form,
   onFormChange,
-  mountains,
-  trails,
-  waterFeatures,
-  lakes,
+  features,
   props,
   id,
   elementType,
@@ -50,10 +44,7 @@ const RenderFormElement = ({
 }: {
   form: any;
   onFormChange: (key: string, value: any) => void;
-  mountains?: any;
-  trails?: any;
-  waterFeatures?: any;
-  lakes?: any;
+  features: { [key: string]: string[] };
   id: string;
   elementType: FormElementType;
   description: string;
@@ -72,14 +63,7 @@ const RenderFormElement = ({
   );
 
   const value = form[id];
-  const options = (
-    {
-      mountain: mountains,
-      river: waterFeatures,
-      trail: trails,
-      lake: lakes,
-    }[id.split(".")[0]] || []
-  ).map((feature: string) => ({
+  const options = (features[id.split(".")[0]] || []).map((feature: string) => ({
     value: feature,
     label: feature,
   }));
@@ -171,10 +155,7 @@ export const ConfigForm = ({
   config,
   configs,
   form,
-  trails,
-  mountains,
-  lakes,
-  waterFeatures,
+  features,
   onConfigChange,
   onFormChange,
   renderSketch,
@@ -197,10 +178,7 @@ export const ConfigForm = ({
           <RenderFormElement
             form={form}
             onFormChange={onFormChange}
-            mountains={mountains}
-            trails={trails}
-            waterFeatures={waterFeatures}
-            lakes={lakes}
+            features={features}
             id={FormElement}
             elementType={elementType}
             description={description}

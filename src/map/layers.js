@@ -299,7 +299,7 @@ export function lakesLabels(
   { font, textSize, textColor } = {},
   addLabels
 ) {
-  const names = [];
+  const addedNames = [];
   const labels = {};
 
   Object.entries(lakes)
@@ -312,8 +312,8 @@ export function lakesLabels(
     .forEach(({ name, externalRing }) => {
       if (name === "undefined") return;
       if (!name) return;
-      if (names.includes(name)) return;
-      names.push(name);
+      if (addedNames.includes(name)) return;
+      addedNames.push(name);
 
       const [x, y] = externalRing.reduce(
         (acc, [x, y]) => {
@@ -512,7 +512,7 @@ export function namedLines(
   { textSize, textColor, font },
   addLabels
 ) {
-  let names = [];
+  let addedNames = [];
   let labels = {};
   if (!Array.isArray(lineStrings)) {
     lineStrings = Object.entries(lineStrings).map(([name, coords]) => ({
@@ -521,20 +521,22 @@ export function namedLines(
     }));
   }
 
+  // coords is an array of arrays of points
   lineStrings.forEach(({ name, coords }) => {
     if (name === "undefined") return;
     if (!name) return;
-    if (names.includes(name)) return;
-    names.push(name);
+    if (addedNames.includes(name)) return;
+    addedNames.push(name);
     let maxLength = 0;
     let maxIndex = 0;
-
+    // find the longest lineString (coordinate list) to label
     for (const [i, coordList] of coords.entries()) {
       if (coordList.length > maxLength) {
         maxIndex = i;
         maxLength = coordList.length;
       }
     }
+
     const mid = Math.floor(maxLength / 2);
     const pt = coords[maxIndex][mid];
     labels[name.split(" ").join("\n")] = pt;

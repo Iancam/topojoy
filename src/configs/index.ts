@@ -32,7 +32,7 @@ const p = {
   JuniperBark8: "#594D43",
   JuniperBark9: "#59372A",
   JuniperBark10: "#0D0D0D",
-
+  magenta: chroma("#e91e63").brighten(0.5).hex(),
   lhk1: "#730217",
   lhk2: "#D9ADD6",
   lhk3: "#8F6CD9",
@@ -49,6 +49,7 @@ export const snowMesaConfig = createConfig({
   trail: {
     colorRange: [p.f4, p.f5],
     textColor: p.orange,
+    selectedTrailColor: p.magenta,
   },
   river: {
     colorRange: [p.f7, p.f6],
@@ -82,6 +83,7 @@ export const emeraldLakesConfig = createConfig({
   trail: {
     colorRange: [p.JuniperBark9, p.ochre],
     textColor: p.orange,
+    selectedTrailColor: p.magenta,
   },
   river: {
     colorRange: [p.bgBlue, p.aquamarine],

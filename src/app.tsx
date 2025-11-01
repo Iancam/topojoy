@@ -13,11 +13,8 @@ import { ConfigForm } from "./components/configForm.tsx";
 import { P5Canvas } from "./components/p5Canvas.tsx";
 import {
   getGeoJSONFromOSM,
-  getLakes,
-  getMountainFeatures,
-  getTrails,
+  getFeatures,
   getUserSelectedTrailsLatLng,
-  getWaterFeatures,
 } from "./map/trails.js";
 import { tilesForFeatures } from "./map/processImage.js";
 import { getMapConfig } from "./api.ts";
@@ -25,6 +22,7 @@ import { saveMapConfig } from "./lib/utils";
 import { useUser } from "@clerk/clerk-react";
 import { Link, useSearchParams } from "react-router";
 import { addHeightsToForm, convertToNestedObject } from "./lib/utils";
+import { uniq } from "lodash";
 interface Configs {
   [key: string]: MapConfig;
 }
@@ -65,11 +63,7 @@ export const App = () => {
     return { ...base, ...saved };
   });
 
-  const [trails, setTrails] = useState<string[]>([]);
-  const [mountains, setMountains] = useState<string[]>([]);
-  const [waterFeatures, setWaterFeatures] = useState<string[]>([]);
-  const [lakes, setLakes] = useState<string[]>([]);
-
+  const [features, setFeatures] = useState<{ [key: string]: string[] }>({});
   const [bbox, setBbox] = useState<any>(null);
   const [selectedTrails, setSelectedTrails] = useState<string[]>([]);
 
@@ -90,26 +84,17 @@ export const App = () => {
         setSelectedTrails(config.selectedTrails);
         setBbox(config.bbox);
         // set fealures
-        setMountains(
-          config.features
-            .filter((feat) => feat.type === "mountain")
-            .map((feat) => feat.name)
+        const feats = config.features.reduce(
+          (acc, feat) => {
+            if (!acc[feat.type]) {
+              acc[feat.type] = [];
+            }
+            acc[feat.type].push(feat.name);
+            return acc;
+          },
+          {} as Record<string, string[]>
         );
-        setWaterFeatures(
-          config.features
-            .filter((feat) => feat.type === "river")
-            .map((feat) => feat.name)
-        );
-        setTrails(
-          config.features
-            .filter((feat) => feat.type === "trail")
-            .map((feat) => feat.name)
-        );
-        setLakes(
-          config.features
-            .filter((feat) => feat.type === "lake")
-            .map((feat) => feat.name)
-        );
+        setFeatures(feats);
       });
     } else {
       const downstreamConfig = convertToNestedObject(form, configs[config]);
@@ -117,30 +102,15 @@ export const App = () => {
         localStorage.getItem("topojoy:geojson.bbox") || "{}"
       );
       const { bounds } = tilesForFeatures(bbox, downstreamConfig.zoomLevel);
-      getGeoJSONFromOSM(bounds.latLngbox, {
-        streams: downstreamConfig.river.streams,
-        rivers: downstreamConfig.river.show,
-        trails: downstreamConfig.trail.show,
-        peaks: downstreamConfig.mountain.show,
-        lakes: downstreamConfig.lake.show,
-      }).then((geoJSON) => {
-        const mountains = getMountainFeatures(bounds, geoJSON);
-        const waterFeatures = getWaterFeatures(bounds, geoJSON);
-        const trails = getTrails(bounds, geoJSON);
-        const lakes = getLakes(bounds, geoJSON);
-        setMountains(Object.keys(mountains));
-        setWaterFeatures(Object.keys(waterFeatures));
-        setTrails(Object.keys(trails));
-        setLakes(Object.keys(lakes));
+      getGeoJSONFromOSM(bounds.latLngbox).then((geoJSON) => {
+        const feats = getFeatures(
+          { box: bounds, zoom: downstreamConfig.zoomLevel },
+          geoJSON
+        );
+        setFeatures(feats);
       });
     }
-  }, [
-    form["river.streams"],
-    form["river.show"],
-    form["trail.show"],
-    form["mountain.show"],
-    form["lakes.show"],
-  ]);
+  }, []);
 
   const tour = TourMap();
 
@@ -295,10 +265,7 @@ export const App = () => {
             config={config}
             configs={configs}
             form={form}
-            trails={trails}
-            mountains={mountains}
-            waterFeatures={waterFeatures}
-            lakes={lakes}
+            features={features}
             onConfigChange={onConfigChange}
             onFormChange={onFormChange}
             renderSketch={renderSketch}
