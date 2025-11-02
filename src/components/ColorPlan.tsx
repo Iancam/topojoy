@@ -7,12 +7,14 @@ interface ColorPlan {
 export const ColorPlan = ({
   config,
   configs,
+  features,
   renderFormElement,
   form,
   onFormChange,
 }: {
   config: string;
   configs: { [key: string]: MapConfig };
+  features: { [key: string]: string[] };
   renderFormElement: (props: any) => React.ReactNode;
   form: any;
   onFormChange: (key: string, value: any) => void;
@@ -30,6 +32,7 @@ export const ColorPlan = ({
         {renderFormElement({
           form,
           onFormChange,
+          features,
           id: `colorPlan.${index}.height`,
           elementType: "slider",
           description: `Set the height value for color plan ${index + 1}`,

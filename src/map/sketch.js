@@ -21,6 +21,7 @@ import { times } from "../lib/map/utils";
 import { createWebGLFlowField } from "../contourExploration/terrainFlowField";
 import { drawTitle } from "./title";
 import chroma from "chroma-js";
+import { drawLegend } from "./legend";
 export const sketchFactory = (
   boundsGeojson,
   selectedTrails,
@@ -62,7 +63,10 @@ export const sketchFactory = (
           transform(config);
         });
         config.textSizeMultiplier = Math.pow(2, config.zoomLevel - 13);
-
+        // config.legend = {
+        //   ...config.legend,
+        //   position: ,
+        // };
         const geoJSON = await getGeoJSONFromOSM(bounds.latLngbox);
 
         const curvePixelCount =
@@ -116,9 +120,11 @@ export const sketchFactory = (
             userSelectedTrails,
             collisionHandler
           );
+          drawLegend(sketch, config, topo, colorAt);
         }
         callback(OGCanvas, sketch);
       };
+
       const placeLabelsWithoutCollision = (
         config,
         bounds,

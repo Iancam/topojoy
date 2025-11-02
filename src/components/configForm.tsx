@@ -63,15 +63,12 @@ const RenderFormElement = ({
   );
 
   const value = form[id];
+
   const options = (features[id.split(".")[0]] || []).map((feature: string) => ({
     value: feature,
     label: feature,
   }));
-  if (elementType === "list") {
-    console.log(id);
-    console.log(value);
-    console.log(options);
-  }
+
   const cases: Record<FormElementType, React.ReactElement> = {
     text: (
       <Input
@@ -189,6 +186,7 @@ export const ConfigForm = ({
           <FormElement
             config={config}
             configs={configs}
+            features={features}
             renderFormElement={RenderFormElement}
             onConfigChange={onConfigChange}
             onFormChange={onFormChange}

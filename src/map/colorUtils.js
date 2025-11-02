@@ -238,7 +238,7 @@ export const colorAtFactory = (colorPlanData, topo) => {
    */
   return (point) => {
     let height;
-    if (!point.length && point) {
+    if (typeof point === "number") {
       height = point * topo.magnitude + topo.min;
     } else {
       const [x, y] = point;
