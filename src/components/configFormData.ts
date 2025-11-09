@@ -54,13 +54,13 @@ export const formJourney: {
   {
     title: "Misc.",
     description: `Choose other options for the map.`,
-    formElements: ["crossHatch"],
+    formElements: ["crossHatch", "legend.enabled"],
     advanced: [ColorPlan],
   },
 ];
 
 export const basicFormElements: FormElements = {
-  "lake.show": ["boolean", "show/hide lakes", false, "Show Lakes"],
+  "legend.enabled": ["boolean", "show/hide legend", false, "Show Legend"],
   "backgroundText.text": ["textarea", "the text in the background", "", "Text"],
   "backgroundText.elevationRange": [
     "range",
@@ -94,6 +94,7 @@ export const basicFormElements: FormElements = {
     false,
     "Remove Lakes Not in Keep List",
   ],
+  "lake.show": ["boolean", "show/hide lakes", false, "Show Lakes"],
   "trail.keepList": ["list", "trails to show", [], "Trail Keep List"],
   "trail.drop": [
     "boolean",

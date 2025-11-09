@@ -103,13 +103,22 @@ export function drawLegend(sketch, config, topo, colorAt) {
     { name: "Water", color: config.river.colorRange[0] },
   ];
   sketch.alpha(255);
+  let lineTypesY = sepLineHeight + margin + padding;
   lineTypes.forEach((lineType, i) => {
     sketch.stroke(lineType.color);
     sketch.strokeWeight(2 * textSizeMultiplier);
-    const y = sepLineHeight + margin + padding + i * 20 * textSizeMultiplier;
+    const y = lineTypesY + i * 20 * textSizeMultiplier;
     sketch.line(position[0] + margin, y, position[0] + margin + eleWidth, y);
     sketch.noStroke();
     sketch.text(lineType.name, position[0] + margin + eleWidth + padding, y);
   });
+
+  const curveDensityPosY =
+    lineTypesY + lineTypes.length * 20 * textSizeMultiplier + margin;
+  sketch.text(
+    "Higher curve density\nindicates greater slope",
+    position[0] + margin,
+    curveDensityPosY
+  );
   sketch.pop();
 }

@@ -110,7 +110,6 @@ export const sketchFactory = (
             multiplier * config.curveCount,
             genCurve(sketch, config, topo)
           ).forEach(colorAndDrawCurve(sketch, colorAt));
-
           drawLayers(
             config,
             bounds,
@@ -120,7 +119,7 @@ export const sketchFactory = (
             userSelectedTrails,
             collisionHandler
           );
-          drawLegend(sketch, config, topo, colorAt);
+          if (config.legend?.enabled) drawLegend(sketch, config, topo, colorAt);
         }
         callback(OGCanvas, sketch);
       };
