@@ -50,15 +50,18 @@ export function drawLines(
 }
 
 const basicLines = function (sketch, lines, slopeScale, textSizeMultiplier) {
+  sketch.push();
+  sketch.stroke(...res(slopeScale(1 / 60)), 255);
+  sketch.strokeWeight(2 * textSizeMultiplier);
   lines.forEach((coords) => {
     sketch.beginShape();
-    sketch.stroke(...res(slopeScale(1 / 60)), 255);
-    sketch.strokeWeight(2 * textSizeMultiplier);
+
     coords.forEach(([x, y]) => {
       sketch.vertex(x, y);
     });
     sketch.endShape();
   });
+  sketch.pop();
 };
 
 const waterColorLine = function (

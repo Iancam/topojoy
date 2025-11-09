@@ -9,7 +9,7 @@ export const addTrails = (rect, map, store) => {
   // download all the trails within the bbox
   const { bounds } = tilesForFeatures(rect, 13);
   // caches result, so we get all features to save another download
-  getGeoJSONFromOSM(bounds.latLngbox).then((geoJSON) => {
+  getGeoJSONFromOSM(bounds.latLngBox).then((geoJSON) => {
     // load the trails into the map and the store
 
     _addTrails(geoJSON, map, store);

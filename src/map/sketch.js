@@ -67,7 +67,7 @@ export const sketchFactory = (
         //   ...config.legend,
         //   position: ,
         // };
-        const geoJSON = await getGeoJSONFromOSM(bounds.latLngbox);
+        const geoJSON = await getGeoJSONFromOSM(bounds.latLngBox);
 
         const curvePixelCount =
           config.curve.stepCount * config.curve.stepLength;
@@ -133,7 +133,7 @@ export const sketchFactory = (
         drawTitle(
           sketch,
           config.title.text,
-          bounds.latLngbox,
+          bounds.latLngBox,
           config.background,
           copperplateBold,
           addLabels

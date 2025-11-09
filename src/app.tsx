@@ -68,7 +68,7 @@ export const App = () => {
   const [selectedTrails, setSelectedTrails] = useState<string[]>([]);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
+
   const p5Ref = useRef<HTMLDivElement>(null);
   const [isRendering, setIsRendering] = useState(false);
 
@@ -97,16 +97,27 @@ export const App = () => {
         setFeatures(feats);
       });
     } else {
+      console.log("loading bbox from localStorage");
       const downstreamConfig = convertToNestedObject(form, configs[config]);
       const bbox = JSON.parse(
         localStorage.getItem("topojoy:geojson.bbox") || "{}"
       );
       const { bounds } = tilesForFeatures(bbox, downstreamConfig.zoomLevel);
-      getGeoJSONFromOSM(bounds.latLngbox).then((geoJSON) => {
-        const feats = getFeatures(
-          { box: bounds, zoom: downstreamConfig.zoomLevel },
+      getGeoJSONFromOSM(bounds.latLngBox).then((geoJSON) => {
+        const rawFeats = getFeatures(
+          { box: bounds.box, zoom: downstreamConfig.zoomLevel },
           geoJSON
         );
+        const feats = Object.entries(rawFeats).reduce(
+          (acc, [key, value]) => {
+            // key minus trailing s
+            const type = key.slice(0, -1);
+            acc[type] = Object.keys(value);
+            return acc;
+          },
+          {} as Record<string, string[]>
+        );
+        console.log(feats);
         setFeatures(feats);
       });
     }
@@ -127,7 +138,7 @@ export const App = () => {
       console.log("loading selectedTrails from localStorage");
       mySelectedTrails = getUserSelectedTrailsLatLng();
     }
-
+    console.log(features);
     // show loading while rendering
     setIsRendering(true);
 
@@ -155,7 +166,7 @@ export const App = () => {
         img.style.maxWidth = `${sketch.width}px`;
         p5Ref.current?.appendChild(img); // 2. use <img>, not <canvas>
         sketch.remove();
-
+        // load selected features
         // hide loading once image is ready
         setIsRendering(false);
       }
@@ -242,18 +253,24 @@ export const App = () => {
               </a>
             </div>
             <div className="pr-3"></div>
-            <SignedIn>
-              <Link to="/my-maps">
-                {/* make it look good */}
-                <span className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
-                  My Maps
-                </span>
-              </Link>
-              <UserButton afterSignOutUrl="/sign-in" />
-            </SignedIn>
-            <SignedOut>
-              <Link to="/sign-in">Sign In</Link>
-            </SignedOut>
+
+            {/* only show if in dev */}
+            {import.meta.env.DEV && (
+              <>
+                <SignedIn>
+                  <Link to="/my-maps">
+                    {/* make it look good */}
+                    <span className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
+                      My Maps
+                    </span>
+                  </Link>
+                  <UserButton afterSignOutUrl="/sign-in" />
+                </SignedIn>
+                <SignedOut>
+                  <Link to="/sign-in">Sign In</Link>
+                </SignedOut>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -124,7 +124,7 @@ export function getUserSelectedTrails({ zoom, box }) {
   return features;
 }
 
-export function getTrails({ box, zoom }, geoJSON, exclude, include) {
+export function getTrails({ box, zoom }, geoJSON) {
   const trails = geoJSON.features
     .filter(
       ({ properties, geometry }) =>
@@ -137,7 +137,7 @@ export function getTrails({ box, zoom }, geoJSON, exclude, include) {
     .map(featuresToScreenCoords(zoom, box))
     .filter(({ coords }) => coords.length > 0)
     .reduce(screenCoordListToObj, {});
-
+  console.log(trails);
   return trails;
 }
 
@@ -180,6 +180,7 @@ export function getMountainFeatures({ box, zoom }, geoJSON) {
     .reduce(screenCoordListToObj, {});
 }
 
+// takes a covertile bbox and zoom level and returns a geoJSON object
 export function getFeatures({ box, zoom }, geoJSON) {
   return {
     trails: getTrails({ box, zoom }, geoJSON),

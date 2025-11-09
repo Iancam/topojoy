@@ -256,7 +256,7 @@ export function tilesForFeatures(feature, zoom) {
     tiles,
     bounds: {
       box: bounds,
-      latLngbox: [south, west, north, east],
+      latLngBox: [south, west, north, east],
       width: 1 + bounds[2] - bounds[0],
       height: 1 + bounds[3] - bounds[1],
       zoom,
