@@ -123,14 +123,18 @@ function init() {
       gjIO.recovery = recovery(gjIO);
       gjIO.router.on();
       api(gjIO);
-      initClerk();
+      if (import.meta.env.DEV) {
+        initClerk();
+      }
     });
   } else {
     d3.select('.geojsonio').call(gjUI);
     gjIO.recovery = recovery(gjIO);
     gjIO.router.on();
     api(gjIO);
-    initClerk();
+    if (import.meta.env.DEV) {
+      initClerk();
+    }
   }
 }
 

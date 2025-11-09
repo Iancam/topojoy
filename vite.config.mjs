@@ -21,7 +21,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, "index.html"),
-        app: path.resolve(__dirname, "app.html"),
         geojson: path.resolve(__dirname, "geojson.io/index.html"),
       },
       external: ["d3"],
