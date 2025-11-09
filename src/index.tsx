@@ -61,11 +61,17 @@ const router = createBrowserRouter([
       },
       {
         path: "/sign-in",
-        element: (
-          <div className="flex items-center justify-center bg-gray-50 pt-16">
-            <SignIn />
-          </div>
-        ),
+        element:
+          // if in dev mode, show sign in button
+          import.meta.env.DEV ? (
+            <div className="flex items-center justify-center bg-gray-50 pt-16">
+              <SignIn />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center bg-gray-50 pt-16">
+              <p>Not available in production</p>
+            </div>
+          ),
       },
       {
         element: <AuthLayout />,

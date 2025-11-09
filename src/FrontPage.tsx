@@ -34,23 +34,27 @@ export const FrontPage = () => {
         </div>
 
         <div className="px-4">
-          <SignedIn>
-            <UserButton afterSignOutUrl="/sign-in" />
-            <Link
-              to="/my-maps"
-              className="text-gray-800 font-semibold hover:underline"
-            >
-              My Maps
-            </Link>
-          </SignedIn>
-          <SignedOut>
-            <Link
-              to="/sign-in"
-              className="text-gray-800 font-semibold hover:underline"
-            >
-              Sign In
-            </Link>
-          </SignedOut>
+          {import.meta.env.DEV && (
+            <>
+              <SignedIn>
+                <UserButton afterSignOutUrl="/sign-in" />
+                <Link
+                  to="/my-maps"
+                  className="text-gray-800 font-semibold hover:underline"
+                >
+                  My Maps
+                </Link>
+              </SignedIn>
+              <SignedOut>
+                <Link
+                  to="/sign-in"
+                  className="text-gray-800 font-semibold hover:underline"
+                >
+                  Sign In
+                </Link>
+              </SignedOut>
+            </>
+          )}
         </div>
       </nav>
       <div className="w-full max-w-[600px] text-center min-h-[calc(100vh-60px)] flex flex-col items-center justify-center py-8 px-4 mt-4">
