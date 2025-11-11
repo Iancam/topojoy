@@ -96,7 +96,7 @@ export default function (context, pane) {
 
         // 4) Clear persisted bbox from storage (used on recovery)
         if (context.storage?.remove) {
-          context.storage.remove('topojoy:geojson.bbox');
+          store.setBBox(null);
         }
 
         // 5) Notify

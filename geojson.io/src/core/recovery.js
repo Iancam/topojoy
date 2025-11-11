@@ -2,7 +2,7 @@ import qs from 'qs-hash';
 import bbox from '@turf/bbox';
 import { addTrails } from '../ui/draw/addTrails.js';
 import store, { interfaceStates } from '../store.js';
-
+import { LS } from '../../../src/lib/utils';
 export default function (context) {
   d3.select(window).on('unload', onunload);
   context.dispatch.on('change', onchange);
@@ -10,7 +10,7 @@ export default function (context) {
   const query = qs.stringQs(location.hash.split('#')[1] || '');
 
   if (location.hash !== '#new' && !query.id && !query.data) {
-    const rec = context.storage.get('topojoy:geojson.bbox');
+    const rec = context.storage.get(LS.GEOJSON_BBOX);
     if (rec && confirm('recover your map from the last time you edited?')) {
       // context.data.set({
       //   ...rec,
@@ -25,7 +25,8 @@ export default function (context) {
         addTrails(rec, context.map, store);
       });
     } else {
-      context.storage.remove('topojoy:geojson.bbox');
+      store.setBBox(null);
+      store.setBBoxTrails([]);
     }
   }
 

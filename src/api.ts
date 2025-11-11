@@ -1,4 +1,5 @@
 import { MapConfig } from "./configs/schema";
+import { normalizeFeatureName } from "./lib/utils";
 
 // selectedTrails should be a geojson object with latlng coords, not
 // with screen coords
@@ -28,7 +29,13 @@ export const saveMapConfig = async (config: {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(config),
+    body: JSON.stringify({
+      ...config,
+      features: config.features.map((f) => ({
+        ...f,
+        name: normalizeFeatureName(f.name),
+      })),
+    }),
   });
 
   if (!response.ok) {
@@ -132,16 +139,16 @@ export async function getMapConfig(
     "title.text": data.title as string,
     "river.keepList": data.features
       .filter((t: any) => t.type === "river" && t.selected)
-      .map((t: any) => t.name as string),
+      .map((t: any) => normalizeFeatureName(t.name as string)),
     "trail.keepList": data.features
       .filter((t: any) => t.type === "trail" && t.selected)
-      .map((t: any) => t.name as string),
+      .map((t: any) => normalizeFeatureName(t.name as string)),
     "mountain.keepList": data.features
       .filter((t: any) => t.type === "mountain" && t.selected)
-      .map((t: any) => t.name as string),
+      .map((t: any) => normalizeFeatureName(t.name as string)),
     "lake.keepList": data.features
       .filter((t: any) => t.type === "lake" && t.selected)
-      .map((t: any) => t.name as string),
+      .map((t: any) => normalizeFeatureName(t.name as string)),
     zoomLevel: data.zoomLevel as number,
     bbox: data.bbox,
     selectedTrails: data.selectedTrails,

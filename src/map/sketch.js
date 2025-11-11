@@ -10,7 +10,7 @@ import {
   lakesLabels,
   drawLakes,
   placeWithoutCollisionFactory,
-} from "./layers";
+} from "./layers.ts";
 import { drawLines } from "./paths";
 import {
   getGeoJSONFromOSM,
@@ -121,7 +121,7 @@ export const sketchFactory = (
           );
           if (config.legend?.enabled) drawLegend(sketch, config, topo, colorAt);
         }
-        callback(OGCanvas, sketch);
+        callback(OGCanvas, sketch, collisionHandler.labels());
       };
 
       const placeLabelsWithoutCollision = (

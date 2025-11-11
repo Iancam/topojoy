@@ -198,7 +198,6 @@ const _addTrails = (geoJSON, map, store) => {
           );
         }
         // Optional: persist selection
-        // localStorage.setItem('topojoy:selectedTrails', JSON.stringify([...selectedIds]));
       });
     }
   }

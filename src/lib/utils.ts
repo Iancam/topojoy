@@ -52,6 +52,10 @@ export const convertToNestedObject = (
   return config;
 };
 
+export const normalizeFeatureName = (name: string) => {
+  return name.replace(/\n/g, " ").trim();
+};
+
 export const saveMapConfig = (
   form: any,
   lakes: string[],
@@ -102,3 +106,12 @@ export const saveMapConfig = (
       .join(","),
   });
 };
+
+export const LS = {
+  GEOJSON_BBOX: "topojoy:geojson.bbox",
+  GEOJSON_SELECTED_TRAIL_SEGMENTS: "topojoy:geojson.selectedtrailSegments",
+  GEOJSON_DRAWN_TRAILS: "topojoy:geojson.drawnTrails",
+  CONFIG: "topojoy:config",
+  IS_DEFAULT_KEEP_LIST_SET: "topojoy:isDefaultKeepListSet",
+  FORM: "topojoy:form",
+} as const;

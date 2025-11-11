@@ -18,7 +18,7 @@ import {
 } from "./map/trails.js";
 import { tilesForFeatures } from "./map/processImage.js";
 import { getMapConfig } from "./api.ts";
-import { saveMapConfig } from "./lib/utils";
+import { LS, normalizeFeatureName, saveMapConfig } from "./lib/utils";
 import { useUser } from "@clerk/clerk-react";
 import { Link, useSearchParams } from "react-router";
 import { addHeightsToForm, convertToNestedObject } from "./lib/utils";
@@ -37,7 +37,7 @@ export const App = () => {
   const configId = useSearchParams()[0].get("configId");
   const [config, setConfig] = useState(() => {
     // Load previously selected config from localStorage if it exists
-    const saved = localStorage.getItem("topojoy:config");
+    const saved = localStorage.getItem(LS.CONFIG);
     return saved && Object.keys(configs).includes(saved) ? saved : "Original";
   });
   const [loadedConfig, setLoadedConfig] = useState<MapConfig | null>(null);
@@ -52,7 +52,7 @@ export const App = () => {
   );
   const [form, setForm] = useState(() => {
     // Combine default form values with any saved values in localStorage
-    const saved = JSON.parse(localStorage.getItem("topojoy:form") || "{}");
+    const saved = JSON.parse(localStorage.getItem(LS.FORM) || "{}");
     Object.keys(saved).forEach((k) => {
       k.startsWith("colorPlan") &&
         k.endsWith("height") &&
@@ -71,7 +71,12 @@ export const App = () => {
 
   const p5Ref = useRef<HTMLDivElement>(null);
   const [isRendering, setIsRendering] = useState(false);
-
+  const [isDefaultKeepListsSet, setIsDefaultKeepListsSet] = useState(() => {
+    const keepListsSetPreviousSession = JSON.parse(
+      localStorage.getItem(LS.IS_DEFAULT_KEEP_LIST_SET) || "false"
+    );
+    return keepListsSetPreviousSession;
+  });
   useEffect(() => {
     if (configId) {
       console.log(configId);
@@ -89,7 +94,7 @@ export const App = () => {
             if (!acc[feat.type]) {
               acc[feat.type] = [];
             }
-            acc[feat.type].push(feat.name);
+            acc[feat.type].push(normalizeFeatureName(feat.name));
             return acc;
           },
           {} as Record<string, string[]>
@@ -99,9 +104,7 @@ export const App = () => {
     } else {
       console.log("loading bbox from localStorage");
       const downstreamConfig = convertToNestedObject(form, configs[config]);
-      const bbox = JSON.parse(
-        localStorage.getItem("topojoy:geojson.bbox") || "{}"
-      );
+      const bbox = JSON.parse(localStorage.getItem(LS.GEOJSON_BBOX) || "{}");
       const { bounds } = tilesForFeatures(bbox, downstreamConfig.zoomLevel);
       getGeoJSONFromOSM(bounds.latLngBox).then((geoJSON) => {
         const rawFeats = getFeatures(
@@ -112,12 +115,11 @@ export const App = () => {
           (acc, [key, value]) => {
             // key minus trailing s
             const type = key.slice(0, -1);
-            acc[type] = Object.keys(value);
+            acc[type] = Object.keys(value).map(normalizeFeatureName);
             return acc;
           },
           {} as Record<string, string[]>
         );
-        console.log(feats);
         setFeatures(feats);
       });
     }
@@ -126,19 +128,30 @@ export const App = () => {
   const tour = TourMap();
 
   const renderSketch = () => {
-    const nestedForm = convertToNestedObject(form, configs[config]);
+    let nestedForm = convertToNestedObject(form, configs[config]);
+    if (isInitialRender) {
+      nestedForm.mountain.drop = false;
+      nestedForm.river.drop = false;
+      nestedForm.trail.drop = false;
+      nestedForm.lake.drop = false;
+    } else {
+      nestedForm.mountain.drop = true;
+      nestedForm.river.drop = true;
+      nestedForm.trail.drop = true;
+      nestedForm.lake.drop = true;
+    }
+
     if (!p5Ref.current) return;
     let myBbox = bbox;
     let mySelectedTrails = selectedTrails;
     if (!myBbox) {
       console.log("loading bbox from localStorage");
-      myBbox = JSON.parse(localStorage.getItem("topojoy:geojson.bbox") || "{}");
+      myBbox = JSON.parse(localStorage.getItem(LS.GEOJSON_BBOX) || "{}");
     }
     if (!mySelectedTrails.length) {
       console.log("loading selectedTrails from localStorage");
       mySelectedTrails = getUserSelectedTrailsLatLng();
     }
-    console.log(features);
     // show loading while rendering
     setIsRendering(true);
 
@@ -150,7 +163,7 @@ export const App = () => {
       myBbox,
       mySelectedTrails,
       nestedForm,
-      (canvas: { elt: HTMLCanvasElement }, sketch: p5, features: any) => {
+      (canvas: { elt: HTMLCanvasElement }, sketch: p5, labels: any) => {
         const png = canvas.elt.toDataURL("image/png");
         const img = new Image();
         img.src = png!;
@@ -166,7 +179,32 @@ export const App = () => {
         img.style.maxWidth = `${sketch.width}px`;
         p5Ref.current?.appendChild(img); // 2. use <img>, not <canvas>
         sketch.remove();
-        // load selected features
+        if (isDefaultKeepListsSet) {
+          setIsDefaultKeepListsSet(false);
+          const selectedFeatures = labels.filter(
+            ({ keep }: { keep: boolean }) => keep
+          );
+          const keepLists = selectedFeatures.reduce(
+            (
+              acc: Record<string, string[]>,
+              { name, category }: { name: string; category: string }
+            ) => {
+              const formId = `${category}.keepList`;
+              if (!acc[formId]) {
+                acc[formId] = [];
+              }
+              acc[formId].push(normalizeFeatureName(name));
+              return acc;
+            },
+            {} as Record<string, string[]>
+          );
+          console.log(keepLists);
+          setForm({
+            ...form,
+            ...keepLists,
+          });
+        }
+
         // hide loading once image is ready
         setIsRendering(false);
       }
@@ -174,6 +212,8 @@ export const App = () => {
 
     const myp5 = new p5(sketch, p5Ref.current);
     myp5.noLoop();
+
+    console.log(nestedForm);
 
     // save form, geojson.bbox, geojson.trails, config,
     // to database using api
@@ -220,12 +260,12 @@ export const App = () => {
 
   // Persist current config selection
   useEffect(() => {
-    localStorage.setItem("topojoy:config", config);
+    localStorage.setItem(LS.CONFIG, config);
   }, [config]);
 
   // Persist form entries whenever they change
   useEffect(() => {
-    localStorage.setItem("topojoy:form", JSON.stringify(form));
+    localStorage.setItem(LS.FORM, JSON.stringify(form));
   }, [form]);
 
   return (

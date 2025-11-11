@@ -68,6 +68,10 @@ const RenderFormElement = ({
     value: feature,
     label: feature,
   }));
+  if (id.includes("keepList")) {
+    console.log(options);
+    console.log(value);
+  }
 
   const cases: Record<FormElementType, React.ReactElement> = {
     text: (
@@ -103,7 +107,7 @@ const RenderFormElement = ({
     list: (
       <MultiSelect
         options={options}
-        value={value}
+        defaultValue={value}
         onValueChange={(v) => onFormChange(id, v)}
       />
     ),

@@ -1,3 +1,4 @@
+import p5 from "p5";
 import {
   degreesToRadians,
   radiansToDegrees,
@@ -419,10 +420,20 @@ export function mountainLayer(
  */
 
 export const placeWithoutCollisionFactory = (sketch) => {
-  let labels = [];
-  let contexts = [];
-  let collisions = [];
-  const getRealBoundingBox = (pt, bbox) => {
+  let labels: {
+    name: string;
+    pt: [number, number];
+    keep: boolean;
+    category: string;
+    bbox: { x: number; y: number; w: number; h: number };
+    setContextId: number;
+  }[] = [];
+  let contexts: (() => void)[] = [];
+  let collisions: [number, number][] = [];
+  const getRealBoundingBox = (
+    pt: [number, number],
+    bbox: { x: number; y: number; w: number; h: number }
+  ) => {
     let { x, y, w, h } = bbox;
     if (sketch._renderer._textBaseline === "center") {
       y = pt[1] - h / 2;
@@ -430,7 +441,11 @@ export const placeWithoutCollisionFactory = (sketch) => {
     return { x, y, w, h };
   };
 
-  const checkCollisions = (bbox, name, aIndex) => {
+  const checkCollisions = (
+    bbox: { x: number; y: number; w: number; h: number },
+    name: string,
+    aIndex: number
+  ) => {
     let bIndex = 0;
     for (const { bbox: box, name: text, keep } of labels) {
       const collides = collision(bbox, box);
@@ -445,7 +460,14 @@ export const placeWithoutCollisionFactory = (sketch) => {
   };
 
   return {
-    addLabels: (givenLabels, keepList, { setContext, font }, category) => {
+    addLabels: (
+      givenLabels:
+        | { name: string; pt: [number, number] }[]
+        | Record<string, [number, number]>,
+      keepList: string[],
+      { setContext, font }: { setContext: () => void; font: p5.Font },
+      category: string
+    ) => {
       if (!Array.isArray(givenLabels)) {
         givenLabels = Object.entries(givenLabels).map(([name, pt]) => ({
           name,
@@ -461,7 +483,12 @@ export const placeWithoutCollisionFactory = (sketch) => {
       givenLabels.forEach(({ name, pt }) => {
         const bbox = getRealBoundingBox(
           pt,
-          font.textBounds(name, pt[0], pt[1])
+          font.textBounds(name, pt[0], pt[1]) as {
+            x: number;
+            y: number;
+            w: number;
+            h: number;
+          }
         );
         const collides = checkCollisions(bbox, name, labels.length);
         const keep = keepList.includes(name) || !collides;
@@ -482,6 +509,9 @@ export const placeWithoutCollisionFactory = (sketch) => {
     },
     textBoxes: () => {
       return labels.filter(({ keep }) => keep);
+    },
+    labels: () => {
+      return labels;
     },
     // reportKeptCollisions: () => {
     //   return collisions;

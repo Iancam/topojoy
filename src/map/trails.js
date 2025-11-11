@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { pointToTileFraction } from "../lib/map/utils";
 import osmtogeojson from "osmtogeojson";
-
+import { LS } from "../lib/utils";
 // IndexedDB helper functions for caching OSM queries
 const DB_NAME = "topojoy-cache";
 const STORE_NAME = "osmCache";
@@ -105,10 +105,10 @@ const screenCoordListToObj = (obj, { name, coords }) => {
 
 export function getUserSelectedTrailsLatLng() {
   const userSelectedTrails = JSON.parse(
-    localStorage.getItem("topojoy:geojson.selectedtrailSegments") || "[]"
+    localStorage.getItem(LS.GEOJSON_SELECTED_TRAIL_SEGMENTS) || "[]"
   );
   const userDrawnTrails = JSON.parse(
-    localStorage.getItem("topojoy:geojson.drawnTrails")
+    localStorage.getItem(LS.GEOJSON_DRAWN_TRAILS)
   ).features;
   // merge userSelectedTrails and userDrawnTrails
   const merged = [...userSelectedTrails, ...userDrawnTrails];
@@ -137,7 +137,6 @@ export function getTrails({ box, zoom }, geoJSON) {
     .map(featuresToScreenCoords(zoom, box))
     .filter(({ coords }) => coords.length > 0)
     .reduce(screenCoordListToObj, {});
-  console.log(trails);
   return trails;
 }
 

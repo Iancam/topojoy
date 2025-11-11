@@ -1,5 +1,5 @@
 import { observable, action, makeAutoObservable, computed } from 'mobx';
-
+import { LS } from '../../src/lib/utils.ts';
 // state to consider:
 // interface state:
 // selecting bbox
@@ -45,7 +45,8 @@ export class Store {
   }
   setBBox(bbox) {
     this.bbox = bbox;
-    localStorage.setItem('topojoy:geojson.bbox', JSON.stringify(bbox));
+    localStorage.setItem(LS.IS_DEFAULT_KEEP_LIST_SET, 'false');
+    localStorage.setItem(LS.GEOJSON_BBOX, JSON.stringify(bbox));
   }
   // changes selected trails from an object indexed on indices
   // from the bboxTrails
