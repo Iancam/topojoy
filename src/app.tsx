@@ -18,7 +18,7 @@ import {
 } from "./map/trails.js";
 import { tilesForFeatures } from "./map/processImage.js";
 import { getMapConfig } from "./api.ts";
-import { LS, normalizeFeatureName, saveMapConfig } from "./lib/utils";
+import { LS, normalizeFeatureName } from "./lib/utils";
 import { useUser } from "@clerk/clerk-react";
 import { Link, useSearchParams } from "react-router";
 import { addHeightsToForm, convertToNestedObject } from "./lib/utils";
@@ -129,7 +129,7 @@ export const App = () => {
 
   const renderSketch = () => {
     let nestedForm = convertToNestedObject(form, configs[config]);
-    if (isInitialRender) {
+    if (isDefaultKeepListsSet) {
       nestedForm.mountain.drop = false;
       nestedForm.river.drop = false;
       nestedForm.trail.drop = false;
@@ -163,7 +163,7 @@ export const App = () => {
       myBbox,
       mySelectedTrails,
       nestedForm,
-      (canvas: { elt: HTMLCanvasElement }, sketch: p5, labels: any) => {
+      (canvas: { elt: HTMLCanvasElement }, sketch: p5, keepLists: any) => {
         const png = canvas.elt.toDataURL("image/png");
         const img = new Image();
         img.src = png!;
@@ -181,23 +181,7 @@ export const App = () => {
         sketch.remove();
         if (isDefaultKeepListsSet) {
           setIsDefaultKeepListsSet(false);
-          const selectedFeatures = labels.filter(
-            ({ keep }: { keep: boolean }) => keep
-          );
-          const keepLists = selectedFeatures.reduce(
-            (
-              acc: Record<string, string[]>,
-              { name, category }: { name: string; category: string }
-            ) => {
-              const formId = `${category}.keepList`;
-              if (!acc[formId]) {
-                acc[formId] = [];
-              }
-              acc[formId].push(normalizeFeatureName(name));
-              return acc;
-            },
-            {} as Record<string, string[]>
-          );
+
           console.log(keepLists);
           setForm({
             ...form,

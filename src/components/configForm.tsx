@@ -68,10 +68,6 @@ const RenderFormElement = ({
     value: feature,
     label: feature,
   }));
-  if (id.includes("keepList")) {
-    console.log(options);
-    console.log(value);
-  }
 
   const cases: Record<FormElementType, React.ReactElement> = {
     text: (

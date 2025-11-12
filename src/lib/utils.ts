@@ -58,10 +58,7 @@ export const normalizeFeatureName = (name: string) => {
 
 export const saveMapConfig = (
   form: any,
-  lakes: string[],
-  mountains: string[],
-  waterFeatures: string[],
-  trails: string[],
+  givenFeatures: Record<string, string[]>,
   bbox: any,
   user: any,
   config: string,
@@ -69,10 +66,10 @@ export const saveMapConfig = (
 ) => {
   const nestedForm = convertToNestedObject(form, defaultConfig);
   const featuresData = {
-    lake: [form["lake.keepList"], lakes],
-    mountain: [form["mountain.keepList"], mountains],
-    river: [form["river.keepList"], waterFeatures],
-    trail: [form["trail.keepList"], trails],
+    lake: [form["lake.keepList"], givenFeatures.lakes],
+    mountain: [form["mountain.keepList"], givenFeatures.mountains],
+    river: [form["river.keepList"], givenFeatures.waterFeatures],
+    trail: [form["trail.keepList"], givenFeatures.trails],
   };
 
   // create a list of all features, with their selected state, name, and type

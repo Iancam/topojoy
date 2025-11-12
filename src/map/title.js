@@ -40,7 +40,9 @@ export function drawTitle(
   font,
   addLabels
 ) {
-  let labels = { [title]: [sketch.width / 2, (9 * sketch.height) / 10] };
+  let labels = {
+    [title]: { name: title, pt: [sketch.width / 2, (9 * sketch.height) / 10] },
+  };
   const textSize = titleFontSize(sketch.width, sketch.height, title);
 
   const drawEnvTitle = () => {
@@ -61,7 +63,12 @@ export function drawTitle(
     .map((n) => n.toFixed(4))
     .join(", ");
 
-  labels = { [latlng]: [sketch.width / 2, (9 * sketch.height) / 10 + 20] };
+  labels = {
+    [latlng]: {
+      name: latlng,
+      pt: [sketch.width / 2, (9 * sketch.height) / 10 + 20],
+    },
+  };
 
   addLabels(labels, [latlng], { setContext: drawEnvLatlng, font }, "title");
 }

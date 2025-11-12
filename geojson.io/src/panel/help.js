@@ -6,6 +6,7 @@ import {
   addVertexLayer,
   removeVertexLayer
 } from '../ui/draw/splitTrails';
+import { LS } from '../../../src/lib/utils';
 // const ApiContent = require('../../API.md').default;
 
 // user selects area using rect. tool √
@@ -110,14 +111,14 @@ export default function (context) {
     // get rid of store reaction
     disposer && disposer();
     // put data in localStorage
-    localStorage.setItem('topojoy:geojson.bbox', JSON.stringify(store.bbox));
+    localStorage.setItem(LS.GEOJSON_BBOX, JSON.stringify(store.bbox));
 
     localStorage.setItem(
-      'topojoy:geojson.selectedtrailSegments',
+      LS.GEOJSON_SELECTED_TRAIL_SEGMENTS,
       JSON.stringify(store.getSelectedTrailSegments())
     );
     localStorage.setItem(
-      'topojoy:geojson.drawnTrails',
+      LS.GEOJSON_DRAWN_TRAILS,
       JSON.stringify({
         type: 'FeatureCollection',
         features: linestringFeatures

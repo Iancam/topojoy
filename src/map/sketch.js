@@ -22,6 +22,7 @@ import { createWebGLFlowField } from "../contourExploration/terrainFlowField";
 import { drawTitle } from "./title";
 import chroma from "chroma-js";
 import { drawLegend } from "./legend";
+import _ from "lodash";
 export const sketchFactory = (
   boundsGeojson,
   selectedTrails,
@@ -94,7 +95,6 @@ export const sketchFactory = (
         );
 
         const collisionHandler = placeWithoutCollisionFactory(sketch);
-
         if (contourLines) {
           // WARNING: this path is untested
           await contourCurvesPath(
@@ -198,6 +198,7 @@ export const sketchFactory = (
         userSelectedTrails,
         collisionHandler
       ) => {
+        placeLabelsWithoutCollision(config, bounds, features, collisionHandler);
         if (!config.backgroundText.highContrast)
           textsLayer(sketch, topo, colorAt, collisionHandler.textBoxes(), {
             ...config.backgroundText,
@@ -205,14 +206,39 @@ export const sketchFactory = (
             textSize:
               config.backgroundText.textSize * config.textSizeMultiplier,
           });
-        drawLines(sketch, topo, features.rivers, config.textSizeMultiplier, {
-          ...config.river,
-          style: "basic",
-        });
-        drawLines(sketch, topo, features.trails, config.textSizeMultiplier, {
-          ...config.trail,
-          style: "basic",
-        });
+        const keepLists = collisionHandler.labels().reduce((acc, label) => {
+          const { category, name, keep } = label;
+          if (!acc[category]) {
+            acc[category] = [];
+          }
+          if (keep) {
+            acc[category].push(name);
+          }
+          return acc;
+        }, {});
+
+        // filter out features not in keeplist
+        console.log(keepLists, collisionHandler.labels());
+        drawLines(
+          sketch,
+          topo,
+          _.pick(features.rivers, keepLists.river),
+          config.textSizeMultiplier,
+          {
+            ...config.river,
+            style: "basic",
+          }
+        );
+        drawLines(
+          sketch,
+          topo,
+          _.pick(features.trails, keepLists.trail),
+          config.textSizeMultiplier,
+          {
+            ...config.trail,
+            style: "basic",
+          }
+        );
 
         drawLines(sketch, topo, userSelectedTrails, config.textSizeMultiplier, {
           ...config.trail,
@@ -222,11 +248,10 @@ export const sketchFactory = (
           ],
           style: "basic",
         });
-        drawLakes(sketch, features.lakes, {
+        drawLakes(sketch, _.pick(features.lakes, keepLists.lake), {
           color: config.river.colorRange[0],
         });
 
-        placeLabelsWithoutCollision(config, bounds, features, collisionHandler);
         if (config.backgroundText.highContrast) {
           textsLayer(sketch, topo, colorAt, collisionHandler.textBoxes(), {
             ...config.backgroundText,

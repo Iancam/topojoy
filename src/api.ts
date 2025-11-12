@@ -1,5 +1,4 @@
 import { MapConfig } from "./configs/schema";
-import { normalizeFeatureName } from "./lib/utils";
 
 // selectedTrails should be a geojson object with latlng coords, not
 // with screen coords
@@ -29,13 +28,7 @@ export const saveMapConfig = async (config: {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      ...config,
-      features: config.features.map((f) => ({
-        ...f,
-        name: normalizeFeatureName(f.name),
-      })),
-    }),
+    body: JSON.stringify(config),
   });
 
   if (!response.ok) {

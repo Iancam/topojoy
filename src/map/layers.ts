@@ -325,7 +325,7 @@ export function lakesLabels(
         [0, 0]
       );
       const [cx, cy] = [x / externalRing.length, y / externalRing.length];
-      labels[name.split(" ").join("\n")] = [cx, cy];
+      labels[name] = { pt: [cx, cy], displayName: name.split(" ").join("\n") };
     });
 
   // sketch.strokeWeight(weight);
@@ -380,7 +380,7 @@ export function mountainLayer(
       return [name, pt];
     })
     .reduce((obj, [name, pt]) => {
-      obj[name] = pt;
+      obj[name] = { name, pt };
       return obj;
     }, {});
 
@@ -422,6 +422,7 @@ export function mountainLayer(
 export const placeWithoutCollisionFactory = (sketch) => {
   let labels: {
     name: string;
+    displayName?: string;
     pt: [number, number];
     keep: boolean;
     category: string;
@@ -462,17 +463,20 @@ export const placeWithoutCollisionFactory = (sketch) => {
   return {
     addLabels: (
       givenLabels:
-        | { name: string; pt: [number, number] }[]
-        | Record<string, [number, number]>,
+        | { name: string; displayName?: string; pt: [number, number] }[]
+        | Record<string, { pt: [number, number]; displayName?: string }>,
       keepList: string[],
       { setContext, font }: { setContext: () => void; font: p5.Font },
       category: string
     ) => {
       if (!Array.isArray(givenLabels)) {
-        givenLabels = Object.entries(givenLabels).map(([name, pt]) => ({
-          name,
-          pt,
-        }));
+        givenLabels = Object.entries(givenLabels).map(
+          ([name, { pt, displayName }]) => ({
+            name,
+            displayName,
+            pt,
+          })
+        );
       }
 
       sketch.push();
@@ -480,10 +484,11 @@ export const placeWithoutCollisionFactory = (sketch) => {
       const setContextId = contexts.length;
       contexts.push(setContext);
 
-      givenLabels.forEach(({ name, pt }) => {
+      givenLabels.forEach(({ name, displayName, pt }) => {
+        console.log(name, displayName, pt);
         const bbox = getRealBoundingBox(
           pt,
-          font.textBounds(name, pt[0], pt[1]) as {
+          font.textBounds(displayName || name, pt[0], pt[1]) as {
             x: number;
             y: number;
             w: number;
@@ -492,17 +497,25 @@ export const placeWithoutCollisionFactory = (sketch) => {
         );
         const collides = checkCollisions(bbox, name, labels.length);
         const keep = keepList.includes(name) || !collides;
-        labels.push({ name, pt, keep, category, bbox, setContextId });
+        labels.push({
+          name,
+          displayName,
+          pt,
+          keep,
+          category,
+          bbox,
+          setContextId,
+        });
       });
 
       sketch.pop();
     },
     drawLabels: () => {
-      labels.forEach(({ setContextId, keep, name, pt }) => {
+      labels.forEach(({ setContextId, keep, name, displayName, pt }) => {
         sketch.push();
         contexts[setContextId]();
         if (keep) {
-          sketch.text(name, pt[0], pt[1]);
+          sketch.text(displayName || name, pt[0], pt[1]);
         }
         sketch.pop();
       });
@@ -512,6 +525,27 @@ export const placeWithoutCollisionFactory = (sketch) => {
     },
     labels: () => {
       return labels;
+    },
+    keepLists: () => {
+      const keepLists = labels.reduce(
+        (
+          acc: Record<string, string[]>,
+          {
+            name,
+            category,
+            keep,
+          }: { name: string; category: string; keep: boolean }
+        ) => {
+          if (!acc[category]) {
+            acc[category] = [];
+          }
+          if (!keep) return acc;
+          acc[category].push(name);
+          return acc;
+        },
+        {} as Record<string, string[]>
+      );
+      return keepLists;
     },
     // reportKeptCollisions: () => {
     //   return collisions;
@@ -569,7 +603,7 @@ export function namedLines(
 
     const mid = Math.floor(maxLength / 2);
     const pt = coords[maxIndex][mid];
-    labels[name.split(" ").join("\n")] = pt;
+    labels[name] = { pt, displayName: name.split(" ").join("\n") };
   });
   const setContext = () => {
     sketch.stroke("white");
@@ -578,10 +612,5 @@ export function namedLines(
     sketch.fill(textColor);
   };
 
-  addLabels(
-    labels,
-    keepList.map((name) => name.split(" ").join("\n")),
-    { setContext, font },
-    category
-  );
+  addLabels(labels, keepList, { setContext, font }, category);
 }
