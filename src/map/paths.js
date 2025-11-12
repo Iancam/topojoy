@@ -51,6 +51,7 @@ export function drawLines(
 
 const basicLines = function (sketch, lines, slopeScale, textSizeMultiplier) {
   sketch.push();
+  sketch.noFill();
   sketch.stroke(...res(slopeScale(1 / 60)), 255);
   sketch.strokeWeight(2 * textSizeMultiplier);
   lines.forEach((coords) => {
