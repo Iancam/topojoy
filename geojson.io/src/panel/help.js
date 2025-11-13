@@ -111,8 +111,6 @@ export default function (context) {
     // get rid of store reaction
     disposer && disposer();
     // put data in localStorage
-    localStorage.setItem(LS.GEOJSON_BBOX, JSON.stringify(store.bbox));
-
     localStorage.setItem(
       LS.GEOJSON_SELECTED_TRAIL_SEGMENTS,
       JSON.stringify(store.getSelectedTrailSegments())

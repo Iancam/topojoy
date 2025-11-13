@@ -1,5 +1,6 @@
 import { observable, action, makeAutoObservable, computed } from 'mobx';
 import { LS } from '../../src/lib/utils.ts';
+import { clearOSMCache } from '../../src/map/trails.js';
 // state to consider:
 // interface state:
 // selecting bbox
@@ -47,6 +48,8 @@ export class Store {
     this.bbox = bbox;
     localStorage.setItem(LS.IS_DEFAULT_KEEP_LIST_SET, 'false');
     localStorage.setItem(LS.GEOJSON_BBOX, JSON.stringify(bbox));
+    // Clear cached OSM data whenever bbox changes
+    clearOSMCache();
   }
   // changes selected trails from an object indexed on indices
   // from the bboxTrails
