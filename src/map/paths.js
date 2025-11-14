@@ -7,7 +7,7 @@ import {
   windowForEach,
 } from "../lib/map/utils";
 import { res } from "./colorUtils";
-import { drawCurve, makeCurve } from "./layers.ts";
+import { drawCurve, makeCurve } from "./layers";
 
 /**
  * Given a topology `topo`, a collection of coordinates `lines` and

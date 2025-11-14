@@ -9,8 +9,8 @@ import {
   drawCurve,
   lakesLabels,
   drawLakes,
-  placeWithoutCollisionFactory,
-} from "./layers.ts";
+} from "./layers";
+import { placeWithoutCollisionFactory } from "./labelManager";
 import { drawLines } from "./paths";
 import {
   getGeoJSONFromOSM,
@@ -199,6 +199,20 @@ export const sketchFactory = (
         collisionHandler
       ) => {
         placeLabelsWithoutCollision(config, bounds, features, collisionHandler);
+        console.log(
+          collisionHandler
+            .collisions()
+            .filter(([a, b]) => {
+              const save =
+                a.name.toLowerCase().includes("highland") ||
+                b.name.toLowerCase().includes("highland");
+              return save;
+            })
+            .map(([a, b]) => `${a.name} ${a.keep}, ${b.name} ${b.keep}`)
+        );
+        collisionHandler.labels().forEach(({ bbox }) => {
+          sketch.rect(bbox.x, bbox.y, bbox.w, bbox.h);
+        });
         if (!config.backgroundText.highContrast)
           textsLayer(sketch, topo, colorAt, collisionHandler.textBoxes(), {
             ...config.backgroundText,
@@ -217,8 +231,6 @@ export const sketchFactory = (
           return acc;
         }, {});
 
-        // filter out features not in keeplist
-        console.log(keepLists, collisionHandler.labels());
         drawLines(
           sketch,
           topo,
