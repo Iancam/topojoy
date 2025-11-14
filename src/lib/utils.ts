@@ -2,7 +2,7 @@ import { MapConfig } from "@/configs/schema";
 import { getUserSelectedTrailsLatLng } from "@/map/trails";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { saveMapConfig as saveMapConfigApi } from "../api";
+import { maps } from "../api";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -56,7 +56,7 @@ export const normalizeFeatureName = (name: string) => {
   return name.replace(/\n/g, " ").trim();
 };
 
-export const saveMapConfig = (
+export const upsertMap = (
   form: any,
   givenFeatures: Record<string, string[]>,
   bbox: any,
@@ -83,13 +83,13 @@ export const saveMapConfig = (
     }
   );
 
-  saveMapConfigApi({
+  maps.upsert({
     userId: user?.id!,
     title: nestedForm.title.text,
     config,
     zoomLevel: nestedForm.zoomLevel,
     curveDensity: nestedForm.curve.density,
-
+    filename: nestedForm.filename,
     bbox: bbox,
     selectedTrails: getUserSelectedTrailsLatLng(),
     features,

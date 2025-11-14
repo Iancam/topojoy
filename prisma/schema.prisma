@@ -50,6 +50,7 @@ model MapConfig {
   user  User @relation(fields: [userId], references: [clerkId])
   userId String
   
+  filename String @db.VarChar(255) @default(dbgenerated("gen_random_uuid()"))
   title String @db.VarChar(128)
   config String @db.VarChar(64)
   zoomLevel Int
@@ -69,4 +70,5 @@ model MapConfig {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  @@unique([filename, userId])
 }

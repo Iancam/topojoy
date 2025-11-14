@@ -20,6 +20,7 @@ export const handler = async (event: any) => {
       userId: z.string(),
       title: z.string(),
       config: z.string(),
+      filename: z.string().optional(),
       zoomLevel: z.number(),
       curveDensity: z.number(),
       features: z.array(featuresSchema),
@@ -40,8 +41,22 @@ export const handler = async (event: any) => {
       // convert colorPlan to csv string
 
       // save to db
-      const config = await prisma.mapConfig.create({
-        data: {
+      const config = await prisma.mapConfig.upsert({
+        where: {
+          filename_userId: {
+            filename: validatedBody.filename || "",
+            userId: validatedBody.userId,
+          },
+        },
+        update: {
+          ...validatedBody,
+          features: {
+            create: validatedBody.features,
+          },
+          bbox: validatedBody.bbox,
+          selectedTrails: validatedBody.selectedTrails,
+        },
+        create: {
           ...validatedBody,
           features: {
             create: validatedBody.features,

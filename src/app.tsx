@@ -17,12 +17,11 @@ import {
   getUserSelectedTrailsLatLng,
 } from "./map/trails.js";
 import { tilesForFeatures } from "./map/processImage.js";
-import { getMapConfig } from "./api.ts";
+import { maps } from "./api.ts";
 import { LS, normalizeFeatureName } from "./lib/utils";
 import { useUser } from "@clerk/clerk-react";
 import { Link, useSearchParams } from "react-router";
 import { addHeightsToForm, convertToNestedObject } from "./lib/utils";
-import { uniq } from "lodash";
 interface Configs {
   [key: string]: MapConfig;
 }
@@ -81,7 +80,7 @@ export const App = () => {
     if (configId) {
       console.log(configId);
       // get config from db
-      getMapConfig(user?.id!, configId).then((config) => {
+      maps.get(user?.id!, configId).then((config) => {
         console.log(config);
         setLoadedConfig(config);
         setConfig(config.config);
@@ -196,8 +195,6 @@ export const App = () => {
 
     const myp5 = new p5(sketch, p5Ref.current);
     myp5.noLoop();
-
-    console.log(nestedForm);
 
     // save form, geojson.bbox, geojson.trails, config,
     // to database using api

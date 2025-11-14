@@ -28,7 +28,13 @@ export const formJourney: {
   {
     title: "Basics",
     description: `Add a title, choose a color scheme, set the curve density, and adjust the zoom level.`,
-    formElements: [ConfigSelect, "title.text", "curve.density", "zoomLevel"],
+    formElements: [
+      ConfigSelect,
+      "filename",
+      "title.text",
+      "curve.density",
+      "zoomLevel",
+    ],
   },
   {
     title: "features",
@@ -60,6 +66,7 @@ export const formJourney: {
 ];
 
 export const basicFormElements: FormElements = {
+  filename: ["text", "the unique 'filename' of the map", "", "Filename"],
   "legend.enabled": ["boolean", "show/hide legend", false, "Show Legend"],
   "backgroundText.text": ["textarea", "the text in the background", "", "Text"],
   "backgroundText.elevationRange": [
