@@ -5,7 +5,6 @@ import { Webhook } from "svix";
 const prisma = new PrismaClient();
 
 export const handler = async (event: HandlerEvent, context: HandlerContext) => {
-  console.log(event);
   const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
   if (!WEBHOOK_SECRET) {
     throw new Error("You need a WEBHOOK_SECRET in your .env");

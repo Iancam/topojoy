@@ -103,8 +103,6 @@ const _addTrails = (geoJSON, map, store) => {
     features: lineFeatures
   };
 
-  console.log(trailsFC.features.filter((f) => f.properties?.name));
-
   if (map.getSource(sourceId)) {
     map.getSource(sourceId).setData(trailsFC);
     ensureLabelLayer();

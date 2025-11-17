@@ -207,9 +207,6 @@ export const sketchFactory = (
         labelManager
       ) => {
         placeLabelsWithoutCollision(config, bounds, features, labelManager);
-        labelManager.labels().forEach(({ bbox }) => {
-          sketch.rect(bbox.x, bbox.y, bbox.w, bbox.h);
-        });
         if (!config.backgroundText.highContrast)
           textsLayer(sketch, topo, colorAt, labelManager.textBoxes(), {
             ...config.backgroundText,

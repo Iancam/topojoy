@@ -92,9 +92,6 @@ export const labelManagerFactory = (sketch: p5) => {
         const collides = checkCollisions(bbox, name, labels.length);
         const keep = keepList.includes(name) || !collides;
 
-        if (name === "Rio Grande") {
-          console.log({ name, keep, collides, keepList });
-        }
         labels.push({
           name,
           displayName,

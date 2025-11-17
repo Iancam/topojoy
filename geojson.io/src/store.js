@@ -157,9 +157,6 @@ export class Store {
   }
   addSelectedtrailSegmentId(id) {
     this.selectedtrailSegmentIds.add(Number(id));
-    console.log(this.selectedtrailSegmentIds);
-    console.log(this.selectedtrailSegments);
-    console.log(this.getSelectedTrailSegments());
     // this.selectedtrailSegments[id] = this.bboxTrails[id];
   }
   getSelectedTrailSegments() {

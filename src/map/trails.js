@@ -78,7 +78,6 @@ export const featuresToScreenCoords = (zoom, box) => (feature) => {
       .filter(([x, y]) => {
         const inBounds =
           x < box[2] + 1 && y < box[3] + 1 && x > box[0] && y > box[1];
-        // if (inBounds) console.log(x, y, ...box);
         return inBounds;
       })
       .map(([x, y]) => [
