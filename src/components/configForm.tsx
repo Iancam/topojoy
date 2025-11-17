@@ -14,7 +14,6 @@ import { Slider } from "./ui/slider";
 import p5 from "p5";
 import { MultiSelect } from "./multi-select";
 import { FormElementType, formJourney, formElements } from "./configFormData";
-
 import { MultiStepForm } from "./multiStepForm";
 
 interface TooltipWrapperProps {
@@ -26,16 +25,44 @@ interface ConfigFormProps {
   configs: { [key: string]: Config };
   form: any;
   features: { [key: string]: string[] };
+  collisions: Record<string, string[]>;
   onConfigChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onFormChange: (key: string, value: any) => void;
   renderSketch: () => p5;
   onSubmitSave?: () => void;
 }
 
+const collisionFoundFactory =
+  (form: any, collisions: Record<string, string[]>) => (feature: string) => {
+    // get master keeplist
+    const keepMap = [
+      form["river.keepList"],
+      form["trail.keepList"],
+      form["mountain.keepList"],
+      form["lake.keepList"],
+    ]
+      .flat()
+      .reduce((acc, val) => {
+        acc[val] = true;
+        return acc;
+      }, {});
+
+    const collidesWith = collisions[feature] || [];
+    let collisionsFound: string[] = [feature];
+    for (const feature of collidesWith) {
+      if (keepMap[feature]) {
+        collisionsFound.push(feature);
+      }
+    }
+
+    return collisionsFound;
+  };
+
 const RenderFormElement = ({
   form,
   onFormChange,
   features,
+  collisions,
   props,
   id,
   elementType,
@@ -45,6 +72,7 @@ const RenderFormElement = ({
   form: any;
   onFormChange: (key: string, value: any) => void;
   features: { [key: string]: string[] };
+  collisions: Record<string, string[]>;
   id: string;
   elementType: FormElementType;
   description: string;
@@ -63,11 +91,20 @@ const RenderFormElement = ({
   );
 
   const value = form[id];
-
-  const options = (features[id.split(".")[0]] || []).map((feature: string) => ({
-    value: feature,
-    label: feature,
-  }));
+  const collisionFound = collisionFoundFactory(form, collisions);
+  const options = (features[id.split(".")[0]] || []).map((feature: string) => {
+    const collides = collisionFound(feature);
+    return {
+      style:
+        collides.length > 1
+          ? {
+              badgeColor: "red",
+            }
+          : undefined,
+      value: feature,
+      label: feature,
+    };
+  });
 
   const cases: Record<FormElementType, React.ReactElement> = {
     text: (
@@ -153,6 +190,7 @@ export const ConfigForm = ({
   configs,
   form,
   features,
+  collisions,
   onConfigChange,
   onFormChange,
   renderSketch,
@@ -176,6 +214,7 @@ export const ConfigForm = ({
             form={form}
             onFormChange={onFormChange}
             features={features}
+            collisions={collisions}
             id={FormElement}
             elementType={elementType}
             description={description}
@@ -187,6 +226,7 @@ export const ConfigForm = ({
             config={config}
             configs={configs}
             features={features}
+            collisions={collisions}
             renderFormElement={RenderFormElement}
             onConfigChange={onConfigChange}
             onFormChange={onFormChange}

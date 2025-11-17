@@ -12,9 +12,8 @@
 
 import { collision } from "@/lib/map/utils";
 import p5 from "p5";
-import { array } from "zod";
 
-export const placeWithoutCollisionFactory = (sketch: p5) => {
+export const labelManagerFactory = (sketch: p5) => {
   let labels: {
     name: string;
     displayName?: string;
@@ -92,6 +91,10 @@ export const placeWithoutCollisionFactory = (sketch: p5) => {
         );
         const collides = checkCollisions(bbox, name, labels.length);
         const keep = keepList.includes(name) || !collides;
+
+        if (name === "Rio Grande") {
+          console.log({ name, keep, collides, keepList });
+        }
         labels.push({
           name,
           displayName,
@@ -142,11 +145,31 @@ export const placeWithoutCollisionFactory = (sketch: p5) => {
       );
       return keepLists;
     },
-    collisions: () => {
-      return collisions.map(([a, b]) => [
-        { name: labels[a].name, keep: labels[a].keep },
-        { name: labels[b].name, keep: labels[b].keep },
-      ]);
+    collisions: {
+      edgelist: () => {
+        return collisions.map(([a, b]) => [
+          { name: labels[a].name, keep: labels[a].keep },
+          { name: labels[b].name, keep: labels[b].keep },
+        ]);
+      },
+      object: () => {
+        return collisions
+          .map(([a, b]) => [labels[a].name, labels[b].name])
+          .reduce(
+            (acc, [a, b]) => {
+              if (!acc[a]) {
+                acc[a] = [];
+              }
+              if (!acc[b]) {
+                acc[b] = [];
+              }
+              acc[a].push(b);
+              acc[b].push(a);
+              return acc;
+            },
+            {} as Record<number, number[]>
+          );
+      },
     },
   };
 };

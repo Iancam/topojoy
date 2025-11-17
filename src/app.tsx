@@ -21,7 +21,13 @@ import { maps } from "./api.ts";
 import { LS, normalizeFeatureName } from "./lib/utils";
 import { useUser } from "@clerk/clerk-react";
 import { Link, useSearchParams } from "react-router";
-import { addHeightsToForm, convertToNestedObject } from "./lib/utils";
+import {
+  addHeightsToForm,
+  convertToNestedObject,
+  upsertMap,
+} from "./lib/utils";
+import _ from "lodash";
+
 interface Configs {
   [key: string]: MapConfig;
 }
@@ -76,12 +82,11 @@ export const App = () => {
     );
     return keepListsSetPreviousSession;
   });
+  const [collisions, setCollisions] = useState<Record<string, string[]>>({});
   useEffect(() => {
     if (configId) {
-      console.log(configId);
       // get config from db
       maps.get(user?.id!, configId).then((config) => {
-        console.log(config);
         setLoadedConfig(config);
         setConfig(config.config);
         setForm({ ...preForm, ...config });
@@ -128,11 +133,17 @@ export const App = () => {
 
   const renderSketch = () => {
     let nestedForm = convertToNestedObject(form, configs[config]);
-    if (isDefaultKeepListsSet) {
+    if (isDefaultKeepListsSet || nestedForm.forceCollisionDetection) {
       nestedForm.mountain.drop = false;
       nestedForm.river.drop = false;
       nestedForm.trail.drop = false;
       nestedForm.lake.drop = false;
+
+      // set all keeplists to empty
+      nestedForm.mountain.keepList = [];
+      nestedForm.river.keepList = [];
+      nestedForm.trail.keepList = [];
+      nestedForm.lake.keepList = [];
     } else {
       nestedForm.mountain.drop = true;
       nestedForm.river.drop = true;
@@ -162,7 +173,12 @@ export const App = () => {
       myBbox,
       mySelectedTrails,
       nestedForm,
-      (canvas: { elt: HTMLCanvasElement }, sketch: p5, keepLists: any) => {
+      (
+        canvas: { elt: HTMLCanvasElement },
+        sketch: p5,
+        keepLists: any,
+        collisions: Record<string, string[]>
+      ) => {
         const png = canvas.elt.toDataURL("image/png");
         const img = new Image();
         img.src = png!;
@@ -178,14 +194,16 @@ export const App = () => {
         img.style.maxWidth = `${sketch.width}px`;
         p5Ref.current?.appendChild(img); // 2. use <img>, not <canvas>
         sketch.remove();
-        if (isDefaultKeepListsSet) {
+        if (isDefaultKeepListsSet || form.forceCollisionDetection) {
           setIsDefaultKeepListsSet(false);
 
-          console.log(keepLists);
-          setForm({
-            ...form,
-            ...keepLists,
-          });
+          setForm((prev: any) => ({
+            ...prev,
+            ..._.mapKeys(keepLists, (value, key) => {
+              return key + ".keepList";
+            }),
+          }));
+          setCollisions(collisions);
         }
 
         // hide loading once image is ready
@@ -198,6 +216,17 @@ export const App = () => {
 
     // save form, geojson.bbox, geojson.trails, config,
     // to database using api
+    if (user) {
+      upsertMap(
+        form,
+        features,
+        bbox,
+        selectedTrails,
+        user,
+        config,
+        configs[config]
+      );
+    }
 
     return myp5;
   };
@@ -210,7 +239,6 @@ export const App = () => {
     const download = () => {
       const img = container.querySelector("img") as HTMLImageElement | null;
       if (!img) return;
-      // console.log(form);
       //human readable date
       const date = new Date().toISOString();
       const a = document.createElement("a");
@@ -228,7 +256,6 @@ export const App = () => {
   };
 
   const onFormChange = (key: string, value: any) => {
-    // console.log(key, value);
     setForm({
       ...form,
       [key]: value,
@@ -304,6 +331,7 @@ export const App = () => {
             configs={configs}
             form={form}
             features={features}
+            collisions={collisions}
             onConfigChange={onConfigChange}
             onFormChange={onFormChange}
             renderSketch={renderSketch}

@@ -24,30 +24,31 @@ export const addHeightsToForm = (config: MapConfig, form: {}) => {
     });
   return { ...form, ...heights };
 };
-/**
- * convert flat keys to nested config keys
- * flat keys look like
- * { backgroundText.text, backgroundText.highContrast }
- */
+const deepClone = (obj: any) => {
+  try {
+    // @ts-ignore
+    if (typeof structuredClone === "function") return structuredClone(obj);
+  } catch {}
+  return JSON.parse(JSON.stringify(obj));
+};
+
 export const convertToNestedObject = (
   flat: { [key: string]: any },
   defaultObject?: { [key: string]: any }
 ) => {
-  defaultObject = defaultObject || {};
-  let config = { ...defaultObject };
+  const base = defaultObject || {};
+  let config = deepClone(base);
   for (const [key, value] of Object.entries(flat)) {
     const keys = key.split(".");
     const lastKey = keys.pop()!;
-    let current = config;
+    let current = config as any;
     for (const k of keys) {
-      // allow configFormData to create new fields without having to edit
-      // config Files
       if (!current[k]) {
         current[k] = {};
       }
       current = current[k];
     }
-    current[lastKey] = value;
+    current[lastKey] = deepClone(value);
   }
   return config;
 };
@@ -60,6 +61,7 @@ export const upsertMap = (
   form: any,
   givenFeatures: Record<string, string[]>,
   bbox: any,
+  selectedTrails: any,
   user: any,
   config: string,
   defaultConfig: MapConfig
@@ -91,7 +93,7 @@ export const upsertMap = (
     curveDensity: nestedForm.curve.density,
     filename: nestedForm.filename,
     bbox: bbox,
-    selectedTrails: getUserSelectedTrailsLatLng(),
+    selectedTrails,
     features,
     backgroundText: nestedForm.backgroundText.text,
     backgroundTextElevationRange0: nestedForm.backgroundText.elevationRange[0],

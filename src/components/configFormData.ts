@@ -61,11 +61,17 @@ export const formJourney: {
     title: "Misc.",
     description: `Choose other options for the map.`,
     formElements: ["crossHatch", "legend.enabled"],
-    advanced: [ColorPlan],
+    advanced: ["forceCollisionDetection", ColorPlan],
   },
 ];
 
 export const basicFormElements: FormElements = {
+  forceCollisionDetection: [
+    "boolean",
+    "force collision detection",
+    false,
+    "Force Collision Detection",
+  ],
   filename: ["text", "the unique 'filename' of the map", "", "Filename"],
   "legend.enabled": ["boolean", "show/hide legend", false, "Show Legend"],
   "backgroundText.text": ["textarea", "the text in the background", "", "Text"],

@@ -1175,7 +1175,15 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                               aria-hidden="true"
                             />
                           )}
-                          <span>{option.label}</span>
+                          <span
+                            className={
+                              option.style?.badgeColor === "red"
+                                ? "bg-red-500 text-white"
+                                : ""
+                            }
+                          >
+                            {option.label}
+                          </span>
                         </CommandItem>
                       );
                     })}

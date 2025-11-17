@@ -10,7 +10,7 @@ import {
   lakesLabels,
   drawLakes,
 } from "./layers";
-import { placeWithoutCollisionFactory } from "./labelManager";
+import { labelManagerFactory } from "./labelManager";
 import { drawLines } from "./paths";
 import {
   getGeoJSONFromOSM,
@@ -59,7 +59,10 @@ export const sketchFactory = (
                 : [0, 0, canvas.width, canvas.height];
           },
         };
-
+        // console.log({
+        //   mtn: config.mountain.keepList,
+        //   river: config.river.keepList,
+        // });
         Object.values(baseConfigTransforms).forEach((transform) => {
           transform(config);
         });
@@ -94,7 +97,7 @@ export const sketchFactory = (
           featuresToScreenCoords(config.zoomLevel, bounds.box, true)
         );
 
-        const collisionHandler = placeWithoutCollisionFactory(sketch);
+        const labelManager = labelManagerFactory(sketch);
         if (contourLines) {
           // WARNING: this path is untested
           await contourCurvesPath(
@@ -117,11 +120,16 @@ export const sketchFactory = (
             colorAt,
             features,
             userSelectedTrails,
-            collisionHandler
+            labelManager
           );
           if (config.legend?.enabled) drawLegend(sketch, config, topo, colorAt);
         }
-        callback(OGCanvas, sketch, collisionHandler.labels());
+        callback(
+          OGCanvas,
+          sketch,
+          labelManager.keepLists(),
+          labelManager.collisions.object()
+        );
       };
 
       const placeLabelsWithoutCollision = (
@@ -196,31 +204,20 @@ export const sketchFactory = (
         colorAt,
         features,
         userSelectedTrails,
-        collisionHandler
+        labelManager
       ) => {
-        placeLabelsWithoutCollision(config, bounds, features, collisionHandler);
-        console.log(
-          collisionHandler
-            .collisions()
-            .filter(([a, b]) => {
-              const save =
-                a.name.toLowerCase().includes("highland") ||
-                b.name.toLowerCase().includes("highland");
-              return save;
-            })
-            .map(([a, b]) => `${a.name} ${a.keep}, ${b.name} ${b.keep}`)
-        );
-        collisionHandler.labels().forEach(({ bbox }) => {
+        placeLabelsWithoutCollision(config, bounds, features, labelManager);
+        labelManager.labels().forEach(({ bbox }) => {
           sketch.rect(bbox.x, bbox.y, bbox.w, bbox.h);
         });
         if (!config.backgroundText.highContrast)
-          textsLayer(sketch, topo, colorAt, collisionHandler.textBoxes(), {
+          textsLayer(sketch, topo, colorAt, labelManager.textBoxes(), {
             ...config.backgroundText,
             backgroundColor: config.background,
             textSize:
               config.backgroundText.textSize * config.textSizeMultiplier,
           });
-        const keepLists = collisionHandler.labels().reduce((acc, label) => {
+        const keepLists = labelManager.labels().reduce((acc, label) => {
           const { category, name, keep } = label;
           if (!acc[category]) {
             acc[category] = [];
@@ -265,7 +262,7 @@ export const sketchFactory = (
         });
 
         if (config.backgroundText.highContrast) {
-          textsLayer(sketch, topo, colorAt, collisionHandler.textBoxes(), {
+          textsLayer(sketch, topo, colorAt, labelManager.textBoxes(), {
             ...config.backgroundText,
             textSize:
               config.backgroundText.textSize * config.textSizeMultiplier,
@@ -276,7 +273,7 @@ export const sketchFactory = (
           );
         }
 
-        collisionHandler.drawLabels();
+        labelManager.drawLabels();
       };
 
       const genCurve = (sketch, config, topo) => () => {
