@@ -32,7 +32,7 @@ export function drawLegend(sketch, config, topo, colorAt) {
   const eleHeight = 100 * textSizeMultiplier;
   const eleWidth = 50 * textSizeMultiplier;
   const eleX = position[0] + margin;
-  const eleY = position[1] + margin + padding + 20;
+  const eleY = position[1] + margin + padding;
   range(1, 0, -0.01).forEach((i) => {
     const color = colorAt(i);
     sketch.stroke(color);
