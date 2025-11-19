@@ -297,7 +297,7 @@ export function lakesLabels(
   sketch,
   lakes,
   keepList,
-  { font, textSize, textColor } = {},
+  { font, textSize, textColor, drop } = {},
   addLabels
 ) {
   const addedNames = [];
@@ -336,7 +336,7 @@ export function lakesLabels(
     sketch.fill(textColor);
   };
 
-  addLabels(labels, keepList, { setContext, font }, "lake");
+  addLabels(labels, keepList, { setContext, font }, "lake", drop);
 }
 
 export function drawLakes(sketch, lakes, { color }) {
@@ -375,7 +375,6 @@ export function mountainLayer(
   addLabels
 ) {
   const peaksObj = Object.entries(peaks)
-    .filter(([name]) => (drop ? keepList.includes(name) : true))
     .map(([name, [[pt]]]) => {
       return [name, pt];
     })
@@ -404,7 +403,7 @@ export function mountainLayer(
     sketch.textSize(labelSize);
     sketch.textStyle(sketch.NORMAL);
   };
-  addLabels(peaksObj, keepList, { setContext, font }, "mountain");
+  addLabels(peaksObj, keepList, { setContext, font }, "mountain", drop);
 }
 
 /**
@@ -424,7 +423,7 @@ export function namedLines(
   lineStrings,
   keepList,
   category,
-  { textSize, textColor, font },
+  { textSize, textColor, font, drop },
   addLabels
 ) {
   let addedNames = [];
@@ -463,5 +462,5 @@ export function namedLines(
     sketch.fill(textColor);
   };
 
-  addLabels(labels, keepList, { setContext, font }, category);
+  addLabels(labels, keepList, { setContext, font }, category, drop);
 }

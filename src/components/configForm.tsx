@@ -46,7 +46,6 @@ const collisionFoundFactory =
         acc[val] = true;
         return acc;
       }, {});
-
     const collidesWith = collisions[feature] || [];
     let collisionsFound: string[] = [feature];
     for (const feature of collidesWith) {

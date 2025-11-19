@@ -40,6 +40,7 @@ export const formJourney: {
     title: "features",
     description: `Choose which features to show on the map.`,
     formElements: [
+      "forceCollisionDetection",
       "mountain.keepList",
       "trail.keepList",
       "river.keepList",
@@ -61,7 +62,7 @@ export const formJourney: {
     title: "Misc.",
     description: `Choose other options for the map.`,
     formElements: ["crossHatch", "legend.enabled"],
-    advanced: ["forceCollisionDetection", ColorPlan],
+    advanced: [ColorPlan],
   },
 ];
 

@@ -207,6 +207,10 @@ export const sketchFactory = (
         labelManager
       ) => {
         placeLabelsWithoutCollision(config, bounds, features, labelManager);
+        // labelManager.labels().forEach(({ bbox }) => {
+        //   sketch.rect(bbox.x, bbox.y, bbox.w, bbox.h);
+        // });
+
         if (!config.backgroundText.highContrast)
           textsLayer(sketch, topo, colorAt, labelManager.textBoxes(), {
             ...config.backgroundText,
@@ -214,16 +218,7 @@ export const sketchFactory = (
             textSize:
               config.backgroundText.textSize * config.textSizeMultiplier,
           });
-        const keepLists = labelManager.labels().reduce((acc, label) => {
-          const { category, name, keep } = label;
-          if (!acc[category]) {
-            acc[category] = [];
-          }
-          if (keep) {
-            acc[category].push(name);
-          }
-          return acc;
-        }, {});
+        const keepLists = labelManager.keepLists();
 
         drawLines(
           sketch,

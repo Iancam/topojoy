@@ -62,7 +62,8 @@ export const labelManagerFactory = (sketch: p5) => {
         | Record<string, { pt: [number, number]; displayName?: string }>,
       keepList: string[],
       { setContext, font }: { setContext: () => void; font: p5.Font },
-      category: string
+      category: string,
+      drop: boolean
     ) => {
       if (!Array.isArray(givenLabels)) {
         givenLabels = Object.entries(givenLabels).map(
@@ -90,7 +91,9 @@ export const labelManagerFactory = (sketch: p5) => {
           }
         );
         const collides = checkCollisions(bbox, name, labels.length);
-        const keep = keepList.includes(name) || !collides;
+        const keep = drop
+          ? keepList.includes(name)
+          : keepList.includes(name) || !collides;
 
         labels.push({
           name,

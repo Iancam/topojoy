@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, use } from "react";
 import { TourMap } from "./walkthrough";
 import p5 from "p5";
 import { sketchFactory } from "./map/sketch";
@@ -82,7 +82,15 @@ export const App = () => {
     );
     return keepListsSetPreviousSession;
   });
-  const [collisions, setCollisions] = useState<Record<string, string[]>>({});
+  const [collisions, setCollisions] = useState<Record<string, string[]>>(() => {
+    const saved = localStorage.getItem(LS.COLLISIONS);
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  useEffect(() => {
+    localStorage.setItem(LS.COLLISIONS, JSON.stringify(collisions));
+  }, [collisions]);
+
   useEffect(() => {
     if (configId) {
       // get config from db
@@ -177,7 +185,7 @@ export const App = () => {
         canvas: { elt: HTMLCanvasElement },
         sketch: p5,
         keepLists: any,
-        collisions: Record<string, string[]>
+        sketchCollisions: Record<string, string[]>
       ) => {
         const png = canvas.elt.toDataURL("image/png");
         const img = new Image();
@@ -196,14 +204,20 @@ export const App = () => {
         sketch.remove();
         if (isDefaultKeepListsSet || form.forceCollisionDetection) {
           setIsDefaultKeepListsSet(false);
-
-          setForm((prev: any) => ({
-            ...prev,
-            ..._.mapKeys(keepLists, (value, key) => {
-              return key + ".keepList";
-            }),
-          }));
-          setCollisions(collisions);
+          setForm((prev: any) => {
+            const mappedKeeplists = {
+              "lake.keepList": keepLists.lake || [],
+              "mountain.keepList": keepLists.mountain || [],
+              "river.keepList": keepLists.river || [],
+              "trail.keepList": keepLists.trail || [],
+            };
+            const newForm = {
+              ...prev,
+              ...mappedKeeplists,
+            };
+            return newForm;
+          });
+          setCollisions(_.cloneDeep(sketchCollisions));
         }
 
         // hide loading once image is ready
@@ -217,6 +231,7 @@ export const App = () => {
     // save form, geojson.bbox, geojson.trails, config,
     // to database using api
     if (user) {
+      console.log("saving map");
       upsertMap(
         form,
         features,
