@@ -68,12 +68,11 @@ export const upsertMap = (
 ) => {
   const nestedForm = convertToNestedObject(form, defaultConfig);
   const featuresData = {
-    lake: [form["lake.keepList"], givenFeatures.lakes],
-    mountain: [form["mountain.keepList"], givenFeatures.mountains],
-    river: [form["river.keepList"], givenFeatures.waterFeatures],
-    trail: [form["trail.keepList"], givenFeatures.trails],
+    lake: [form["lake.keepList"], givenFeatures.lake],
+    mountain: [form["mountain.keepList"], givenFeatures.mountain],
+    river: [form["river.keepList"], givenFeatures.river],
+    trail: [form["trail.keepList"], givenFeatures.trail],
   };
-
   // create a list of all features, with their selected state, name, and type
   const features = Object.entries(featuresData).flatMap(
     ([key, [keepList, list]]) => {
@@ -86,6 +85,7 @@ export const upsertMap = (
   );
 
   maps.upsert({
+    id: form.id,
     userId: user?.id!,
     title: nestedForm.title.text,
     config,
@@ -113,4 +113,5 @@ export const LS = {
   CONFIG: "topojoy:config",
   IS_DEFAULT_KEEP_LIST_SET: "topojoy:isDefaultKeepListSet",
   FORM: "topojoy:form",
+  COLLISIONS: "topojoy:collisions",
 } as const;

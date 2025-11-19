@@ -3,6 +3,7 @@ import { MapConfig } from "./configs/schema";
 export const maps = {
   upsert: async (config: {
     userId: string;
+    id?: string;
     filename?: string;
     title: string;
     config: string;

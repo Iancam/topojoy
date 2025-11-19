@@ -17,6 +17,7 @@ export const handler = async (event: any) => {
 
     // validate body
     const configSchema = z.object({
+      id: z.string().optional(),
       userId: z.string(),
       title: z.string(),
       config: z.string(),
@@ -39,7 +40,6 @@ export const handler = async (event: any) => {
       const validatedBody = configSchema.parse(body);
 
       // convert colorPlan to csv string
-
       // save to db
       const config = await prisma.mapConfig.upsert({
         where: {
@@ -51,7 +51,16 @@ export const handler = async (event: any) => {
         update: {
           ...validatedBody,
           features: {
-            create: validatedBody.features,
+            update: validatedBody.features.map((feature) => ({
+              where: {
+                name_mapConfigId_type: {
+                  name: feature.name,
+                  mapConfigId: validatedBody.id || "",
+                  type: feature.type,
+                },
+              },
+              data: feature,
+            })),
           },
           bbox: validatedBody.bbox,
           selectedTrails: validatedBody.selectedTrails,

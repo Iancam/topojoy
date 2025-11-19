@@ -48,6 +48,7 @@ export class Store {
     this.bbox = bbox;
     localStorage.setItem(LS.IS_DEFAULT_KEEP_LIST_SET, 'false');
     localStorage.setItem(LS.GEOJSON_BBOX, JSON.stringify(bbox));
+    localStorage.setItem(LS.FORM, JSON.stringify(null));
     // Clear cached OSM data whenever bbox changes
     clearOSMCache();
   }

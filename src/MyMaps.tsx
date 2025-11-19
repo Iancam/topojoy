@@ -23,7 +23,7 @@ export default function MyMaps() {
       setLoading(true);
       try {
         const res = await fetch(
-          `/.netlify/functions/getMaps?userId=${encodeURIComponent(userId)}`
+          `/.netlify/functions/map-all?userId=${encodeURIComponent(userId)}`
         );
         if (!res.ok) {
           throw new Error(`Failed to load maps (${res.status})`);
