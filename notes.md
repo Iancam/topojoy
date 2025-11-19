@@ -55,3 +55,8 @@ must allow the user to deselect all features
 # an annoying bug
 
 I made a function to convert flat keys to nested keys, but it didn't make a clone of the flat object, it just referenced it. I would create a nested object, set the keeplists of the nested object to be blank, and then in the console I was reading that the keeplists were actually full. I was modifying the flat object downstream, and this was causing the bug.
+
+# another bug with collision detection
+
+if drop, only keep if in keeplist
+if !drop, keep if no collisions
