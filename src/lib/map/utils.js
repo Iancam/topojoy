@@ -37,11 +37,20 @@ export function ringOrientation(points, { yDown = true } = {}) {
     signedArea > 0
       ? "counterclockwise"
       : signedArea < 0
-      ? "clockwise"
-      : "degenerate";
+        ? "clockwise"
+        : "degenerate";
   const clockwise = orientation === "clockwise";
 
   return { orientation, clockwise, signedArea };
+}
+
+export function textSizeMultiplier(width, height) {
+  const area = width * height;
+  // 4 = tsm * area / 3670016;
+  // 4/tsm = area / 3670016;
+  // tsm = 4 * 3670016 / area;
+  const tsm = (3 * Math.sqrt(3670016)) / Math.sqrt(area);
+  return tsm;
 }
 
 // #### Tile Functions

@@ -69,7 +69,7 @@ export const formJourney: {
 export const basicFormElements: FormElements = {
   forceCollisionDetection: [
     "boolean",
-    "force collision detection",
+    "force collision detection, overrides keepList",
     false,
     "Force Collision Detection",
   ],

@@ -17,7 +17,7 @@ import {
   featuresToScreenCoords,
   getFeatures,
 } from "./trails";
-import { times } from "../lib/map/utils";
+import { textSizeMultiplier, times } from "../lib/map/utils";
 import { createWebGLFlowField } from "../contourExploration/terrainFlowField";
 import { drawTitle } from "./title";
 import chroma from "chroma-js";
@@ -66,11 +66,11 @@ export const sketchFactory = (
         Object.values(baseConfigTransforms).forEach((transform) => {
           transform(config);
         });
-        config.textSizeMultiplier = Math.pow(2, config.zoomLevel - 13);
-        // config.legend = {
-        //   ...config.legend,
-        //   position: ,
-        // };
+        config.textSizeMultiplier = textSizeMultiplier(
+          canvas.width,
+          canvas.height
+        );
+
         const geoJSON = await getGeoJSONFromOSM(bounds.latLngBox);
 
         const curvePixelCount =
