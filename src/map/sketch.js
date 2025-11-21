@@ -241,14 +241,20 @@ export const sketchFactory = (
           }
         );
 
-        drawLines(sketch, topo, userSelectedTrails, config.textSizeMultiplier, {
-          ...config.trail,
-          colorRange: [
-            config.trail.selectedTrailColor,
-            config.trail.selectedTrailColor,
-          ],
-          style: "basic",
-        });
+        drawLines(
+          sketch,
+          topo,
+          userSelectedTrails,
+          config.textSizeMultiplier * 2,
+          {
+            ...config.trail,
+            colorRange: [
+              config.trail.selectedTrailColor,
+              config.trail.selectedTrailColor,
+            ],
+            style: "basic",
+          }
+        );
         drawLakes(sketch, _.pick(features.lakes, keepLists.lake), {
           color: config.river.colorRange[0],
         });
