@@ -292,7 +292,7 @@ export const App = () => {
   }, [form]);
 
   return (
-    <>
+    <div>
       {/* Header */}
       <div className="text-white bg-slate-800 font-sans px-3 flex justify-between h-15 fixed top-0 left-0 right-0">
         <div className="font-extrabold flex items-center tracking-wide text-base">
@@ -319,7 +319,7 @@ export const App = () => {
 
             {/* only show if in dev */}
             {import.meta.env.DEV && (
-              <>
+              <div>
                 <SignedIn>
                   <Link to="/my-maps">
                     {/* make it look good */}
@@ -332,7 +332,7 @@ export const App = () => {
                 <SignedOut>
                   <Link to="/sign-in">Sign In</Link>
                 </SignedOut>
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -363,6 +363,6 @@ export const App = () => {
           isLoading={isRendering}
         ></P5Canvas>
       </div>
-    </>
+    </div>
   );
 };

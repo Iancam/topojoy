@@ -13,7 +13,7 @@ if (import.meta.env.DEV && !PUBLISHABLE_KEY) {
 
 export const Layout = ({ children }: { children?: React.ReactNode }) => {
   return (
-    <>
+    <div>
       {import.meta.env.DEV && PUBLISHABLE_KEY ? (
         <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
           <Outlet />
@@ -21,6 +21,6 @@ export const Layout = ({ children }: { children?: React.ReactNode }) => {
       ) : (
         <Outlet />
       )}
-    </>
+    </div>
   );
 };

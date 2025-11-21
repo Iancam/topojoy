@@ -19,7 +19,7 @@ export const ColorPlan = ({
   form: any;
   onFormChange: (key: string, value: any) => void;
 }) => (
-  <>
+  <div>
     <h2 className="text-lg font-semibold color-height">Color Plans</h2>
     {configs[config].colorPlan.map((colorPlan: ColorPlan, index: number) => (
       <div key={index} className="flex flex-col gap-2 p-2 border rounded">
@@ -40,5 +40,5 @@ export const ColorPlan = ({
         })}
       </div>
     ))}
-  </>
+  </div>
 );
