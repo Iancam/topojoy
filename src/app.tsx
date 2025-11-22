@@ -46,7 +46,9 @@ export const App = () => {
     return saved && Object.keys(configs).includes(saved) ? saved : "Original";
   });
   const [loadedConfig, setLoadedConfig] = useState<MapConfig | null>(null);
-  const { isSignedIn, user } = useUser();
+  const { isSignedIn, user } = import.meta.env.DEV
+    ? useUser()
+    : { isSignedIn: false, user: null };
 
   const preForm = Object.entries(formElements).reduce(
     (obj, [key, [_, __, value]]) => {
@@ -57,7 +59,7 @@ export const App = () => {
   );
   const [form, setForm] = useState(() => {
     // Combine default form values with any saved values in localStorage
-    const saved = JSON.parse(localStorage.getItem(LS.FORM) || "{}");
+    const saved = JSON.parse(localStorage.getItem(LS.FORM) || "{}") || {};
     Object.keys(saved).forEach((k) => {
       k.startsWith("colorPlan") &&
         k.endsWith("height") &&
@@ -82,6 +84,14 @@ export const App = () => {
     );
     return keepListsSetPreviousSession;
   });
+
+  useEffect(() => {
+    localStorage.setItem(
+      LS.IS_DEFAULT_KEEP_LIST_SET,
+      JSON.stringify(isDefaultKeepListsSet)
+    );
+  }, [isDefaultKeepListsSet]);
+
   const [collisions, setCollisions] = useState<Record<string, string[]>>(() => {
     const saved = localStorage.getItem(LS.COLLISIONS);
     return saved ? JSON.parse(saved) : {};
@@ -141,7 +151,7 @@ export const App = () => {
 
   const renderSketch = () => {
     let nestedForm = convertToNestedObject(form, configs[config]);
-    if (isDefaultKeepListsSet || nestedForm.forceCollisionDetection) {
+    if (!isDefaultKeepListsSet || nestedForm.forceCollisionDetection) {
       nestedForm.mountain.drop = false;
       nestedForm.river.drop = false;
       nestedForm.trail.drop = false;
@@ -230,7 +240,7 @@ export const App = () => {
 
     // save form, geojson.bbox, geojson.trails, config,
     // to database using api
-    if (user) {
+    if (user && isDefaultKeepListsSet) {
       console.log("saving map");
       upsertMap(
         form,
