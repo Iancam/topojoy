@@ -68,10 +68,10 @@ export const upsertMap = (
 ) => {
   const nestedForm = convertToNestedObject(form, defaultConfig);
   const featuresData = {
-    lake: [form["lake.keepList"], givenFeatures.lake],
-    mountain: [form["mountain.keepList"], givenFeatures.mountain],
-    river: [form["river.keepList"], givenFeatures.river],
-    trail: [form["trail.keepList"], givenFeatures.trail],
+    lake: [form["lake.keepList"] || [], givenFeatures.lake || []],
+    mountain: [form["mountain.keepList"] || [], givenFeatures.mountain || []],
+    river: [form["river.keepList"] || [], givenFeatures.river || []],
+    trail: [form["trail.keepList"] || [], givenFeatures.trail || []],
   };
   // create a list of all features, with their selected state, name, and type
   const features = Object.entries(featuresData).flatMap(

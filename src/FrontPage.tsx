@@ -35,7 +35,7 @@ export const FrontPage = () => {
 
         <div className="px-4">
           {import.meta.env.DEV && (
-            <>
+            <div>
               <SignedIn>
                 <UserButton afterSignOutUrl="/sign-in" />
                 <Link
@@ -53,7 +53,7 @@ export const FrontPage = () => {
                   Sign In
                 </Link>
               </SignedOut>
-            </>
+            </div>
           )}
         </div>
       </nav>

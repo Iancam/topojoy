@@ -15,6 +15,7 @@ export default defineConfig({
       "::1",
       "3ca39b6aa3f8.ngrok-free.app",
       "overintense-semicapitalistically-roberta.ngrok-free.dev",
+      "devserver-staging--topojoy.netlify.app",
     ],
   },
   build: {

@@ -142,10 +142,10 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
               {isLast ? (
                 submitLabel
               ) : (
-                <>
+                <div>
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   <span className="sr-only">{nextLabel}</span>
-                </>
+                </div>
               )}
             </button>
           </div>

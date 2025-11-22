@@ -49,7 +49,7 @@ export function textSizeMultiplier(width, height) {
   // 4 = tsm * area / 3670016;
   // 4/tsm = area / 3670016;
   // tsm = 4 * 3670016 / area;
-  const tsm = (3 * Math.sqrt(3670016)) / Math.sqrt(area);
+  const tsm = (2 * Math.sqrt(3670016)) / Math.sqrt(area);
   return tsm;
 }
 
