@@ -34,6 +34,7 @@ export const formJourney: {
       "title.text",
       "curve.density",
       "zoomLevel",
+      "legend.enabled",
     ],
   },
   {
@@ -55,13 +56,13 @@ export const formJourney: {
     formElements: [
       "backgroundText.text",
       "backgroundText.elevationRange",
-      "backgroundText.highContrast",
+      "backgroundText.contrast",
     ],
   },
   {
     title: "Misc.",
     description: `Choose other options for the map.`,
-    formElements: ["crossHatch", "legend.enabled"],
+    formElements: ["crossHatch"],
     advanced: [ColorPlan],
   },
 ];
@@ -88,41 +89,21 @@ export const basicFormElements: FormElements = {
     false,
     "High Contrast",
   ],
+  "backgroundText.contrast": [
+    "number",
+    "the contrast of the background text",
+    7.5,
+    "Contrast",
+    { min: 0, max: 10 },
+  ],
   "title.text": ["text", "the text of the title", "", "Title"],
 
-  "river.streams": ["boolean", "show/hide streams", false, "Show Streams"],
-  "river.show": ["boolean", "show/hide rivers", true, "Show Rivers"],
-  "mountain.show": ["boolean", "show/hide mountains", true, "Show Mountains"],
-  "trail.show": ["boolean", "show/hide trails", true, "Show Trails"],
   "mountain.keepList": ["list", "mountains to show", [], "Mountain Keep List"],
-  "mountain.drop": [
-    "boolean",
-    "if checked, mountains not in the keepList will be dropped",
-    false,
-    "Remove Mountains Not in Keep List",
-  ],
+
   "lake.keepList": ["list", "lakes to show", [], "Lake Keep List"],
-  "lake.drop": [
-    "boolean",
-    "if checked, lakes not in the keepList will be dropped",
-    false,
-    "Remove Lakes Not in Keep List",
-  ],
-  "lake.show": ["boolean", "show/hide lakes", false, "Show Lakes"],
   "trail.keepList": ["list", "trails to show", [], "Trail Keep List"],
-  "trail.drop": [
-    "boolean",
-    "if checked, trails not in the keepList will be dropped",
-    false,
-    "Remove Trails Not in Keep List",
-  ],
+
   "river.keepList": ["list", "rivers to show", [], "River Keep List"],
-  "river.drop": [
-    "boolean",
-    "if checked, rivers not in the keepList will be dropped",
-    false,
-    "Remove Rivers Not in Keep List",
-  ],
 
   "curve.density": [
     "number",
