@@ -108,9 +108,9 @@ export const sketchFactory = (
             curveCount
           );
         } else {
-          const multiplier = config.backgroundText.highContrast ? 0.6 : 0.8;
+          // const multiplier = config.backgroundText.highContrast ? 0.6 : 0.8;
           times(
-            multiplier * config.curveCount,
+            0.6 * config.curveCount,
             genCurve(sketch, config, topo)
           ).forEach(colorAndDrawCurve(sketch, colorAt));
           drawLayers(
@@ -211,13 +211,6 @@ export const sketchFactory = (
         //   sketch.rect(bbox.x, bbox.y, bbox.w, bbox.h);
         // });
 
-        if (!config.backgroundText.highContrast)
-          textsLayer(sketch, topo, colorAt, labelManager.textBoxes(), {
-            ...config.backgroundText,
-            backgroundColor: config.background,
-            textSize:
-              config.backgroundText.textSize * config.textSizeMultiplier,
-          });
         const keepLists = labelManager.keepLists();
 
         drawLines(
@@ -259,17 +252,14 @@ export const sketchFactory = (
           color: config.river.colorRange[0],
         });
 
-        if (config.backgroundText.highContrast) {
-          textsLayer(sketch, topo, colorAt, labelManager.textBoxes(), {
-            ...config.backgroundText,
-            textSize:
-              config.backgroundText.textSize * config.textSizeMultiplier,
-            backgroundColor: config.background,
-          });
-          times(0.2 * config.curveCount, genCurve(topo)).forEach(
-            colorAndDrawCurve(colorAt)
-          );
-        }
+        textsLayer(sketch, topo, colorAt, labelManager.textBoxes(), {
+          ...config.backgroundText,
+          textSize: config.backgroundText.textSize * config.textSizeMultiplier,
+          backgroundColor: config.background,
+        });
+        times(0.2 * config.curveCount, genCurve(sketch, config, topo)).forEach(
+          colorAndDrawCurve(sketch, colorAt)
+        );
 
         labelManager.drawLabels();
       };

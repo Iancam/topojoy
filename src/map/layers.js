@@ -169,7 +169,7 @@ export function textsLayer(
     bbox,
     margin,
     elevationRange,
-    highContrast,
+    contrast,
     backgroundColor,
   }
 ) {
@@ -221,7 +221,7 @@ export function textsLayer(
     alpha,
     textSize,
     colorAt,
-    highContrast,
+    contrast,
     backgroundColor,
     predicate,
     bbox
@@ -236,7 +236,7 @@ function fillText(
   alpha,
   size,
   colorAt,
-  highContrast,
+  contrast,
   backgroundColor,
   predicate = () => true,
   bbox = [0, 0, width, height],
@@ -265,11 +265,10 @@ function fillText(
 
         // }
         let col = chroma(c).mix("black", shade).hex();
-        if (highContrast) {
-          col = contrastingLuminance(col, 7.5);
-          if (luminanceContrastRatio(col, backgroundColor) < 5.5) {
-            col = contrastingLuminance(col, 7.5);
-          }
+
+        col = contrastingLuminance(col, contrast);
+        if (luminanceContrastRatio(col, backgroundColor) < 5.5) {
+          col = contrastingLuminance(col, contrast);
         }
 
         sketch.push();
