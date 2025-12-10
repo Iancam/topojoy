@@ -271,7 +271,7 @@ export const SnowMesaConfig: MapConfig = {
   },
   backgroundText: {
     font: "Courier",
-    textSize: 2.5 * 8.001,
+    textSize: 1.8 * 8.001,
     bbox: [0, 0, 0, 0],
     alpha: 200,
     highContrast: false,
