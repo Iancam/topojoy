@@ -25,12 +25,12 @@ export const FrontPage = () => {
         </div>
 
         <div className="flex">
-          <a
-            className="text-black text-xs font-bold py-1 px-4"
-            href="/app.html"
+          <Link
+            to="/app"
+            className="px-4 text-gray-800 font-semibold hover:underline"
           >
             Open App
-          </a>
+          </Link>
         </div>
 
         <div className="px-4">
