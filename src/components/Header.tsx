@@ -1,0 +1,56 @@
+import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
+import { Link } from "react-router";
+
+export const Header = () => {
+  return (
+    <div className="text-white bg-slate-800 font-sans px-3 flex justify-between h-15 fixed top-0 left-0 right-0">
+      <div className="font-extrabold flex items-center tracking-wide text-base">
+        <Link to="/">TopoJoy</Link>
+      </div>
+      <div className="flex-grow flex justify-end">
+        <div style={{ height: "42px" }}></div>
+        <div className="flex items-center bg-pink" style={{ fontSize: "10px" }}>
+          <div className="pr-3"></div>
+          <div className="flex items-center ml-auto">
+            <a
+              className={
+                "bg-indigo-500 hover:bg-indigo-700 start-tour text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200"
+              }
+              href="/geojson.io/index.html"
+            >
+              Open Map Editor
+            </a>
+          </div>
+          <div className="pr-3"></div>
+          <div className="flex items-center ml-auto">
+            <Link to="/app">
+              <span className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
+                App
+              </span>
+            </Link>
+          </div>
+
+          {/* only show if in dev */}
+          {import.meta.env.DEV && (
+            <div>
+              <SignedIn>
+                <div className="flex items-center ml-auto">
+                  <Link to="/my-maps">
+                    {/* make it look good */}
+                    <span className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
+                      My Maps
+                    </span>
+                  </Link>
+                  <UserButton afterSignOutUrl="/sign-in" />
+                </div>
+              </SignedIn>
+              <SignedOut>
+                <Link to="/sign-in">Sign In</Link>
+              </SignedOut>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};

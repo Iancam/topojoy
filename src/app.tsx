@@ -27,6 +27,7 @@ import {
   upsertMap,
 } from "./lib/utils";
 import _ from "lodash";
+import { Header } from "./components/Header.tsx";
 
 interface Configs {
   [key: string]: MapConfig;
@@ -212,8 +213,8 @@ export const App = () => {
         img.style.maxWidth = `${sketch.width}px`;
         p5Ref.current?.appendChild(img); // 2. use <img>, not <canvas>
         sketch.remove();
-        if (isDefaultKeepListsSet || form.forceCollisionDetection) {
-          setIsDefaultKeepListsSet(false);
+        if (!isDefaultKeepListsSet || form.forceCollisionDetection) {
+          setIsDefaultKeepListsSet(true);
           setForm((prev: any) => {
             const mappedKeeplists = {
               "lake.keepList": keepLists.lake || [],
@@ -240,6 +241,8 @@ export const App = () => {
 
     // save form, geojson.bbox, geojson.trails, config,
     // to database using api
+    console.log({ user, isDefaultKeepListsSet });
+
     if (user && isDefaultKeepListsSet) {
       console.log("saving map");
       upsertMap(
@@ -304,50 +307,7 @@ export const App = () => {
   return (
     <div>
       {/* Header */}
-      <div className="text-white bg-slate-800 font-sans px-3 flex justify-between h-15 fixed top-0 left-0 right-0">
-        <div className="font-extrabold flex items-center tracking-wide text-base">
-          <Link to="/">TopoJoy</Link>
-        </div>
-        <div className="flex-grow flex justify-end">
-          <div style={{ height: "42px" }}></div>
-          <div
-            className="flex items-center bg-pink"
-            style={{ fontSize: "10px" }}
-          >
-            <div className="pr-3"></div>
-            <div className="flex items-center ml-auto">
-              <a
-                className={
-                  "bg-indigo-500 hover:bg-indigo-700 start-tour text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200"
-                }
-                href="/geojson.io/index.html"
-              >
-                Open Map Editor
-              </a>
-            </div>
-            <div className="pr-3"></div>
-
-            {/* only show if in dev */}
-            {import.meta.env.DEV && (
-              <div>
-                <SignedIn>
-                  <Link to="/my-maps">
-                    {/* make it look good */}
-                    <span className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
-                      My Maps
-                    </span>
-                  </Link>
-                  <UserButton afterSignOutUrl="/sign-in" />
-                </SignedIn>
-                <SignedOut>
-                  <Link to="/sign-in">Sign In</Link>
-                </SignedOut>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
+      <Header />
       <div className="flex h-screen">
         {/* Sidebar */}
         <div className="w-80 fixed top-15 left-0 h-full overflow-y-auto border-r bg-white p-4 flex-shrink-0">
