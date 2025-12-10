@@ -41,39 +41,43 @@ export const handler = async (event: any) => {
 
       // convert colorPlan to csv string
       // save to db
-      const config = await prisma.mapConfig.upsert({
-        where: {
-          filename_userId: {
-            filename: validatedBody.filename || "",
-            userId: validatedBody.userId,
+      const config = await prisma.$transaction(async (tx) => {
+        const cfg = await tx.mapConfig.upsert({
+          where: {
+            filename_userId: {
+              filename: validatedBody.filename || "",
+              userId: validatedBody.userId,
+            },
           },
-        },
-        update: {
-          ...validatedBody,
-          features: {
-            update: validatedBody.features.map((feature) => ({
-              where: {
-                name_mapConfigId_type: {
-                  name: feature.name,
-                  mapConfigId: validatedBody.id || "",
-                  type: feature.type,
-                },
+          update: {
+            ...validatedBody,
+            features: {
+              deleteMany: {
+                mapConfigId: validatedBody.id,
               },
-              data: feature,
-            })),
+            },
+            bbox: validatedBody.bbox,
+            selectedTrails: validatedBody.selectedTrails,
           },
-          bbox: validatedBody.bbox,
-          selectedTrails: validatedBody.selectedTrails,
-        },
-        create: {
-          ...validatedBody,
-          features: {
-            create: validatedBody.features,
+          create: {
+            ...validatedBody,
+            features: {
+              create: [],
+            },
+            bbox: validatedBody.bbox,
+            selectedTrails: validatedBody.selectedTrails,
           },
-          bbox: validatedBody.bbox,
-          selectedTrails: validatedBody.selectedTrails,
-        },
+        });
+
+        await tx.feature.createMany({
+          data: validatedBody.features.map((feature) => ({
+            ...feature,
+            mapConfigId: cfg.id,
+          })),
+        });
+        return cfg;
       });
+
       return {
         statusCode: 200,
         body: JSON.stringify(config),
