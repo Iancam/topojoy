@@ -38,7 +38,6 @@ export const handler = async (event: any) => {
 
     try {
       const validatedBody = configSchema.parse(body);
-
       // convert colorPlan to csv string
       // save to db
       const config = await prisma.$transaction(async (tx) => {
@@ -51,6 +50,7 @@ export const handler = async (event: any) => {
           },
           update: {
             ...validatedBody,
+            id: undefined,
             features: {
               deleteMany: {
                 mapConfigId: validatedBody.id,
@@ -61,6 +61,7 @@ export const handler = async (event: any) => {
           },
           create: {
             ...validatedBody,
+            id: undefined,
             features: {
               create: [],
             },

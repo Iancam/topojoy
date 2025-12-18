@@ -45,13 +45,10 @@ const configs: Configs = {
 
 export const App = () => {
   // get config id from url
-  const configId = useSearchParams()[0].get("configId");
-  console.log(configId);
-  const [config, setConfig] = useState(() => {
-    // Load previously selected config from localStorage if it exists
-    const saved = localStorage.getItem(LS.CONFIG);
-    return Object.keys(configs).includes(saved || "") ? saved : "Original";
-  });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const configId = searchParams.get("configId");
+
+  const [config, setConfig] = useState("Original");
 
   const { isSignedIn, user } = import.meta.env.DEV
     ? useUser()
@@ -65,9 +62,7 @@ export const App = () => {
     {}
   );
   const [sketchDims, setSketchDims] = useState({ width: 0, height: 0 });
-  const [form, setForm] = useState(() => {
-    return getFormFromLocalStorage(preForm, config!, configs);
-  });
+  const [form, setForm] = useState(preForm);
 
   const [features, setFeatures] = useState<{ [key: string]: string[] }>({});
   const [bbox, setBbox] = useState<any>(null);
@@ -78,11 +73,11 @@ export const App = () => {
   const p5Ref = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [isRendering, setIsRendering] = useState(false);
-  const [isDefaultKeepListsSet, setIsDefaultKeepListsSet] = useState(() => {
-    const keepListsSetPreviousSession = JSON.parse(
+  const [isInitialRun, setIsInitialRun] = useState(() => {
+    const isInitialRun = JSON.parse(
       localStorage.getItem(LS.IS_DEFAULT_KEEP_LIST_SET) || "false"
     );
-    return keepListsSetPreviousSession;
+    return isInitialRun;
   });
 
   const [collisions, setCollisions] = useState<Record<string, string[]>>(() => {
@@ -98,12 +93,10 @@ export const App = () => {
     if (configId) {
       // get config from db
       maps.get(user?.id!, configId).then((config) => {
-        console.log("retrieved config from database", config);
-        // setLoadedConfig(config);
+        console.log("retrieved config from database");
         setConfig(config.config);
         setForm({ ...preForm, ...config });
         setSelectedTrails(config.selectedTrails);
-        console.log(config.bbox);
         setBbox(config.bbox);
         // set fealures
         const feats = config.features.reduce(
@@ -204,7 +197,7 @@ export const App = () => {
     }) =>
     () => {
       let nestedForm = convertToNestedObject(form, configs[config]);
-      if (!isDefaultKeepListsSet || nestedForm.forceCollisionDetection) {
+      if (isInitialRun || nestedForm.forceCollisionDetection) {
         nestedForm.mountain.drop = false;
         nestedForm.river.drop = false;
         nestedForm.trail.drop = false;
@@ -224,16 +217,8 @@ export const App = () => {
 
       if (!p5Ref.current) return;
       let myBbox = bbox;
-      console.log({ bbox });
+
       let mySelectedTrails = selectedTrails;
-      // if (!myBbox) {
-      //   console.log("loading bbox from localStorage");
-      //   myBbox = JSON.parse(localStorage.getItem(LS.GEOJSON_BBOX) || "{}");
-      // }
-      // if (!mySelectedTrails.length) {
-      //   console.log("loading selectedTrails from localStorage");
-      //   mySelectedTrails = getUserSelectedTrailsLatLng();
-      // }
       // show loading while rendering
       setIsRendering(true);
 
@@ -249,7 +234,8 @@ export const App = () => {
           canvas: { elt: HTMLCanvasElement },
           sketch: p5,
           keepLists: any,
-          sketchCollisions: Record<string, string[]>
+          sketchCollisions: Record<string, string[]>,
+          sketchFeatures: Record<string, string[]>
         ) => {
           setSketchDims({ width: sketch.width, height: sketch.height });
           const png = canvas.elt.toDataURL("image/png");
@@ -268,8 +254,8 @@ export const App = () => {
 
           p5Ref.current?.appendChild(img); // 2. use <img>, not <canvas>
           sketch.remove();
-          if (!isDefaultKeepListsSet || form.forceCollisionDetection) {
-            setIsDefaultKeepListsSet(true);
+          if (isInitialRun || form.forceCollisionDetection) {
+            setIsInitialRun(false);
             setForm((prev: any) => {
               const mappedKeeplists = {
                 "lake.keepList": keepLists.lake || [],
@@ -283,6 +269,14 @@ export const App = () => {
               };
               return newForm;
             });
+            const features = _.mapValues(
+              _.mapKeys(sketchFeatures, (value, key) => {
+                console.log(key);
+                return key.slice(0, -1);
+              }),
+              (value) => Object.keys(value)
+            );
+            setFeatures(features);
             setCollisions(_.cloneDeep(sketchCollisions));
           }
 
@@ -296,19 +290,23 @@ export const App = () => {
 
       // save form, geojson.bbox, geojson.trails, config,
       // to database using api
-      console.log({ user, isDefaultKeepListsSet });
-
-      if (user && isDefaultKeepListsSet) {
+      console.log({ user, isInitialRun });
+      console.log({ features });
+      if (user && !isInitialRun) {
         console.log("saving map");
-        upsertMap(
-          form,
-          features,
-          bbox,
-          selectedTrails,
-          user,
-          config,
-          configs[config]
-        );
+        maps
+          .upsert(
+            form,
+            features,
+            bbox,
+            selectedTrails,
+            user,
+            config,
+            configs[config]
+          )
+          .then(({ id }) => {
+            setSearchParams((prev) => ({ ...prev, configId: id }));
+          });
       }
 
       return myp5;
@@ -393,9 +391,9 @@ export const App = () => {
     if (configId) return;
     localStorage.setItem(
       LS.IS_DEFAULT_KEEP_LIST_SET,
-      JSON.stringify(isDefaultKeepListsSet)
+      JSON.stringify(isInitialRun)
     );
-  }, [isDefaultKeepListsSet]);
+  }, [isInitialRun]);
 
   return (
     <div>
