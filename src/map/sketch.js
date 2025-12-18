@@ -128,7 +128,8 @@ export const sketchFactory = (
           OGCanvas,
           sketch,
           labelManager.keepLists(),
-          labelManager.collisions.object()
+          labelManager.collisions.object(),
+          features
         );
       };
 
