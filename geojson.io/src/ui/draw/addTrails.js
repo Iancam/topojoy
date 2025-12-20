@@ -1,4 +1,4 @@
-import { getGeoJSONFromOSM } from '../../../../src/map/trails.js';
+import { getGeoJSONFromOSM, trailsFilter } from '../../../../src/map/trails.js';
 import { tilesForFeatures } from '../../../../src/map/processImage.js';
 import store, { interfaceStates } from '../../store.js';
 
@@ -81,15 +81,7 @@ const _addTrails = (geoJSON, map, store) => {
 
   // Filter to likely trails and ensure each feature has a stable id
   const lineFeatures = (geoJSON.features || [])
-    .filter(
-      (f) =>
-        f.geometry?.type === 'LineString' &&
-        (f.properties?.highway === 'path' ||
-          f.properties?.highway === 'footway' ||
-          f.properties?.highway === 'track' ||
-          f.properties?.highway === 'trail' ||
-          f.properties?.route === 'hiking')
-    )
+    .filter(trailsFilter)
     .map((f, i) => ({
       ...f,
       id: i
@@ -102,8 +94,6 @@ const _addTrails = (geoJSON, map, store) => {
     type: 'FeatureCollection',
     features: lineFeatures
   };
-
-  console.log(trailsFC.features.filter((f) => f.properties?.name));
 
   if (map.getSource(sourceId)) {
     map.getSource(sourceId).setData(trailsFC);

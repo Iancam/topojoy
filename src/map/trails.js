@@ -55,6 +55,22 @@ async function idbPut(key, value) {
   }
 }
 
+// Clear the OSM cache stored in IndexedDB
+export async function clearOSMCache() {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.clear();
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) {
+    console.warn("IndexedDB unavailable, cannot clear cache");
+  }
+}
+
 export const featuresToScreenCoords = (zoom, box) => (feature) => {
   const processCoords = function (coordinates) {
     const imageCoords = coordinates
@@ -62,7 +78,6 @@ export const featuresToScreenCoords = (zoom, box) => (feature) => {
       .filter(([x, y]) => {
         const inBounds =
           x < box[2] + 1 && y < box[3] + 1 && x > box[0] && y > box[1];
-        // if (inBounds) console.log(x, y, ...box);
         return inBounds;
       })
       .map(([x, y]) => [
@@ -124,16 +139,30 @@ export function getUserSelectedTrails({ zoom, box }) {
   return features;
 }
 
+const highwayTypes = [
+  "trail",
+  "path",
+  "footway",
+  "track",
+  "primary",
+  "secondary",
+  "tertiary",
+  "unclassified",
+  "residential",
+  "service",
+  "road",
+];
+
+export function trailsFilter({ properties, geometry }) {
+  return (
+    (properties.highway && highwayTypes.includes(properties.highway)) ||
+    (properties.route === "hiking" && geometry.type === "LineString")
+  );
+}
+
 export function getTrails({ box, zoom }, geoJSON) {
   const trails = geoJSON.features
-    .filter(
-      ({ properties, geometry }) =>
-        !properties.waterway &&
-        !(properties.natural === "peak") &&
-        !(properties.natural === "water") &&
-        geometry.type === "LineString"
-    )
-    // .map(makeDenser)
+    .filter(trailsFilter)
     .map(featuresToScreenCoords(zoom, box))
     .filter(({ coords }) => coords.length > 0)
     .reduce(screenCoordListToObj, {});
@@ -191,13 +220,9 @@ export function getFeatures({ box, zoom }, geoJSON) {
 
 export async function getGeoJSONFromOSM(latLongBox) {
   const hiking = `
-  way["highway"="trail"](${latLongBox.join(",")});
-  way["highway"="path"](${latLongBox.join(",")});
-  way["highway"="footway"](${latLongBox.join(",")});
-  way["highway"="track"](${latLongBox.join(",")});
+  ${highwayTypes.map((type) => `way["highway"="${type}"](${latLongBox.join(",")});`).join("\n")}
   nwr["route"="hiking"](${latLongBox.join(",")});
   `;
-
   const rivers = `
     way["waterway"="river"](${latLongBox.join(",")});
     way["waterway"="stream"](${latLongBox.join(",")});

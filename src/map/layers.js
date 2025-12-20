@@ -169,7 +169,7 @@ export function textsLayer(
     bbox,
     margin,
     elevationRange,
-    highContrast,
+    contrast,
     backgroundColor,
   }
 ) {
@@ -221,7 +221,7 @@ export function textsLayer(
     alpha,
     textSize,
     colorAt,
-    highContrast,
+    contrast,
     backgroundColor,
     predicate,
     bbox
@@ -236,7 +236,7 @@ function fillText(
   alpha,
   size,
   colorAt,
-  highContrast,
+  contrast,
   backgroundColor,
   predicate = () => true,
   bbox = [0, 0, width, height],
@@ -265,11 +265,10 @@ function fillText(
 
         // }
         let col = chroma(c).mix("black", shade).hex();
-        if (highContrast) {
-          col = contrastingLuminance(col, 7.5);
-          if (luminanceContrastRatio(col, backgroundColor) < 5.5) {
-            col = contrastingLuminance(col, 7.5);
-          }
+
+        col = contrastingLuminance(col, contrast);
+        if (luminanceContrastRatio(col, backgroundColor) < 5.5) {
+          col = contrastingLuminance(col, contrast);
         }
 
         sketch.push();
@@ -297,7 +296,7 @@ export function lakesLabels(
   sketch,
   lakes,
   keepList,
-  { font, textSize, textColor } = {},
+  { font, textSize, textColor, drop } = {},
   addLabels
 ) {
   const addedNames = [];
@@ -336,7 +335,7 @@ export function lakesLabels(
     sketch.fill(textColor);
   };
 
-  addLabels(labels, keepList, { setContext, font }, "lake");
+  addLabels(labels, keepList, { setContext, font }, "lake", drop);
 }
 
 export function drawLakes(sketch, lakes, { color }) {
@@ -375,7 +374,6 @@ export function mountainLayer(
   addLabels
 ) {
   const peaksObj = Object.entries(peaks)
-    .filter(([name]) => (drop ? keepList.includes(name) : true))
     .map(([name, [[pt]]]) => {
       return [name, pt];
     })
@@ -404,157 +402,8 @@ export function mountainLayer(
     sketch.textSize(labelSize);
     sketch.textStyle(sketch.NORMAL);
   };
-  addLabels(peaksObj, keepList, { setContext, font }, "mountain");
+  addLabels(peaksObj, keepList, { setContext, font }, "mountain", drop);
 }
-
-/**
- * internal data structures:
- * - Labels: [{labels:[{name, pt, keep, bbox, category}], drawEnv: function}]
- * - Collisions: [[string, string]]
- * functions:
- * - addLabels(labels: [{name, pt}], keepList: string[], drawEnv: function, category: string)
- * - drawLabels()
- * //- reportKeptCollisions()
- * //- reportUnkeptLabels(category: string?)
- *
- */
-
-export const placeWithoutCollisionFactory = (sketch) => {
-  let labels: {
-    name: string;
-    displayName?: string;
-    pt: [number, number];
-    keep: boolean;
-    category: string;
-    bbox: { x: number; y: number; w: number; h: number };
-    setContextId: number;
-  }[] = [];
-  let contexts: (() => void)[] = [];
-  let collisions: [number, number][] = [];
-  const getRealBoundingBox = (
-    pt: [number, number],
-    bbox: { x: number; y: number; w: number; h: number }
-  ) => {
-    let { x, y, w, h } = bbox;
-    if (sketch._renderer._textBaseline === "center") {
-      y = pt[1] - h / 2;
-    }
-    return { x, y, w, h };
-  };
-
-  const checkCollisions = (
-    bbox: { x: number; y: number; w: number; h: number },
-    name: string,
-    aIndex: number
-  ) => {
-    let bIndex = 0;
-    for (const { bbox: box, name: text, keep } of labels) {
-      const collides = collision(bbox, box);
-      if (!keep) continue;
-      if (collides) {
-        collisions.push([aIndex, bIndex]);
-        return true;
-      }
-      bIndex++;
-    }
-    return false;
-  };
-
-  return {
-    addLabels: (
-      givenLabels:
-        | { name: string; displayName?: string; pt: [number, number] }[]
-        | Record<string, { pt: [number, number]; displayName?: string }>,
-      keepList: string[],
-      { setContext, font }: { setContext: () => void; font: p5.Font },
-      category: string
-    ) => {
-      if (!Array.isArray(givenLabels)) {
-        givenLabels = Object.entries(givenLabels).map(
-          ([name, { pt, displayName }]) => ({
-            name,
-            displayName,
-            pt,
-          })
-        );
-      }
-
-      sketch.push();
-      setContext();
-      const setContextId = contexts.length;
-      contexts.push(setContext);
-
-      givenLabels.forEach(({ name, displayName, pt }) => {
-        console.log(name, displayName, pt);
-        const bbox = getRealBoundingBox(
-          pt,
-          font.textBounds(displayName || name, pt[0], pt[1]) as {
-            x: number;
-            y: number;
-            w: number;
-            h: number;
-          }
-        );
-        const collides = checkCollisions(bbox, name, labels.length);
-        const keep = keepList.includes(name) || !collides;
-        labels.push({
-          name,
-          displayName,
-          pt,
-          keep,
-          category,
-          bbox,
-          setContextId,
-        });
-      });
-
-      sketch.pop();
-    },
-    drawLabels: () => {
-      labels.forEach(({ setContextId, keep, name, displayName, pt }) => {
-        sketch.push();
-        contexts[setContextId]();
-        if (keep) {
-          sketch.text(displayName || name, pt[0], pt[1]);
-        }
-        sketch.pop();
-      });
-    },
-    textBoxes: () => {
-      return labels.filter(({ keep }) => keep);
-    },
-    labels: () => {
-      return labels;
-    },
-    keepLists: () => {
-      const keepLists = labels.reduce(
-        (
-          acc: Record<string, string[]>,
-          {
-            name,
-            category,
-            keep,
-          }: { name: string; category: string; keep: boolean }
-        ) => {
-          if (!acc[category]) {
-            acc[category] = [];
-          }
-          if (!keep) return acc;
-          acc[category].push(name);
-          return acc;
-        },
-        {} as Record<string, string[]>
-      );
-      return keepLists;
-    },
-    // reportKeptCollisions: () => {
-    //   return collisions;
-    // },
-    // reportUnkeptLabels: () => {
-    // return labels.filter((label) => !label.keep);
-    // },
-  };
-};
 
 /**
  * Given a topology `topo`, and a collection of trail coordinates `trails`
@@ -573,7 +422,7 @@ export function namedLines(
   lineStrings,
   keepList,
   category,
-  { textSize, textColor, font },
+  { textSize, textColor, font, drop },
   addLabels
 ) {
   let addedNames = [];
@@ -612,5 +461,5 @@ export function namedLines(
     sketch.fill(textColor);
   };
 
-  addLabels(labels, keepList, { setContext, font }, category);
+  addLabels(labels, keepList, { setContext, font }, category, drop);
 }

@@ -571,9 +571,9 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
       (value: string): MultiSelectOption | undefined => {
         const option = getAllOptions().find((option) => option.value === value);
         if (!option && process.env.NODE_ENV === "development") {
-          console.warn(
-            `MultiSelect: Option with value "${value}" not found in options list`
-          );
+          // console.warn(
+          //   `MultiSelect: Option with value "${value}" not found in options list`
+          // );
         }
         return option;
       },
@@ -1175,7 +1175,15 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                               aria-hidden="true"
                             />
                           )}
-                          <span>{option.label}</span>
+                          <span
+                            className={
+                              option.style?.badgeColor === "red"
+                                ? "bg-red-500 text-white"
+                                : ""
+                            }
+                          >
+                            {option.label}
+                          </span>
                         </CommandItem>
                       );
                     })}

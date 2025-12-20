@@ -208,6 +208,22 @@ const tileToUrl = ([x, y, zoom]) => {
   return `https://api.mapbox.com/v4/mapbox.terrain-rgb/${zoom}/${x}/${y}.pngraw?access_token=${MBX_TOKEN}`;
 };
 
+const tileBitmapCache = new Map();
+
+async function loadTileBitmap(url) {
+  let p = tileBitmapCache.get(url);
+  if (!p) {
+    p = fetch(url, { mode: "cors", cache: "force-cache" })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Tile fetch failed ${res.status} ${url}`);
+        return res.blob();
+      })
+      .then((blob) => createImageBitmap(blob));
+    tileBitmapCache.set(url, p);
+  }
+  return p;
+}
+
 /**
  * Finds the tiles and bounding box of a set of features at a given zoom level.
  * @param {Object} features - GeoJSON feature set.
@@ -299,21 +315,23 @@ export function stitchMapTiles(tiles, gridWidth, tileWidth, tileHeight) {
         const x = col * tileWidth;
         const y = row * tileHeight;
 
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-
-        img.onload = () => {
-          ctx.drawImage(img, x, y, tileWidth, tileHeight);
-          ctx.textBaseline = "top";
-
-          ctx.fillText(tile[0] + "," + tile[1] + "," + tile[2], x, y);
-          loadedTiles++;
-
-          if (loadedTiles === totalTiles) {
-            resolve(canvas);
-          }
-        };
-        img.src = tileToUrl(tile);
+        const url = tileToUrl(tile);
+        loadTileBitmap(url)
+          .then((bitmap) => {
+            ctx.drawImage(bitmap, x, y, tileWidth, tileHeight);
+            ctx.textBaseline = "top";
+            ctx.fillText(tile[0] + "," + tile[1] + "," + tile[2], x, y);
+            loadedTiles++;
+            if (loadedTiles === totalTiles) {
+              resolve(canvas);
+            }
+          })
+          .catch(() => {
+            loadedTiles++;
+            if (loadedTiles === totalTiles) {
+              resolve(canvas);
+            }
+          });
       });
   });
 }

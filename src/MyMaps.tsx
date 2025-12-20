@@ -1,10 +1,12 @@
 import React from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { Link } from "react-router";
+import { Header } from "./components/Header";
 
 export type MapListItem = {
   id: string;
   title: string;
+  filename: string;
   createdAt: string;
   updatedAt: string;
   imageUrl?: string | null;
@@ -15,6 +17,8 @@ export default function MyMaps() {
   const [maps, setMaps] = React.useState<MapListItem[] | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState<boolean>(true);
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
+  const [removingIds, setRemovingIds] = React.useState<string[]>([]);
 
   React.useEffect(() => {
     let mounted = true;
@@ -23,11 +27,12 @@ export default function MyMaps() {
       setLoading(true);
       try {
         const res = await fetch(
-          `/.netlify/functions/getMaps?userId=${encodeURIComponent(userId)}`
+          `/.netlify/functions/map-all?userId=${encodeURIComponent(userId)}`
         );
         if (!res.ok) {
           throw new Error(`Failed to load maps (${res.status})`);
         }
+
         const json = await res.json();
         if (json.success && mounted) {
           setMaps(json.data as MapListItem[]);
@@ -46,6 +51,37 @@ export default function MyMaps() {
     };
   }, [userId]);
 
+  const handleDelete = async (id: string) => {
+    if (!userId) return;
+    const confirmed = window.confirm(
+      "Delete this map? This action cannot be undone."
+    );
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(id);
+      const res = await fetch("/.netlify/functions/map-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, userId }),
+      });
+
+      if (!res.ok) {
+        const json = await res.json().catch(() => null);
+        throw new Error(json?.message || "Failed to delete map");
+      }
+      setRemovingIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+      setTimeout(() => {
+        setMaps((prev) => (prev ? prev.filter((m) => m.id !== id) : prev));
+        setRemovingIds((prev) => prev.filter((x) => x !== id));
+      }, 300);
+    } catch (e: any) {
+      setError(e.message || "Failed to delete map");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (!userId) {
     return <div className="p-6">You must be signed in to view your maps.</div>;
   }
@@ -63,42 +99,64 @@ export default function MyMaps() {
   }
 
   return (
-    <div className="min-h-screen p-6">
-      <h1 className="text-2xl font-semibold mb-4">My Maps</h1>
-      {!maps || maps.length === 0 ? (
-        <div className="text-gray-600">You haven't created any maps yet.</div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {maps.map((m) => (
-            <article
-              key={m.id}
-              className="rounded-lg border border-gray-200 bg-white shadow hover:shadow-md transition-shadow overflow-hidden"
-            >
-              <div className="aspect-video bg-gray-100 flex items-center justify-center text-gray-400">
-                {/* Placeholder for future thumbnail */}
-                <span className="text-sm">No image</span>
-              </div>
-              <div className="p-4">
-                <Link to={`/app/?configId=${m.id}`}>
-                  <h2 className="text-lg font-medium text-gray-900 truncate">
-                    {m.title}
-                  </h2>
-                </Link>
-                <div className="mt-2 text-sm text-gray-600 space-y-1">
-                  <div>
-                    <span className="font-medium text-gray-700">Updated:</span>{" "}
-                    {new Date(m.updatedAt).toLocaleString()}
+    <div>
+      <Header />
+      <div className="min-h-screen p-6">
+        <h1 className="text-2xl font-semibold mb-4">My Maps</h1>
+        {!maps || maps.length === 0 ? (
+          <div className="text-gray-600">You haven't created any maps yet.</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {maps.map((m) => (
+              <article
+                key={m.id}
+                className={`rounded-lg border border-gray-200 bg-white shadow hover:shadow-md overflow-hidden transition-opacity duration-300 ${
+                  removingIds.includes(m.id) ? "opacity-0" : "opacity-100"
+                }`}
+              >
+                <div className="aspect-video bg-gray-100 flex items-center justify-center text-gray-400">
+                  {/* Placeholder for future thumbnail */}
+                  <span className="text-sm">No image</span>
+                </div>
+                <div className="p-4 flex flex-col gap-3">
+                  <Link to={`/app/?configId=${m.id}`}>
+                    <h2 className="text-lg font-medium text-gray-900 truncate">
+                      {m.title}
+                    </h2>
+                  </Link>
+                  <div className="text-xs text-gray-500 truncate">
+                    {m.filename}
                   </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Created:</span>{" "}
-                    {new Date(m.createdAt).toLocaleString()}
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <div>
+                      <span className="font-medium text-gray-700">
+                        Updated:
+                      </span>{" "}
+                      {new Date(m.updatedAt).toLocaleString()}
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">
+                        Created:
+                      </span>{" "}
+                      {new Date(m.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(m.id)}
+                      disabled={deletingId === m.id}
+                      className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {deletingId === m.id ? "Deleting…" : "Delete"}
+                    </button>
                   </div>
                 </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -17,9 +17,11 @@ export const handler = async (event: any) => {
 
     // validate body
     const configSchema = z.object({
+      id: z.string().optional(),
       userId: z.string(),
       title: z.string(),
       config: z.string(),
+      filename: z.string().optional(),
       zoomLevel: z.number(),
       curveDensity: z.number(),
       features: z.array(featuresSchema),
@@ -36,20 +38,47 @@ export const handler = async (event: any) => {
 
     try {
       const validatedBody = configSchema.parse(body);
-
       // convert colorPlan to csv string
-
       // save to db
-      const config = await prisma.mapConfig.create({
-        data: {
-          ...validatedBody,
-          features: {
-            create: validatedBody.features,
+      const config = await prisma.$transaction(async (tx) => {
+        const cfg = await tx.mapConfig.upsert({
+          where: {
+            filename_userId: {
+              filename: validatedBody.filename || "",
+              userId: validatedBody.userId,
+            },
           },
-          bbox: validatedBody.bbox,
-          selectedTrails: validatedBody.selectedTrails,
-        },
+          update: {
+            ...validatedBody,
+            id: undefined,
+            features: {
+              deleteMany: {
+                mapConfigId: validatedBody.id,
+              },
+            },
+            bbox: validatedBody.bbox,
+            selectedTrails: validatedBody.selectedTrails,
+          },
+          create: {
+            ...validatedBody,
+            id: undefined,
+            features: {
+              create: [],
+            },
+            bbox: validatedBody.bbox,
+            selectedTrails: validatedBody.selectedTrails,
+          },
+        });
+
+        await tx.feature.createMany({
+          data: validatedBody.features.map((feature) => ({
+            ...feature,
+            mapConfigId: cfg.id,
+          })),
+        });
+        return cfg;
       });
+
       return {
         statusCode: 200,
         body: JSON.stringify(config),

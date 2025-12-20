@@ -9,15 +9,15 @@ import {
   drawCurve,
   lakesLabels,
   drawLakes,
-  placeWithoutCollisionFactory,
-} from "./layers.ts";
+} from "./layers";
+import { labelManagerFactory } from "./labelManager";
 import { drawLines } from "./paths";
 import {
   getGeoJSONFromOSM,
   featuresToScreenCoords,
   getFeatures,
 } from "./trails";
-import { times } from "../lib/map/utils";
+import { textSizeMultiplier, times } from "../lib/map/utils";
 import { createWebGLFlowField } from "../contourExploration/terrainFlowField";
 import { drawTitle } from "./title";
 import chroma from "chroma-js";
@@ -59,15 +59,18 @@ export const sketchFactory = (
                 : [0, 0, canvas.width, canvas.height];
           },
         };
-
+        // console.log({
+        //   mtn: config.mountain.keepList,
+        //   river: config.river.keepList,
+        // });
         Object.values(baseConfigTransforms).forEach((transform) => {
           transform(config);
         });
-        config.textSizeMultiplier = Math.pow(2, config.zoomLevel - 13);
-        // config.legend = {
-        //   ...config.legend,
-        //   position: ,
-        // };
+        config.textSizeMultiplier = textSizeMultiplier(
+          canvas.width,
+          canvas.height
+        );
+
         const geoJSON = await getGeoJSONFromOSM(bounds.latLngBox);
 
         const curvePixelCount =
@@ -94,7 +97,7 @@ export const sketchFactory = (
           featuresToScreenCoords(config.zoomLevel, bounds.box, true)
         );
 
-        const collisionHandler = placeWithoutCollisionFactory(sketch);
+        const labelManager = labelManagerFactory(sketch);
         if (contourLines) {
           // WARNING: this path is untested
           await contourCurvesPath(
@@ -105,9 +108,9 @@ export const sketchFactory = (
             curveCount
           );
         } else {
-          const multiplier = config.backgroundText.highContrast ? 0.6 : 0.8;
+          // const multiplier = config.backgroundText.highContrast ? 0.6 : 0.8;
           times(
-            multiplier * config.curveCount,
+            0.6 * config.curveCount,
             genCurve(sketch, config, topo)
           ).forEach(colorAndDrawCurve(sketch, colorAt));
           drawLayers(
@@ -117,11 +120,17 @@ export const sketchFactory = (
             colorAt,
             features,
             userSelectedTrails,
-            collisionHandler
+            labelManager
           );
           if (config.legend?.enabled) drawLegend(sketch, config, topo, colorAt);
         }
-        callback(OGCanvas, sketch, collisionHandler.labels());
+        callback(
+          OGCanvas,
+          sketch,
+          labelManager.keepLists(),
+          labelManager.collisions.object(),
+          features
+        );
       };
 
       const placeLabelsWithoutCollision = (
@@ -196,29 +205,15 @@ export const sketchFactory = (
         colorAt,
         features,
         userSelectedTrails,
-        collisionHandler
+        labelManager
       ) => {
-        placeLabelsWithoutCollision(config, bounds, features, collisionHandler);
-        if (!config.backgroundText.highContrast)
-          textsLayer(sketch, topo, colorAt, collisionHandler.textBoxes(), {
-            ...config.backgroundText,
-            backgroundColor: config.background,
-            textSize:
-              config.backgroundText.textSize * config.textSizeMultiplier,
-          });
-        const keepLists = collisionHandler.labels().reduce((acc, label) => {
-          const { category, name, keep } = label;
-          if (!acc[category]) {
-            acc[category] = [];
-          }
-          if (keep) {
-            acc[category].push(name);
-          }
-          return acc;
-        }, {});
+        placeLabelsWithoutCollision(config, bounds, features, labelManager);
+        // labelManager.labels().forEach(({ bbox }) => {
+        //   sketch.rect(bbox.x, bbox.y, bbox.w, bbox.h);
+        // });
 
-        // filter out features not in keeplist
-        console.log(keepLists, collisionHandler.labels());
+        const keepLists = labelManager.keepLists();
+
         drawLines(
           sketch,
           topo,
@@ -240,31 +235,34 @@ export const sketchFactory = (
           }
         );
 
-        drawLines(sketch, topo, userSelectedTrails, config.textSizeMultiplier, {
-          ...config.trail,
-          colorRange: [
-            config.trail.selectedTrailColor,
-            config.trail.selectedTrailColor,
-          ],
-          style: "basic",
-        });
+        drawLines(
+          sketch,
+          topo,
+          userSelectedTrails,
+          config.textSizeMultiplier * 2,
+          {
+            ...config.trail,
+            colorRange: [
+              config.trail.selectedTrailColor,
+              config.trail.selectedTrailColor,
+            ],
+            style: "basic",
+          }
+        );
         drawLakes(sketch, _.pick(features.lakes, keepLists.lake), {
           color: config.river.colorRange[0],
         });
 
-        if (config.backgroundText.highContrast) {
-          textsLayer(sketch, topo, colorAt, collisionHandler.textBoxes(), {
-            ...config.backgroundText,
-            textSize:
-              config.backgroundText.textSize * config.textSizeMultiplier,
-            backgroundColor: config.background,
-          });
-          times(0.2 * config.curveCount, genCurve(topo)).forEach(
-            colorAndDrawCurve(colorAt)
-          );
-        }
+        textsLayer(sketch, topo, colorAt, labelManager.textBoxes(), {
+          ...config.backgroundText,
+          textSize: config.backgroundText.textSize * config.textSizeMultiplier,
+          backgroundColor: config.background,
+        });
+        times(0.2 * config.curveCount, genCurve(sketch, config, topo)).forEach(
+          colorAndDrawCurve(sketch, colorAt)
+        );
 
-        collisionHandler.drawLabels();
+        labelManager.drawLabels();
       };
 
       const genCurve = (sketch, config, topo) => () => {
