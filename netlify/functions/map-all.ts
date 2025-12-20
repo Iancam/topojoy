@@ -3,7 +3,10 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export const handler = async (event: HandlerEvent, _context: HandlerContext) => {
+export const handler = async (
+  event: HandlerEvent,
+  _context: HandlerContext
+) => {
   try {
     const userId = event.queryStringParameters?.userId || null;
 
@@ -11,7 +14,10 @@ export const handler = async (event: HandlerEvent, _context: HandlerContext) => 
       return {
         statusCode: 400,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ success: false, message: "Missing required userId" }),
+        body: JSON.stringify({
+          success: false,
+          message: "Missing required userId",
+        }),
       };
     }
 
@@ -23,6 +29,7 @@ export const handler = async (event: HandlerEvent, _context: HandlerContext) => 
       select: {
         id: true,
         title: true,
+        filename: true,
         createdAt: true,
         updatedAt: true,
         // Placeholder for future image field
@@ -39,7 +46,10 @@ export const handler = async (event: HandlerEvent, _context: HandlerContext) => 
     return {
       statusCode: 500,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ success: false, message: err.message || "Server error" }),
+      body: JSON.stringify({
+        success: false,
+        message: err.message || "Server error",
+      }),
     };
   }
 };

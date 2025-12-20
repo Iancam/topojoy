@@ -15,7 +15,7 @@ export const P5Canvas = ({
   isLoading: boolean;
 }) => {
   return (
-    <div className="relative h-full w-full overflow-auto">
+    <div className="relative mt-15 h-full w-full overflow-auto">
       <button
         className="fixed top-15 left-80 bg-white/20 pointer z-50"
         onClick={toggleMapImageIsExpanded}
