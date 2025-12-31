@@ -15,6 +15,9 @@ export type MultiStepFormProps = {
   nextLabel?: string;
   prevLabel?: string;
   submitLabel?: string;
+  onRender?: () => void;
+  onSave?: () => void;
+  onPurchase?: () => void;
 };
 
 export const MultiStepForm: React.FC<MultiStepFormProps> = ({
@@ -26,6 +29,9 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
   nextLabel = "Next",
   prevLabel = "Previous",
   submitLabel = "Submit",
+  onRender,
+  onSave,
+  onPurchase,
 }) => {
   const [current, setCurrent] = React.useState(initialStep);
   const total = steps.length;
@@ -109,46 +115,74 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
       {/* Spacer  */}
       <div className="h-20"></div>
       {/* Footer actions */}
-      <div className="sticky bottom-10 left-0 mt-4 bg-white border-t p-3 flex justify-between sm:justify-end gap-3">
-        <div className="flex items-center gap-2 justify-between">
-          <div className="flex items-center gap-2">{leftAction}</div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={goPrev}
-              disabled={isFirst}
-              className={cn(
-                "px-4 py-2 rounded-md border text-sm font-medium transition-colors inline-flex items-center justify-center gap-1",
-                isFirst
-                  ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+      <div className="sticky bottom-10 left-0 mt-4 bg-white border-t p-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 flex-wrap">
+          {leftAction}
+          {(onRender || onSave || onPurchase) && (
+            <div className="flex items-center gap-2 flex-wrap">
+              {onRender && (
+                <button
+                  type="button"
+                  onClick={onRender}
+                  className="px-3 py-1.5 rounded-md bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors"
+                >
+                  Render
+                </button>
               )}
-              aria-label={prevLabel}
-            >
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              <span className="sr-only">{prevLabel}</span>
-            </button>
-            <button
-              type="button"
-              onClick={goNext}
-              className={cn(
-                "px-4 py-2 rounded-md text-white text-sm font-medium transition-colors inline-flex items-center justify-center gap-1",
-                isLast
-                  ? "bg-green-600 hover:bg-green-700"
-                  : "bg-blue-600 hover:bg-blue-700"
+              {onSave && !isLast && (
+                <button
+                  type="button"
+                  onClick={onSave}
+                  className="px-3 py-1.5 rounded-md border text-xs font-medium bg-white text-gray-700 border-gray-300 hover:bg-gray-50 transition-colors"
+                >
+                  Save
+                </button>
               )}
-              aria-label={isLast ? submitLabel : nextLabel}
-            >
-              {isLast ? (
-                submitLabel
-              ) : (
-                <div>
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  <span className="sr-only">{nextLabel}</span>
-                </div>
+              {onPurchase && isLast && (
+                <button
+                  type="button"
+                  onClick={onPurchase}
+                  className="px-3 py-1.5 rounded-md bg-green-600 text-white text-xs font-medium hover:bg-green-700 transition-colors"
+                >
+                  Purchase
+                </button>
               )}
-            </button>
-          </div>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2 justify-end mt-2 sm:mt-0">
+          <button
+            type="button"
+            onClick={goPrev}
+            disabled={isFirst}
+            className={cn(
+              "px-4 py-2 rounded-md border text-sm font-medium transition-colors inline-flex items-center justify-center gap-1",
+              isFirst
+                ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+            )}
+            aria-label={prevLabel}
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            <span className="sr-only">{prevLabel}</span>
+          </button>
+          <button
+            type="button"
+            onClick={goNext}
+            disabled={isLast}
+            className={cn(
+              "px-4 py-2 rounded-md text-white text-sm font-medium transition-colors inline-flex items-center justify-center gap-1",
+              isLast
+                ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            )}
+            aria-label={nextLabel}
+          >
+            <div>
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              <span className="sr-only">{nextLabel}</span>
+            </div>
+          </button>
         </div>
       </div>
     </div>

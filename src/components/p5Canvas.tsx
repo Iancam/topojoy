@@ -8,12 +8,44 @@ export const P5Canvas = ({
   p5Ref,
   toggleMapImageIsExpanded,
   isLoading,
+  sketchDims,
+  printType,
+  printSize,
 }: {
   mapImageIsExpanded: boolean;
   p5Ref: React.RefObject<HTMLDivElement> | null;
   toggleMapImageIsExpanded: (e: React.MouseEvent) => void;
   isLoading: boolean;
+  sketchDims: { width: number; height: number };
+  printType?: string;
+  printSize?: { width: number; height: number } | null;
 }) => {
+  React.useEffect(() => {
+    if (!printSize || !sketchDims.width || !sketchDims.height) return;
+
+    const printRatio = printSize.width / printSize.height;
+    const imageRatio = sketchDims.width / sketchDims.height;
+
+    let cropWidth: number;
+    let cropHeight: number;
+    if (printRatio > imageRatio) {
+      cropWidth = sketchDims.width;
+      cropHeight = sketchDims.width / printRatio;
+    } else {
+      cropHeight = sketchDims.height;
+      cropWidth = sketchDims.height * printRatio;
+    }
+
+    const cropX = (sketchDims.width - cropWidth) / 2;
+    const cropY = (sketchDims.height - cropHeight) / 2;
+
+    console.log("print crop", {
+      printType,
+      printSize,
+      crop: { x: cropX, y: cropY, width: cropWidth, height: cropHeight },
+    });
+  }, [printSize, printType, sketchDims.width, sketchDims.height]);
+
   return (
     <div className="relative mt-15 h-full w-full overflow-auto">
       <button

@@ -120,14 +120,13 @@ export const App = () => {
       });
     } else {
       console.log("loading data from localStorage");
-      const downstreamConfig = convertToNestedObject(form, configs[config]);
       const bbox = JSON.parse(localStorage.getItem(LS.GEOJSON_BBOX) || "{}");
       const selectedTrails = JSON.parse(
         localStorage.getItem(LS.GEOJSON_SELECTED_TRAIL_SEGMENTS) || "[]"
       );
       const configName = localStorage.getItem(LS.CONFIG) || "Original";
       const form = getFormFromLocalStorage(preForm, configName, configs);
-
+      const downstreamConfig = convertToNestedObject(form, configs[configName]);
       setBbox(bbox);
       setSelectedTrails(selectedTrails);
       setConfig(configName);
@@ -238,6 +237,11 @@ export const App = () => {
           sketchFeatures: Record<string, string[]>
         ) => {
           setSketchDims({ width: sketch.width, height: sketch.height });
+          setForm((prev: any) => ({
+            ...prev,
+            "print.imageWidth": sketch.width,
+            "print.imageHeight": sketch.height,
+          }));
           const png = canvas.elt.toDataURL("image/png");
           const img = new Image();
           img.src = png!;
@@ -428,6 +432,20 @@ export const App = () => {
             toggleMapImageIsExpanded={toggleMapImageIsExpanded}
             p5Ref={p5Ref}
             isLoading={isRendering}
+            sketchDims={sketchDims}
+            printType={form["print.type"]}
+            printSize={
+              form["print.size"]
+                ? (() => {
+                    const m = String(form["print.size"]).match(
+                      /^(\d+)[xX](\d+)$/
+                    );
+                    return m
+                      ? { width: Number(m[1]), height: Number(m[2]) }
+                      : null;
+                  })()
+                : null
+            }
           ></P5Canvas>
         </div>
         s

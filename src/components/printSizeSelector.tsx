@@ -28,8 +28,8 @@ const PrintSizeSelector = ({
   // Generate all Prodigi sizes (3-50 inches in 2-inch increments)
   const generateSizes = () => {
     const sizes = [];
-    for (let width = 3; width <= 50; width += 2) {
-      for (let height = 3; height <= 50; height += 2) {
+    for (let width = 3; width <= 50; width += 1) {
+      for (let height = 3; height <= 50; height += 1) {
         if (width >= height) {
           // Avoid duplicates (e.g., 5x7 and 7x5)
           sizes.push({ width, height, landscape: true });

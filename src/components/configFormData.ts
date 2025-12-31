@@ -1,6 +1,7 @@
 import { Component } from "react";
 import { ColorPlan } from "./ColorPlan";
 import { ConfigSelect } from "./ConfigSelect";
+import { PrintOptions } from "./PrintOptions";
 import type { MapConfig } from "@/configs/schema";
 
 // Props passed to advanced form components (e.g., ColorPlan)
@@ -64,6 +65,11 @@ export const formJourney: {
     description: `Choose other options for the map.`,
     formElements: ["crossHatch"],
     advanced: [ColorPlan],
+  },
+  {
+    title: "Print Options",
+    description: `Choose the print type and size.`,
+    formElements: [PrintOptions],
   },
 ];
 
@@ -140,6 +146,13 @@ export const advancedFormElements: FormElements = {
     false,
     "Crosshatch",
   ],
+  "print.type": [
+    "text",
+    "type of print (poster, canvas, framed)",
+    "poster",
+    "Print Type",
+  ],
+  "print.size": ["text", "selected print size (e.g. 16x20)", "", "Print Size"],
 };
 
 export const formElements = {
