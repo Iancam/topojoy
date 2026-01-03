@@ -206,3 +206,50 @@ const DTOToForm = (data: MapConfigDTO) => {
 
   return ret;
 };
+
+export const saveImageToAws = async (blob: Blob, filename: string) => {
+  // const formData = new FormData();
+  // formData.append("file", blob, filename);
+
+  const res = await fetch("/.netlify/functions/print-put-signed-url", {
+    method: "POST",
+    body: JSON.stringify({
+      filename,
+      contentType: "image/png",
+    }),
+  });
+
+  if (!res.ok) throw new Error("Failed to save image");
+
+  const { url, key } = await res.json();
+
+  const response = await fetch(url, {
+    method: "PUT",
+    body: blob,
+  });
+
+  if (!response.ok) throw new Error("Failed to save image");
+
+  return { url, key };
+};
+
+// use to send to lumaprints
+export const getImageUrlFromAws = async (key: string) => {
+  const res = await fetch("/.netlify/functions/print-get-signed-url", {
+    method: "POST",
+    body: JSON.stringify({
+      filename: key,
+    }),
+  });
+
+  if (!res.ok) throw new Error("Failed to get image");
+
+  const { url } = await res.json();
+
+  return url;
+  // const response = await fetch(url);
+
+  // if (!response.ok) throw new Error("Failed to get image");
+  //
+  // return response.body;
+};

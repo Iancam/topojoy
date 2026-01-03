@@ -161,14 +161,7 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
     scoredSizes.filter((s) => getDPI(imgW, imgH, s.width, s.height) >= minDPI)
       .length === 0;
   const noGoodScore = scoredSizes.filter((s) => s.score >= 0.975).length === 0;
-  console.log(
-    scoredSizes
-      .filter((s) => s.score >= 0.975)
-      .map((s) => ({
-        ...s,
-        dpi: getDPI(imgW, imgH, s.width, s.height),
-      }))
-  );
+
   const handleTypeChange = (type: string) => {
     onFormChange("print.type", type);
   };

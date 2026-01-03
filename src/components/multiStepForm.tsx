@@ -18,6 +18,7 @@ export type MultiStepFormProps = {
   onRender?: () => void;
   onSave?: () => void;
   onPurchase?: () => void;
+  isPurchasing?: boolean;
 };
 
 export const MultiStepForm: React.FC<MultiStepFormProps> = ({
@@ -28,10 +29,10 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
   leftAction,
   nextLabel = "Next",
   prevLabel = "Previous",
-  submitLabel = "Submit",
   onRender,
   onSave,
   onPurchase,
+  isPurchasing,
 }) => {
   const [current, setCurrent] = React.useState(initialStep);
   const total = steps.length;
@@ -142,9 +143,14 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
                 <button
                   type="button"
                   onClick={onPurchase}
-                  className="px-3 py-1.5 rounded-md bg-green-600 text-white text-xs font-medium hover:bg-green-700 transition-colors"
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-xs font-medium",
+                    isPurchasing
+                      ? "bg-green-300 text-white cursor-not-allowed"
+                      : "bg-green-600 text-white hover:bg-green-700"
+                  )}
                 >
-                  Purchase
+                  {isPurchasing ? "Processing..." : "Purchase"}
                 </button>
               )}
             </div>

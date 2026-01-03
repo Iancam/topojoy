@@ -26,6 +26,8 @@ interface ConfigFormProps {
   form: any;
   features: { [key: string]: string[] };
   collisions: Record<string, string[]>;
+  isPurchasing: boolean;
+  onPurchase?: () => void;
   onConfigChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onFormChange: (key: string, value: any) => void;
   renderSketch: () => p5;
@@ -190,6 +192,8 @@ export const ConfigForm = ({
   form,
   features,
   collisions,
+  isPurchasing,
+  onPurchase,
   onConfigChange,
   onFormChange,
   renderSketch,
@@ -270,9 +274,8 @@ export const ConfigForm = ({
       submitLabel="Save Image"
       onRender={renderSketch}
       onSave={onSubmitSave}
-      onPurchase={() => {
-        console.log("purchase");
-      }}
+      onPurchase={onPurchase}
+      isPurchasing={isPurchasing}
     />
   );
 };

@@ -17,7 +17,7 @@ import {
   getUserSelectedTrailsLatLng,
 } from "./map/trails.js";
 import { tilesForFeatures } from "./map/processImage.js";
-import { maps } from "./api.ts";
+import { getImageUrlFromAws, maps, saveImageToAws } from "./api.ts";
 import {
   fitToParent,
   getFormFromLocalStorage,
@@ -62,7 +62,7 @@ export const App = () => {
     {}
   );
   const [sketchDims, setSketchDims] = useState({ width: 0, height: 0 });
-  const [form, setForm] = useState(preForm);
+  const [form, setForm] = useState<Record<string, any>>(preForm);
 
   const [features, setFeatures] = useState<{ [key: string]: string[] }>({});
   const [bbox, setBbox] = useState<any>(null);
@@ -87,6 +87,8 @@ export const App = () => {
     const saved = localStorage.getItem(LS.COLLISIONS);
     return saved ? JSON.parse(saved) : {};
   });
+
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
   // load config from db, or from local storage
   useEffect(() => {
@@ -275,7 +277,6 @@ export const App = () => {
             });
             const features = _.mapValues(
               _.mapKeys(sketchFeatures, (value, key) => {
-                console.log(key);
                 return key.slice(0, -1);
               }),
               (value) => Object.keys(value)
@@ -323,6 +324,7 @@ export const App = () => {
 
     const download = () => {
       const img = container.querySelector("img") as HTMLImageElement | null;
+
       if (!img) return;
       //human readable date
       const date = new Date().toISOString();
@@ -337,6 +339,51 @@ export const App = () => {
     // If an image is present, download immediately. Otherwise render then wait.
     if (container.querySelector("img")) {
       download();
+    }
+  };
+
+  const captureImage = () => {
+    const container = p5Ref.current;
+    if (!container) return;
+    const img = container.querySelector("img") as HTMLImageElement | null;
+    if (!img) return;
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx?.drawImage(img, 0, 0);
+    return new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error("Failed to capture image"));
+          return;
+        }
+        resolve(blob);
+      }, "image/png");
+    });
+  };
+
+  const handlePurchase = async () => {
+    if (isPurchasing) return;
+    setIsPurchasing(true);
+    try {
+      const blob = await captureImage();
+      if (!blob) {
+        console.error("Failed to capture image");
+        return;
+      }
+
+      const { url, key } = await saveImageToAws(
+        blob,
+        form["filename"] as string
+      );
+
+      const imageUrl = await getImageUrlFromAws(key);
+      console.log({ imageUrl });
+    } catch (error) {
+      console.error("Failed to purchase map", error);
+    } finally {
+      setIsPurchasing(false);
     }
   };
 
@@ -415,6 +462,8 @@ export const App = () => {
             collisions={collisions}
             onConfigChange={onConfigChange}
             onFormChange={onFormChange}
+            onPurchase={handlePurchase}
+            isPurchasing={isPurchasing}
             renderSketch={renderSketch({
               config: config!,
               form,
