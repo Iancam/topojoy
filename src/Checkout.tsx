@@ -1,0 +1,595 @@
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  Elements,
+  PaymentElement,
+  useElements,
+  useStripe,
+} from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+import { useSearchParams } from "react-router";
+import type { CartOrder } from "./api";
+import { order } from "./api";
+import { Header } from "./components/Header";
+import { formatMoney } from "./lib/utils";
+import { StripePaymentForm } from "./StripePaymentForm";
+
+const CHECKOUT_STEPS = ["shipping", "method", "payment", "confirm"] as const;
+
+type CheckoutStep = (typeof CHECKOUT_STEPS)[number];
+
+const describeShippingMethod = (option: {
+  carrier?: string;
+  method?: string;
+}): { label: string; speedHint?: string } => {
+  const carrier = option.carrier || "";
+  const method = option.method || "";
+
+  const lower = method.toLowerCase();
+
+  const options = {
+    ground_advantage: {
+      label: `${carrier || "USPS"} Ground Advantage`,
+      speedHint: "Economy (typically 3–5 business days)",
+    },
+    priority_mail_express: {
+      label: `${carrier || "USPS"} Priority Mail Express`,
+      speedHint: "Fastest (usually 1–2 business days)",
+    },
+    priority_mail: {
+      label: `${carrier || "USPS"} Priority Mail`,
+      speedHint: "Faster shipping (around 2–3 business days)",
+    },
+    "2_day": {
+      label: `${carrier || "FedEx/UPS"} 2 Day`,
+      speedHint: "2 business days",
+    },
+    ground_economy: {
+      label: `${carrier || "FedEx/UPS"} Ground Economy`,
+      speedHint: "Economy ground service",
+    },
+    ground: {
+      label: `${carrier || "FedEx/UPS"} Ground`,
+      speedHint: "Standard ground service",
+    },
+  };
+
+  const key = Object.keys(options).filter((key) => lower.includes(key))[0];
+  if (!key) {
+    return {
+      label: [carrier, method].filter(Boolean).join(" · ") || "Shipping option",
+    };
+  }
+  return options[key as keyof typeof options];
+};
+
+const isValidStep = (value: string | null): value is CheckoutStep => {
+  return CHECKOUT_STEPS.includes((value || "") as CheckoutStep);
+};
+
+export const Checkout = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [cart, setCart] = useState<CartOrder | null | undefined>(undefined);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [submittingShipping, setSubmittingShipping] = useState<boolean>(false);
+
+  const [shippingForm, setShippingForm] = useState({
+    email: "",
+    name: "",
+    phone: "",
+    line1: "",
+    line2: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "US",
+  });
+
+  const [shippingOptions, setShippingOptions] = useState<any[] | null>(null);
+  const [selectedShippingIndex, setSelectedShippingIndex] = useState<
+    number | null
+  >(null);
+  const [shippingError, setShippingError] = useState<string | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [creatingPaymentIntent, setCreatingPaymentIntent] =
+    useState<boolean>(false);
+
+  const step: CheckoutStep = useMemo(() => {
+    const raw = searchParams.get("step");
+    if (!isValidStep(raw)) return "shipping";
+    return raw;
+  }, [searchParams]);
+
+  const stripePromise = loadStripe(
+    import.meta.env.VITE_SBX_STRIPE_PUBLISHABLE_KEY
+  );
+  // Rehydrate shipping form from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("checkout:shippingForm");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setShippingForm((prev) => ({ ...prev, ...parsed }));
+      }
+    } catch (e) {
+      console.error("Failed to restore shipping form", e);
+    }
+  }, []);
+
+  // Persist shipping form whenever it changes
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        "checkout:shippingForm",
+        JSON.stringify(shippingForm)
+      );
+    } catch (e) {
+      console.error("Failed to persist shipping form", e);
+    }
+  }, [shippingForm]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    order
+      .getCart()
+      .then((data) => {
+        if (!cancelled) setCart(data);
+      })
+      .catch((err) => {
+        console.error("Failed to load cart for checkout", err);
+        if (!cancelled) setError("Failed to load cart");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const goToStep = (next: CheckoutStep) => {
+    setSearchParams((prev) => {
+      const updated = new URLSearchParams(prev);
+      updated.set("step", next);
+      return updated;
+    });
+  };
+
+  const currentStepIndex = CHECKOUT_STEPS.indexOf(step);
+
+  const items = cart?.orderItems || [];
+  const orderTotal =
+    cart?.totalPrice ?? items.reduce((sum, i) => sum + (i.totalPrice ?? 0), 0);
+
+  const handleShippingChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setShippingForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmitShipping = async (e: FormEvent) => {
+    e.preventDefault();
+    setShippingError(null);
+
+    if (!cart || items.length === 0) return;
+
+    if (!shippingForm.email || !shippingForm.name) {
+      setShippingError("Please enter your email and name.");
+      return;
+    }
+    if (
+      !shippingForm.line1 ||
+      !shippingForm.city ||
+      !shippingForm.state ||
+      !shippingForm.postalCode ||
+      !shippingForm.country
+    ) {
+      setShippingError("Please complete your shipping address.");
+      return;
+    }
+
+    setSubmittingShipping(true);
+    try {
+      const data = await order.getShippingOptions({
+        address: shippingForm,
+        items: items.map((item) => ({
+          subcategoryId: item.subcategoryId,
+          width: item.width,
+          height: item.height,
+          quantity: item.quantity,
+          options: item.orderItemOptions ?? [],
+        })),
+      });
+      // Lumaprints returns { message, shippingMethods }
+      console.log(data);
+      setShippingOptions(data?.shippingMethods || []);
+      goToStep("method");
+    } catch (err) {
+      console.error("Failed to fetch shipping options", err);
+      setShippingError("Failed to load shipping options.");
+    } finally {
+      setSubmittingShipping(false);
+    }
+  };
+
+  const steps = {
+    shipping: (
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Shipping information</h2>
+        <p className="text-sm text-gray-500">
+          Enter your email and shipping address so we can fetch live shipping
+          options from our print partner.
+        </p>
+        <form className="space-y-4" onSubmit={handleSubmitShipping}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={shippingForm.email}
+                onChange={handleShippingChange}
+                className="w-full border rounded px-2 py-1 text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Full name
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={shippingForm.name}
+                onChange={handleShippingChange}
+                className="w-full border rounded px-2 py-1 text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Phone (optional)
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                value={shippingForm.phone}
+                onChange={handleShippingChange}
+                className="w-full border rounded px-2 py-1 text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Address line 1
+              </label>
+              <input
+                type="text"
+                name="line1"
+                value={shippingForm.line1}
+                onChange={handleShippingChange}
+                className="w-full border rounded px-2 py-1 text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Address line 2 (optional)
+              </label>
+              <input
+                type="text"
+                name="line2"
+                value={shippingForm.line2}
+                onChange={handleShippingChange}
+                className="w-full border rounded px-2 py-1 text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                City
+              </label>
+              <input
+                type="text"
+                name="city"
+                value={shippingForm.city}
+                onChange={handleShippingChange}
+                className="w-full border rounded px-2 py-1 text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                State / Province
+              </label>
+              <input
+                type="text"
+                name="state"
+                value={shippingForm.state}
+                onChange={handleShippingChange}
+                className="w-full border rounded px-2 py-1 text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Postal code
+              </label>
+              <input
+                type="text"
+                name="postalCode"
+                value={shippingForm.postalCode}
+                onChange={handleShippingChange}
+                className="w-full border rounded px-2 py-1 text-sm"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="w-full md:w-1/3">
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Country
+            </label>
+            <select
+              name="country"
+              value={shippingForm.country}
+              onChange={handleShippingChange}
+              className="w-full border rounded px-2 py-1 text-sm bg-white"
+              required
+            >
+              <option value="US">United States</option>
+              <option value="CA">Canada</option>
+              <option value="GB">United Kingdom</option>
+              <option value="AU">Australia</option>
+            </select>
+          </div>
+
+          {shippingError && (
+            <p className="text-sm text-red-600">{shippingError}</p>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-md bg-indigo-600 text-white text-sm disabled:opacity-60"
+              disabled={submittingShipping}
+            >
+              {submittingShipping
+                ? "Loading options…"
+                : "Continue to shipping method"}
+            </button>
+          </div>
+        </form>
+      </div>
+    ),
+    method: (
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Shipping method</h2>
+        <p className="text-sm text-gray-500">
+          Choose a shipping option. These prices and estimates come directly
+          from our print partner.
+        </p>
+
+        {!shippingOptions && (
+          <p className="text-sm text-gray-500">
+            No shipping options loaded yet. Go back and confirm your shipping
+            address.
+          </p>
+        )}
+
+        {shippingOptions && shippingOptions.length === 0 && (
+          <p className="text-sm text-red-600">
+            No shipping methods are available for this address.
+          </p>
+        )}
+
+        {shippingOptions && shippingOptions.length > 0 && (
+          <div className="space-y-2">
+            {shippingOptions.map((option, index) => {
+              const id = option.method ?? index;
+              const { label, speedHint } = describeShippingMethod(option);
+
+              // cost from Lumaprints is in dollars
+              const priceCents =
+                typeof option.cost === "number"
+                  ? Math.round(option.cost * 100)
+                  : null;
+
+              const isSelected = selectedShippingIndex === index;
+
+              return (
+                <label
+                  key={id}
+                  className={`flex items-start gap-3 rounded border p-3 cursor-pointer text-sm ${
+                    isSelected
+                      ? "border-indigo-600 bg-indigo-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="shippingMethod"
+                    className="mt-1"
+                    checked={isSelected}
+                    onChange={() => setSelectedShippingIndex(index)}
+                  />
+                  <div className="flex-1 flex justify-between gap-4">
+                    <div>
+                      <div className="font-medium text-gray-900">{label}</div>
+                      {speedHint && (
+                        <div className="text-xs text-gray-500">{speedHint}</div>
+                      )}
+                    </div>
+                    <div className="text-sm font-semibold text-gray-900">
+                      {priceCents != null
+                        ? formatMoney(priceCents)
+                        : (option.cost ?? "")}
+                    </div>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="flex justify-between gap-2 pt-2">
+          <button
+            type="button"
+            className="px-4 py-2 rounded-md border text-sm"
+            onClick={() => goToStep("shipping")}
+          >
+            Back
+          </button>
+          <button
+            type="button"
+            className="px-4 py-2 rounded-md bg-indigo-600 text-white text-sm disabled:opacity-60"
+            disabled={
+              !shippingOptions ||
+              shippingOptions.length === 0 ||
+              selectedShippingIndex === null ||
+              creatingPaymentIntent
+            }
+            onClick={async () => {
+              if (
+                !shippingOptions ||
+                selectedShippingIndex === null ||
+                !shippingOptions[selectedShippingIndex]
+              ) {
+                return;
+              }
+              const selected = shippingOptions[selectedShippingIndex];
+              const costShippingCents =
+                typeof selected.cost === "number"
+                  ? Math.round(selected.cost * 100)
+                  : 0;
+              setCreatingPaymentIntent(true);
+              if (!cart) {
+                setError("Failed to load cart");
+                return;
+              }
+              const costTotalCents = costShippingCents + cart?.totalPrice;
+              try {
+                const data = await order.createPaymentIntent({
+                  shippingCostCents: costTotalCents,
+                });
+                setClientSecret(data.clientSecret);
+                goToStep("payment");
+              } catch (err) {
+                console.error("Failed to create payment intent", err);
+                setShippingError("Failed to start payment.");
+              } finally {
+                setCreatingPaymentIntent(false);
+              }
+            }}
+          >
+            {creatingPaymentIntent
+              ? "Preparing payment…"
+              : "Continue to payment"}
+          </button>
+        </div>
+      </div>
+    ),
+    payment: (
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Payment</h2>
+        {!clientSecret && (
+          <p className="text-sm text-gray-500">
+            Preparing your payment details… If this takes too long, go back and
+            try selecting a shipping method again.
+          </p>
+        )}
+
+        {clientSecret && stripePromise && (
+          <Elements stripe={stripePromise} options={{ clientSecret }}>
+            <StripePaymentForm onBack={() => goToStep("method")} />
+          </Elements>
+        )}
+      </div>
+    ),
+    confirm: (
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Order confirmation</h2>
+        <p className="text-sm text-gray-500">
+          TODO: show real order confirmation once backend order creation is
+          wired up.
+        </p>
+        <div className="flex justify-between gap-2">
+          <button
+            type="button"
+            className="px-4 py-2 rounded-md border text-sm"
+            onClick={() => goToStep("payment")}
+          >
+            Back
+          </button>
+        </div>
+      </div>
+    ),
+  };
+
+  return (
+    <div>
+      <Header />
+      <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
+        <h1 className="text-2xl font-semibold">Checkout</h1>
+
+        <div className="flex gap-4 text-sm">
+          {/* nav */}
+          {CHECKOUT_STEPS.map((s, index) => {
+            const isActive = s === step;
+            const isComplete = index < currentStepIndex;
+            return (
+              <button
+                key={s}
+                type="button"
+                className={`flex-1 py-2 border-b-2 text-center capitalize ${
+                  isActive
+                    ? "border-indigo-600 text-indigo-700 font-semibold"
+                    : isComplete
+                      ? "border-green-500 text-gray-700"
+                      : "border-gray-200 text-gray-400"
+                }`}
+                onClick={() => {
+                  if (!isComplete && !isActive) return;
+                  goToStep(s);
+                }}
+              >
+                {s}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-[2fr,1fr]">
+          <div className="space-y-4">
+            {loading && <p className="text-sm text-gray-500">Loading cart…</p>}
+            {error && <p className="text-sm text-red-600">{error}</p>}
+            {!loading && !error && (!cart || items.length === 0) && (
+              <p className="text-sm text-gray-500">Your cart is empty.</p>
+            )}
+            {!loading && !error && cart && items.length > 0 && steps[step]}
+          </div>
+
+          <aside className="border rounded-lg p-4 bg-white shadow-sm h-fit space-y-3">
+            <h2 className="text-lg font-semibold">Summary</h2>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Items</span>
+              <span className="font-medium">{items.length}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Total</span>
+              <span className="font-semibold">{formatMoney(orderTotal)}</span>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -1,11 +1,6 @@
+import { flow, mapValues } from "lodash";
 import { MapConfig } from "./configs/schema";
 import { convertToNestedObject } from "./lib/utils";
-
-/**
- * The app is small, and will likely remain small. A layer between
- * the client and the api would enable things that I wouldn't use,
- * and would cost more to maintain.
- */
 
 export type MapConfigDTO = {
   userId: string;
@@ -30,68 +25,28 @@ export type MapConfigDTO = {
   colorPlan: string;
 };
 
-export const maps = {
-  // Will not return a map with features
-  upsert: async (
-    form: any,
-    givenFeatures: Record<string, string[]>,
-    bbox: any,
-    selectedTrails: any,
-    user: any,
-    configName: string,
-    defaultConfig: MapConfig
-  ) => {
-    const config = formToDTO(
-      form,
-      givenFeatures,
-      bbox,
-      selectedTrails,
-      user,
-      configName,
-      defaultConfig
-    );
-    // save to api
-    const response = await fetch("/.netlify/functions/map-upsert", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(config),
-    });
-
-    if (!response.ok) {
-      console.log(response);
-      throw new Error("Failed to save config");
-    }
-    const json = await response.json();
-    console.log({ json });
-    const ret = DTOToForm(json);
-    // if (!json.success) throw new Error(json.message || "Failed to save config");
-    return ret;
-  },
-  all: async function getMaps(userId: string): Promise<MapListItem[]> {
-    const res = await fetch(
-      `/.netlify/functions/map-all?userId=${encodeURIComponent(userId)}`
-    );
-    if (!res.ok) throw new Error(`Failed to load maps (${res.status})`);
-    const json = await res.json();
-    if (!json.success) throw new Error(json.message || "Failed to load maps");
-    return json.data as MapListItem[];
-  },
-  get: async function (userId: string, configId: string): Promise<any> {
-    const res = await fetch(
-      `/.netlify/functions/map-get?userId=${encodeURIComponent(userId)}&configId=${encodeURIComponent(configId)}`
-    );
-    if (!res.ok) throw new Error(`Failed to load map config (${res.status})`);
-    const json = await res.json();
-    if (!json.success)
-      throw new Error(json.message || "Failed to load map config");
-
-    const data = json.data;
-    const ret = DTOToForm(data);
-
-    return ret;
-  },
+export type CartOrder = {
+  id: string;
+  status: string;
+  totalPrice: number;
+  orderItems: {
+    id: string;
+    mapConfigId: string | null;
+    mapConfig: {
+      s3Key: string | null;
+    } | null;
+    filename: string;
+    imageUrl: string;
+    printType: string;
+    subcategoryId?: number | string;
+    width: number;
+    height: number;
+    quantity: number;
+    itemPrice: number; // cents
+    userContribution: number; // cents
+    totalPrice: number; // cents
+    orderItemOptions?: number[];
+  }[];
 };
 
 export type MapListItem = {
@@ -102,15 +57,85 @@ export type MapListItem = {
   imageUrl?: string | null;
 };
 
-const formToDTO = (
-  form: any,
-  givenFeatures: Record<string, string[]>,
-  bbox: any,
-  selectedTrails: any,
-  user: any,
-  configName: string,
-  defaultConfig: MapConfig
-) => {
+// the netlify functions always return json, even if it's an error
+// to get the error message, we can parse the response
+
+const apiCall = (urlPath: string, method: string, errorMessage: string) => {
+  return async (body: any) => {
+    const res = await fetch(`/.netlify/functions/${urlPath}`, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json();
+    const errorMessageFinal = `${errorMessage}\nServer message:${json.message}`;
+    if (!res.ok) {
+      console.error(errorMessageFinal);
+      throw new Error(errorMessageFinal);
+    }
+    return json;
+  };
+};
+
+/**
+ * The app is small, and will likely remain small. A layer between
+ * the client and the api would enable things that I wouldn't use,
+ * and would cost more to maintain.
+ */
+
+const toDTO =
+  (toDTO: (body: any) => any) => (apiCallFn: (body: any) => Promise<any>) => {
+    return async (body: any) => {
+      const json = await apiCallFn(toDTO(body));
+      return json;
+    };
+  };
+
+const fromDTO =
+  (toClientDomainObject: (body: any) => any) =>
+  (apiCallFn: (body: any) => Promise<any>) => {
+    return async (body: any) => {
+      const json = await apiCallFn(body);
+      return toClientDomainObject(json);
+    };
+  };
+
+const APIDataToAPIFN = ([urlPath, method, errorMessage, ...transformers]: [
+  string,
+  string,
+  string,
+  ...((apiFn: (body: any) => Promise<any>) => (body: any) => Promise<any>)[],
+]) => {
+  const base = apiCall(urlPath, method, errorMessage);
+  if (transformers.length === 0) {
+    return base;
+  }
+  return flow(...transformers)(base);
+};
+
+const formToDTO = ({
+  form,
+  givenFeatures,
+  bbox,
+  selectedTrails,
+  user,
+  configName,
+  defaultConfig,
+  imageUrl,
+  s3Key,
+}: {
+  form: any;
+  givenFeatures: Record<string, string[]>;
+  bbox: any;
+  selectedTrails: any;
+  user: any;
+  configName: string;
+  defaultConfig: MapConfig;
+  imageUrl: string | undefined;
+  s3Key: string | undefined;
+}) => {
   const nestedForm = convertToNestedObject(form, defaultConfig);
   const featuresData = {
     lake: [form["lake.keepList"] || [], givenFeatures.lake || []],
@@ -148,6 +173,8 @@ const formToDTO = (
     colorPlan: nestedForm.colorPlan
       .map((c: { height: number }) => c.height)
       .join(","),
+    imageUrl,
+    s3Key,
   };
 };
 
@@ -207,10 +234,39 @@ const DTOToForm = (data: MapConfigDTO) => {
   return ret;
 };
 
-export const saveImageToAws = async (blob: Blob, filename: string) => {
-  // const formData = new FormData();
-  // formData.append("file", blob, filename);
+const mapsAPIData = {
+  upsert: [
+    "map-upsert",
+    "POST",
+    "Failed to save map",
+    toDTO(formToDTO),
+    fromDTO(DTOToForm),
+  ],
+  all: ["map-all", "GET", "Failed to load maps", fromDTO(DTOToForm)],
+  get: ["map-get", "GET", "Failed to load map", fromDTO(DTOToForm)],
+};
 
+const orderAPIData = {
+  addItem: ["order-add-item", "POST", "Failed to add item to order"],
+  getCart: ["order-get-cart", "GET", "Failed to get cart"],
+  updateItem: ["order-update-item", "POST", "Failed to update item"],
+  removeItem: ["order-remove-item", "POST", "Failed to remove cart item"],
+  getShippingOptions: [
+    "print-shipping-post",
+    "POST",
+    "Failed to get shipping options",
+  ],
+  createPaymentIntent: [
+    "stripe-create-payment-intent",
+    "POST",
+    "Failed to create payment intent",
+  ],
+};
+
+export const maps = mapValues(mapsAPIData, APIDataToAPIFN);
+export const order = mapValues(orderAPIData, APIDataToAPIFN);
+
+export const saveImageToAws = async (blob: Blob, filename: string) => {
   const res = await fetch("/.netlify/functions/print-put-signed-url", {
     method: "POST",
     body: JSON.stringify({
@@ -247,9 +303,36 @@ export const getImageUrlFromAws = async (key: string) => {
   const { url } = await res.json();
 
   return url;
-  // const response = await fetch(url);
+};
 
-  // if (!response.ok) throw new Error("Failed to get image");
-  //
-  // return response.body;
+/********* Lumaprints API *********/
+
+export const getPrices = async (
+  products: {
+    subcategoryId: string;
+    width: number;
+    height: number;
+    options: Number[];
+  }[]
+) => {
+  const res = await fetch("/.netlify/functions/print-price-post", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    cache: "force-cache",
+    body: JSON.stringify({
+      products,
+    }),
+  });
+  if (!res.ok) throw new Error("Failed to get prices");
+  const json = await res.json();
+  // if (!json.success) throw new Error(json.message || "Failed to get prices");
+  return json as {
+    price: number;
+    subcategoryId: string;
+    width: number;
+    height: number;
+    options: number[];
+  }[];
 };

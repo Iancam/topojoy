@@ -18,7 +18,7 @@ export const Header = () => {
               }
               href="/geojson.io/index.html"
             >
-              Open Map Editor
+              Map Editor
             </a>
           </div>
           <div className="pr-3"></div>
@@ -39,6 +39,11 @@ export const Header = () => {
                     {/* make it look good */}
                     <span className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
                       My Maps
+                    </span>
+                  </Link>
+                  <Link to="/cart">
+                    <span className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
+                      Cart
                     </span>
                   </Link>
                   <UserButton afterSignOutUrl="/sign-in" />

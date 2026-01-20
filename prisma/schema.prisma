@@ -20,6 +20,7 @@ model User {
   email String? @db.VarChar(255)
   name  String @db.VarChar(255)
   mapConfigs MapConfig[]
+  orders Order[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -68,7 +69,90 @@ model MapConfig {
   crossHatch Boolean
   colorPlan String @db.VarChar(255)
 
+  imageUrl String?
+  s3Key String?
+
+  orderItems OrderItem[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@unique([filename, userId])
+}
+
+model Recipient {
+  id    String @id @default(cuid())
+  name String @db.VarChar(255)
+  email String? @db.VarChar(128)
+  phone String? @db.VarChar(64)
+  addressLine1   String
+  addressLine2   String?
+  city           String
+  state          String?
+  postalCode     String
+  country        String
+
+  orders Order[]
+}
+
+model Order {
+  id    String @id @default(cuid())
+  // nonce String @unique
+
+  status String @default("pending")
+  shippingMethod String @default("standard")
+
+  currency   String  @default("USD")
+  totalPrice Int @default(0) //in cents
+
+  recipientId String?
+  recipient Recipient? @relation(fields: [recipientId], references: [id])
+
+  orderItems OrderItem[]
+
+  userId String?
+  user User? @relation(fields: [userId], references: [clerkId])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// enum OrderStatus {
+//   pending
+//   processing
+//   shipped
+//   completed
+//   cancelled
+//   failed
+// }
+
+// model OrderItemOption {
+//   id    String @id @default(cuid())
+//   optionName String
+
+//   orderItemId String
+//   orderItem OrderItem @relation(fields: [orderItemId], references: [id])
+// }
+
+model OrderItem {
+  id    String @id @default(cuid())
+  // nonce String @unique
+
+  orderId String
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  subcategoryId Int 
+  
+  mapConfigId String?
+  mapConfig MapConfig? @relation(fields: [mapConfigId], references: [id], onDelete: SetNull)
+
+  width Int 
+  height Int 
+  
+  currency   String  @default("USD")
+  quantity Int @default(1)
+  itemPrice Int //in cents 
+  totalPrice Int //in cents
+  userContribution Int //in cents
+  orderItemOptions Json 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

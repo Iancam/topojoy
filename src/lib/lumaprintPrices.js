@@ -489,22 +489,3 @@ function estimatePriceFromTable(table, targetSize, columnIndex = 1) {
     columnLabel: header[columnIndex], // e.g. "NO MAT" or '1" MAT'
   };
 }
-
-function customPrice(length, width, subcategoryId) {
-  fetch("https://orders.lumaprints.com/api/custom-size/price", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL29yZGVycy5sdW1hcHJpbnRzLmNvbS9hcGkvY3VzdG9tZXIvbG9naW4iLCJpYXQiOjE3NjY2MTg3NTYsImV4cCI6MTc2NjYyMjM1NiwibmJmIjoxNzY2NjE4NzU2LCJqdGkiOiJtQVh2clRzN245cGRIRkFlIiwic3ViIjoiMTA2ODI2OCIsInBydiI6IjhmY2EwODhhYmFlMmY5YThmODRhNWYwYmY2YTY1MjQ0OTA1NWJlMDAifQ.Nde4h_rXKDVvNS51slzTNgpP-KQGxfwkDZw3iCWpS2A`,
-    },
-    body: JSON.stringify({
-      length: length,
-      width: width,
-      subcategoryID: subcategoryId,
-      matSize: 0,
-    }),
-  })
-    .then((response) => response.json())
-    .then((result) => console.log(result))
-    .catch((error) => console.log(error));
-}

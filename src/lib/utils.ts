@@ -108,3 +108,15 @@ export const getFormFromLocalStorage = (
   const base = addHeightsToForm(configs[config], preForm);
   return { ...base, ...saved };
 };
+
+export function needsFilenamePrompt(filename?: string | null) {
+  if (!filename || !filename.trim()) return true;
+  // simple heuristics for UUID-like names
+  const looksLikeUuid = /^[0-9a-f-]{30,}$/i.test(filename.trim());
+  return looksLikeUuid;
+}
+
+export const formatMoney = (cents: number | null | undefined) => {
+  if (cents == null) return "$0.00";
+  return `$${(cents / 100).toFixed(2)}`;
+};

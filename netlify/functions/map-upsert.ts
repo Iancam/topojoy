@@ -51,11 +51,7 @@ export const handler = async (event: any) => {
           update: {
             ...validatedBody,
             id: undefined,
-            features: {
-              deleteMany: {
-                mapConfigId: validatedBody.id,
-              },
-            },
+            features: {},
             bbox: validatedBody.bbox,
             selectedTrails: validatedBody.selectedTrails,
           },
@@ -69,7 +65,11 @@ export const handler = async (event: any) => {
             selectedTrails: validatedBody.selectedTrails,
           },
         });
-
+        await tx.feature.deleteMany({
+          where: {
+            mapConfigId: cfg.id,
+          },
+        });
         await tx.feature.createMany({
           data: validatedBody.features.map((feature) => ({
             ...feature,

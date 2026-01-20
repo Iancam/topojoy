@@ -1,38 +1,37 @@
-import { useState, useRef, useEffect, use } from "react";
+import { useState, useRef, useEffect } from "react";
 import { TourMap } from "./walkthrough";
 import p5 from "p5";
 import { sketchFactory } from "./map/sketch";
 
 import { formElements } from "./components/configFormData";
 
-import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
+import { useAuth } from "@clerk/clerk-react";
 // Import configs with correct paths
 import { snowMesaConfig, emeraldLakesConfig } from "./configs/index.ts";
 import { MapConfig } from "./configs/schema.ts";
 import { ConfigForm } from "./components/configForm.tsx";
 import { P5Canvas } from "./components/p5Canvas.tsx";
-import {
-  getGeoJSONFromOSM,
-  getFeatures,
-  getUserSelectedTrailsLatLng,
-} from "./map/trails.js";
+import { getGeoJSONFromOSM, getFeatures } from "./map/trails.js";
 import { tilesForFeatures } from "./map/processImage.js";
-import { getImageUrlFromAws, maps, saveImageToAws } from "./api.ts";
+import { getImageUrlFromAws, maps, order, saveImageToAws } from "./api.ts";
 import {
   fitToParent,
   getFormFromLocalStorage,
   LS,
+  needsFilenamePrompt,
   normalizeFeatureName,
 } from "./lib/utils";
 import { useUser } from "@clerk/clerk-react";
-import { Link, useSearchParams } from "react-router";
-import {
-  addHeightsToForm,
-  convertToNestedObject,
-  upsertMap,
-} from "./lib/utils";
+import { useSearchParams } from "react-router";
+import { addHeightsToForm, convertToNestedObject } from "./lib/utils";
 import _ from "lodash";
 import { Header } from "./components/Header.tsx";
+import { printTypes } from "./components/PrintOptions.tsx";
+
+type ToastState = {
+  message: string;
+  type: "success" | "error" | "info";
+} | null;
 
 interface Configs {
   [key: string]: MapConfig;
@@ -53,6 +52,8 @@ export const App = () => {
   const { isSignedIn, user } = import.meta.env.DEV
     ? useUser()
     : { isSignedIn: false, user: null };
+
+  const { getToken } = useAuth();
 
   const preForm = Object.entries(formElements).reduce(
     (obj, [key, [_, __, value]]) => {
@@ -88,8 +89,28 @@ export const App = () => {
     return saved ? JSON.parse(saved) : {};
   });
 
-  const [isPurchasing, setIsPurchasing] = useState(false);
+  const [toast, setToast] = useState<ToastState>(null);
 
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isSignedIn) {
+      getToken().then((token) => {
+        // getOrder(token).then((order) => {
+        // setOrderId(order.id);
+        // });
+      });
+    }
+  }, [isSignedIn]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => {
+      setToast(null);
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [toast]);
   // load config from db, or from local storage
   useEffect(() => {
     if (configId) {
@@ -295,24 +316,22 @@ export const App = () => {
 
       // save form, geojson.bbox, geojson.trails, config,
       // to database using api
-      console.log({ user, isInitialRun });
-      console.log({ features });
-      if (user && !isInitialRun) {
-        console.log("saving map");
-        maps
-          .upsert(
-            form,
-            features,
-            bbox,
-            selectedTrails,
-            user,
-            config,
-            configs[config]
-          )
-          .then(({ id }) => {
-            setSearchParams((prev) => ({ ...prev, configId: id }));
-          });
-      }
+      // if (user && !isInitialRun) {
+      //   console.log("saving map");
+      //   maps
+      //     .upsert(
+      //       form,
+      //       features,
+      //       bbox,
+      //       selectedTrails,
+      //       user,
+      //       config,
+      //       configs[config]
+      //     )
+      //     .then(({ id }) => {
+      //       setSearchParams((prev) => ({ ...prev, configId: id }));
+      //     });
+      // }
 
       return myp5;
     };
@@ -387,11 +406,142 @@ export const App = () => {
     }
   };
 
-  const onFormChange = (key: string, value: any) => {
-    setForm({
-      ...form,
-      [key]: value,
-    });
+  const handleUpload = async () => {
+    if (isPurchasing) return;
+    setIsPurchasing(true);
+    try {
+      const blob = await captureImage();
+      if (!blob) {
+        console.error("Failed to capture image");
+        return;
+      }
+
+      const { url, key } = await saveImageToAws(
+        blob,
+        form["filename"] as string
+      );
+      const imageUrl = await getImageUrlFromAws(key);
+
+      await maps.upsert({
+        form,
+        givenFeatures: features,
+        bbox,
+        selectedTrails,
+        user,
+        configName: config,
+        defaultConfig: configs[config],
+        imageUrl,
+        s3Key: key,
+      });
+    } catch (error) {
+      console.error("Failed to upload map", error);
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
+
+  const handleAddToOrder = async () => {
+    if (isPurchasing) return;
+    if (!isSignedIn) {
+      setIsPurchasing(false);
+      return;
+    }
+    setIsPurchasing(true);
+    if (needsFilenamePrompt(form["filename"])) {
+      // setIsFilenamePromptOpen(true);
+      const filename = prompt(
+        "Please enter a unique filename",
+        form["filename"]
+      );
+      setForm({
+        ...form,
+        filename,
+      });
+
+      // setIsFilenamePromptOpen(false);
+      // setIsPurchasing(false);
+    }
+    if (!form["print.size"] || !form["print.price"]) {
+      setToast({ message: "Please select a print size", type: "error" });
+      setIsPurchasing(false);
+      return;
+    }
+    try {
+      const blob = await captureImage();
+
+      if (!blob) {
+        console.error("Failed to capture image");
+        return;
+      }
+      const { url, key } = await saveImageToAws(
+        blob,
+        form["filename"] as string
+      );
+      const imageUrl = await getImageUrlFromAws(key);
+
+      const newMapConfig = await maps.upsert({
+        form,
+        givenFeatures: features,
+        bbox,
+        selectedTrails,
+        user,
+        configName: config,
+        defaultConfig: configs[config],
+        imageUrl,
+        s3Key: key,
+      });
+      console.log({ newMapConfig });
+      const mapConfigId = newMapConfig.id;
+      if (!mapConfigId) {
+        console.error("Failed to create map config");
+        return;
+      }
+      const printType =
+        printTypes[form["print.type"] as keyof typeof printTypes];
+      console.log({
+        quantity: form["print.quantity"],
+        price: form["print.price"],
+      });
+      await order.addItem({
+        orderId,
+        orderItem: {
+          mapConfigId,
+          itemPrice: form["print.price"] || 0,
+          userContribution: (form["print.contribution"] as number) || 0,
+          subcategoryId: printType.subcategoryId,
+          printType: form["print.type"] as string,
+          width: form["print.size"]?.width,
+          height: form["print.size"]?.height,
+          options: printType.options.map((option) => option.optionId),
+          quantity: form["print.quantity"] || 1,
+          filename: form["filename"] as string,
+        },
+      });
+      setToast({ message: "Map added to cart", type: "success" });
+    } catch (error) {
+      setToast({ message: "Failed to add to cart map", type: "error" });
+      console.error("Failed to add to cart map", error);
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
+
+  const onFormChange = (arg1: any, arg2: any) => {
+    // if arg1 is a string, do the normal thing
+    console.log({ arg1, arg2 });
+    if (typeof arg1 === "string") {
+      const key = arg1 as string;
+      const value = arg2;
+      setForm({
+        ...form,
+        [key]: value,
+      });
+    } else if (typeof arg1 === "object") {
+      setForm({
+        ...form,
+        ...arg1,
+      });
+    }
   };
   const onConfigChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setConfig(e.target.value);
@@ -450,6 +600,30 @@ export const App = () => {
     <div>
       {/* Header */}
       <Header />
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-md px-4 py-3 shadow-lg text-white text-sm max-w-sm bg-opacity-90">
+          <div
+            className={
+              "absolute inset-0 -z-10 rounded-md " +
+              (toast.type === "error"
+                ? "bg-red-600"
+                : toast.type === "success"
+                  ? "bg-green-600"
+                  : "bg-gray-800")
+            }
+          />
+          <span>{toast.message}</span>
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            className="ml-auto text-white/80 hover:text-white text-lg leading-none"
+            aria-label="Close notification"
+          >
+            ×
+          </button>
+        </div>
+      )}
       <div className="flex h-screen">
         {/* Sidebar */}
         <div className="w-80"></div>
@@ -463,6 +637,8 @@ export const App = () => {
             onConfigChange={onConfigChange}
             onFormChange={onFormChange}
             onPurchase={handlePurchase}
+            onAddToOrder={handleAddToOrder}
+            onUpload={handleUpload}
             isPurchasing={isPurchasing}
             renderSketch={renderSketch({
               config: config!,
@@ -497,7 +673,6 @@ export const App = () => {
             }
           ></P5Canvas>
         </div>
-        s
       </div>
     </div>
   );

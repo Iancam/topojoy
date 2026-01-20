@@ -1,6 +1,7 @@
 import React from "react";
 import { cn } from "../lib/utils";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Download, Upload } from "lucide-react";
+import { SignInButton, useUser } from "@clerk/clerk-react";
 export type MultiStepFormStep = {
   title: string;
   content: React.ReactNode;
@@ -17,7 +18,9 @@ export type MultiStepFormProps = {
   submitLabel?: string;
   onRender?: () => void;
   onSave?: () => void;
+  onUpload?: () => void;
   onPurchase?: () => void;
+  onAddToOrder?: () => void;
   isPurchasing?: boolean;
 };
 
@@ -31,10 +34,12 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
   prevLabel = "Previous",
   onRender,
   onSave,
-  onPurchase,
+  onUpload,
+  onAddToOrder,
   isPurchasing,
 }) => {
   const [current, setCurrent] = React.useState(initialStep);
+  const { isSignedIn } = useUser();
   const total = steps.length;
   const isFirst = current === 0;
   const isLast = current === total - 1;
@@ -119,7 +124,7 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
       <div className="sticky bottom-10 left-0 mt-4 bg-white border-t p-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2 flex-wrap">
           {leftAction}
-          {(onRender || onSave || onPurchase) && (
+          {(onRender || onSave || onUpload || onAddToOrder) && (
             <div className="flex items-center gap-2 flex-wrap">
               {onRender && (
                 <button
@@ -131,18 +136,35 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
                 </button>
               )}
               {onSave && !isLast && (
-                <button
-                  type="button"
-                  onClick={onSave}
-                  className="px-3 py-1.5 rounded-md border text-xs font-medium bg-white text-gray-700 border-gray-300 hover:bg-gray-50 transition-colors"
-                >
-                  Save
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={onSave}
+                    className="px-2 py-1.5 rounded-md border text-xs font-medium bg-white text-gray-700 border-gray-300 hover:bg-gray-50 transition-colors inline-flex items-center justify-center"
+                    aria-label="Download image"
+                    title="download image"
+                  >
+                    <Download className="h-4 w-4" aria-hidden="true" />
+                    <span className="sr-only">Download image</span>
+                  </button>
+                  {onUpload && (
+                    <button
+                      type="button"
+                      onClick={onUpload}
+                      className="px-2 py-1.5 rounded-md border text-xs font-medium bg-white text-gray-700 border-gray-300 hover:bg-gray-50 transition-colors inline-flex items-center justify-center"
+                      aria-label="Upload image"
+                      title="save to server"
+                    >
+                      <Upload className="h-4 w-4" aria-hidden="true" />
+                      <span className="sr-only">Upload image</span>
+                    </button>
+                  )}
+                </div>
               )}
-              {onPurchase && isLast && (
+              {onAddToOrder && isLast && isSignedIn && (
                 <button
                   type="button"
-                  onClick={onPurchase}
+                  onClick={onAddToOrder}
                   className={cn(
                     "px-3 py-1.5 rounded-md text-xs font-medium",
                     isPurchasing
@@ -150,9 +172,10 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
                       : "bg-green-600 text-white hover:bg-green-700"
                   )}
                 >
-                  {isPurchasing ? "Processing..." : "Purchase"}
+                  {isPurchasing ? "Processing..." : "Add to Order"}
                 </button>
               )}
+              {isLast && !isSignedIn && <SignInButton mode="modal" />}
             </div>
           )}
         </div>

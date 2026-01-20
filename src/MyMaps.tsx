@@ -114,44 +114,45 @@ export default function MyMaps() {
                   removingIds.includes(m.id) ? "opacity-0" : "opacity-100"
                 }`}
               >
-                <div className="aspect-video bg-gray-100 flex items-center justify-center text-gray-400">
-                  {/* Placeholder for future thumbnail */}
-                  <span className="text-sm">No image</span>
-                </div>
-                <div className="p-4 flex flex-col gap-3">
-                  <Link to={`/app/?configId=${m.id}`}>
+                <Link to={`/app/?configId=${m.id}`}>
+                  <div className="aspect-video bg-gray-100 flex items-center justify-center text-gray-400">
+                    {/* Placeholder for future thumbnail */}
+                    <span className="text-sm">No image</span>
+                  </div>
+                  <div className="p-4 flex flex-col gap-3">
                     <h2 className="text-lg font-medium text-gray-900 truncate">
                       {m.title}
                     </h2>
-                  </Link>
-                  <div className="text-xs text-gray-500 truncate">
-                    {m.filename}
-                  </div>
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <div>
-                      <span className="font-medium text-gray-700">
-                        Updated:
-                      </span>{" "}
-                      {new Date(m.updatedAt).toLocaleString()}
+
+                    <div className="text-xs text-gray-500 truncate">
+                      {m.filename}
                     </div>
-                    <div>
-                      <span className="font-medium text-gray-700">
-                        Created:
-                      </span>{" "}
-                      {new Date(m.createdAt).toLocaleString()}
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <div>
+                        <span className="font-medium text-gray-700">
+                          Updated:
+                        </span>{" "}
+                        {new Date(m.updatedAt).toLocaleString()}
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">
+                          Created:
+                        </span>{" "}
+                        {new Date(m.createdAt).toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(m.id)}
+                        disabled={deletingId === m.id}
+                        className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {deletingId === m.id ? "Deleting…" : "Delete"}
+                      </button>
                     </div>
                   </div>
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(m.id)}
-                      disabled={deletingId === m.id}
-                      className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {deletingId === m.id ? "Deleting…" : "Delete"}
-                    </button>
-                  </div>
-                </div>
+                </Link>
               </article>
             ))}
           </div>

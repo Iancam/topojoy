@@ -44,7 +44,7 @@ export const handler = async (
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ success: true, data: map }),
+      body: JSON.stringify(map),
     };
   } catch (err: any) {
     console.error(err);

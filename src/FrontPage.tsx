@@ -2,10 +2,12 @@ import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
 import { html } from "./content/about.md";
 import "./index.css";
 import { Link } from "react-router";
+import { Header } from "./components/Header";
 export const FrontPage = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-8 pt-20">
-      <nav className="flex justify-between px-3 py-2 fixed top-0 left-0 right-0 shadow-lg bg-white z-10 backdrop-blur-lg">
+      <Header />
+      {/* <nav className="flex justify-between px-3 py-2 fixed top-0 left-0 right-0 shadow-lg bg-white z-10 backdrop-blur-lg">
         <a href="#hero" className="text-gray-800 font-semibold hover:underline">
           TopoJoy
         </a>
@@ -56,7 +58,7 @@ export const FrontPage = () => {
             </div>
           )}
         </div>
-      </nav>
+      </nav> */}
       <div className="w-full max-w-[600px] text-center min-h-[calc(100vh-60px)] flex flex-col items-center justify-center py-8 px-4 mt-4">
         <h1 className="text-4xl font-bold text-gray-800 mb-4">
           Welcome to TopoJoy
