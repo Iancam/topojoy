@@ -62,15 +62,28 @@ export type MapListItem = {
 
 const apiCall = (urlPath: string, method: string, errorMessage: string) => {
   return async (body: any) => {
-    const res = await fetch(`/.netlify/functions/${urlPath}`, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+    const searchParams = new URLSearchParams();
+    if (method === "GET") {
+      // Append key-value pairs, which automatically handles encoding
+      Object.keys(body || {}).forEach((key) => {
+        searchParams.append(key, body[key]);
+      });
+    }
+    const res = await fetch(
+      `/.netlify/functions/${urlPath}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`,
+      {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body:
+          method === "GET" || method === "HEAD"
+            ? undefined
+            : JSON.stringify(body),
+      }
+    );
     const json = await res.json();
-    const errorMessageFinal = `${errorMessage}\nServer message:${json.message}`;
+    const errorMessageFinal = `${errorMessage}\nServer message: ${json.message}`;
     if (!res.ok) {
       console.error(errorMessageFinal);
       throw new Error(errorMessageFinal);
@@ -242,13 +255,26 @@ const mapsAPIData = {
     toDTO(formToDTO),
     fromDTO(DTOToForm),
   ],
-  all: ["map-all", "GET", "Failed to load maps", fromDTO(DTOToForm)],
+  all: [
+    "map-all",
+    "GET",
+    "Failed to load maps",
+    (fn: (body: any) => Promise<any>) => {
+      return async (body: any) => {
+        const json = await fn(body);
+        console.log(json);
+        return json as MapListItem[];
+      };
+    },
+  ],
   get: ["map-get", "GET", "Failed to load map", fromDTO(DTOToForm)],
+  delete: ["map-delete", "POST", "Failed to delete map"],
 };
 
 const orderAPIData = {
   addItem: ["order-add-item", "POST", "Failed to add item to order"],
   getCart: ["order-get-cart", "GET", "Failed to get cart"],
+  update: ["order-update", "POST", "Failed to update"],
   updateItem: ["order-update-item", "POST", "Failed to update item"],
   removeItem: ["order-remove-item", "POST", "Failed to remove cart item"],
   getShippingOptions: [
@@ -261,18 +287,30 @@ const orderAPIData = {
     "POST",
     "Failed to create payment intent",
   ],
+  submitToLumaprints: [
+    "print-submit-order",
+    "POST",
+    "Failed to submit order to Lumaprints",
+  ],
+};
+
+type createPaymentIntentBody = {
+  amount: number;
+  currency: string;
+  paymentMethodId: string;
 };
 
 export const maps = mapValues(mapsAPIData, APIDataToAPIFN);
 export const order = mapValues(orderAPIData, APIDataToAPIFN);
 
-export const saveImageToAws = async (blob: Blob, filename: string) => {
+export const saveImageToAws = async (body: {
+  blob: Blob;
+  filename: string;
+  mapConfigId: string;
+}) => {
   const res = await fetch("/.netlify/functions/print-put-signed-url", {
     method: "POST",
-    body: JSON.stringify({
-      filename,
-      contentType: "image/png",
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) throw new Error("Failed to save image");
@@ -281,7 +319,7 @@ export const saveImageToAws = async (blob: Blob, filename: string) => {
 
   const response = await fetch(url, {
     method: "PUT",
-    body: blob,
+    body: body.blob,
   });
 
   if (!response.ok) throw new Error("Failed to save image");

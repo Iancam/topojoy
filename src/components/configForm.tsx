@@ -27,6 +27,7 @@ interface ConfigFormProps {
   features: { [key: string]: string[] };
   collisions: Record<string, string[]>;
   isPurchasing: boolean;
+  isUploading: boolean;
   onPurchase?: () => void;
   onAddToOrder?: () => void;
   onUpload?: () => void;
@@ -195,6 +196,7 @@ export const ConfigForm = ({
   features,
   collisions,
   isPurchasing,
+  isUploading,
   onPurchase,
   onAddToOrder,
   onUpload,
@@ -282,6 +284,7 @@ export const ConfigForm = ({
       onPurchase={onPurchase}
       onAddToOrder={onAddToOrder}
       isPurchasing={isPurchasing}
+      isUploading={isUploading}
     />
   );
 };

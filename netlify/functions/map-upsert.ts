@@ -32,6 +32,8 @@ export const handler = async (event: any) => {
       backgroundTextElevationRange1: z.number(),
       backgroundTextHighContrast: z.boolean(),
       crossHatch: z.boolean(),
+      s3Key: z.string().optional(),
+      imageUrl: z.string().optional(),
       // num array converted to csv string
       colorPlan: z.string(),
     });

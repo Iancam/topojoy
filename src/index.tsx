@@ -10,7 +10,8 @@ import { FrontPage } from "./FrontPage";
 import MyMaps from "./MyMaps";
 import { Cart } from "./Cart";
 import { Checkout } from "./Checkout";
-
+import { SignInPage } from "./SignInPage";
+import { CartProvider } from "./cartContext";
 const AppError = () => {
   const error = useRouteError();
   console.log(error);
@@ -50,9 +51,7 @@ const router = createBrowserRouter([
         element:
           // if in dev mode, show sign in button
           import.meta.env.DEV ? (
-            <div className="flex items-center justify-center bg-gray-50 pt-16">
-              <SignIn />
-            </div>
+            <SignInPage />
           ) : (
             <div className="flex items-center justify-center bg-gray-50 pt-16">
               <p>Not available in production</p>
@@ -82,7 +81,11 @@ const router = createBrowserRouter([
 
 const root = document.getElementById("app");
 
-createRoot(root).render(<RouterProvider router={router} />);
+createRoot(root).render(
+  <CartProvider>
+    <RouterProvider router={router} />
+  </CartProvider>
+);
 // const container = document.getElementById("app");
 // const root = createRoot(container);
 // root.render(<App />);

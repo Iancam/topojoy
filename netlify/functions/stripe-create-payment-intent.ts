@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 import { PrismaClient } from "@prisma/client";
 import { createClerkClient } from "@clerk/backend";
-import { auth } from "../lib";
+import { auth, getShippingPrice } from "../lib";
 
 const prisma = new PrismaClient();
 const stripeSecretKey = process.env.SBX_STRIPE_SECRET_KEY;
@@ -36,14 +36,24 @@ export const handler = async (event: any) => {
       };
     }
 
-    const { shippingCostCents } = JSON.parse(event.body || "{}") as {
-      shippingCostCents?: number;
+    const { selectedShippingIndex } = JSON.parse(event.body || "{}") as {
+      selectedShippingIndex?: number;
     };
-    console.log(authUserId);
+    if (typeof selectedShippingIndex !== "number") {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: "No shipping option selected" }),
+      };
+    }
+
     const order = await prisma.order.findFirst({
       where: {
         userId: authUserId,
         status: "pending",
+      },
+      include: {
+        recipient: true,
+        orderItems: true,
       },
     });
 
@@ -54,7 +64,55 @@ export const handler = async (event: any) => {
         body: JSON.stringify({ message: "No pending order found" }),
       };
     }
+    const address = order?.recipient;
+    const items = order?.orderItems;
 
+    if (!address || !items) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: "No address or items found" }),
+      };
+    }
+    const { message, shippingMethods } = await getShippingPrice({
+      address: {
+        ...address,
+        name: address.name,
+        phone: address.phone,
+        // addressLine1: address.line1,
+        // addressLine2: address.line2,
+        city: address.city,
+        state: address.state,
+        postalCode: address.postalCode,
+        country: address.country,
+      },
+      items: items.map((item) => {
+        return {
+          subcategoryId: item.subcategoryId,
+          width: item.width,
+          height: item.height,
+          options: item.orderItemOptions as number[],
+          quantity: item.quantity,
+        };
+      }),
+    });
+
+    if (!shippingMethods) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ message: "No shipping prices found" }),
+      };
+    }
+
+    const shippingCostCents =
+      shippingMethods?.[selectedShippingIndex].cost * 100;
+    if (!shippingCostCents) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({
+          message: `No shipping cost associated with index ${selectedShippingIndex} found`,
+        }),
+      };
+    }
     const baseAmount = order.totalPrice || 0; // in cents
     const shippingAmount =
       typeof shippingCostCents === "number" ? shippingCostCents : 0;

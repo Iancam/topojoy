@@ -53,8 +53,6 @@ export const App = () => {
     ? useUser()
     : { isSignedIn: false, user: null };
 
-  const { getToken } = useAuth();
-
   const preForm = Object.entries(formElements).reduce(
     (obj, [key, [_, __, value]]) => {
       obj[key] = value;
@@ -73,14 +71,13 @@ export const App = () => {
 
   const p5Ref = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [isRendering, setIsRendering] = useState(false);
+
   const [isInitialRun, setIsInitialRun] = useState(() => {
     const isInitialRun = JSON.parse(
       localStorage.getItem(LS.IS_DEFAULT_KEEP_LIST_SET) || "false"
     );
     return isInitialRun;
   });
-
   const [collisions, setCollisions] = useState<Record<string, string[]>>(() => {
     if (configId) {
       return {};
@@ -91,18 +88,9 @@ export const App = () => {
 
   const [toast, setToast] = useState<ToastState>(null);
 
+  const [isRendering, setIsRendering] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
-  const [orderId, setOrderId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (isSignedIn) {
-      getToken().then((token) => {
-        // getOrder(token).then((order) => {
-        // setOrderId(order.id);
-        // });
-      });
-    }
-  }, [isSignedIn]);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (!toast) return;
@@ -115,7 +103,7 @@ export const App = () => {
   useEffect(() => {
     if (configId) {
       // get config from db
-      maps.get(user?.id!, configId).then((config) => {
+      maps.get({ userId: user?.id!, configId }).then((config) => {
         console.log("retrieved config from database");
         setConfig(config.config);
         setForm({ ...preForm, ...config });
@@ -314,25 +302,6 @@ export const App = () => {
       const myp5 = new p5(sketch, p5Ref.current);
       myp5.noLoop();
 
-      // save form, geojson.bbox, geojson.trails, config,
-      // to database using api
-      // if (user && !isInitialRun) {
-      //   console.log("saving map");
-      //   maps
-      //     .upsert(
-      //       form,
-      //       features,
-      //       bbox,
-      //       selectedTrails,
-      //       user,
-      //       config,
-      //       configs[config]
-      //     )
-      //     .then(({ id }) => {
-      //       setSearchParams((prev) => ({ ...prev, configId: id }));
-      //     });
-      // }
-
       return myp5;
     };
 
@@ -382,33 +351,9 @@ export const App = () => {
     });
   };
 
-  const handlePurchase = async () => {
-    if (isPurchasing) return;
-    setIsPurchasing(true);
-    try {
-      const blob = await captureImage();
-      if (!blob) {
-        console.error("Failed to capture image");
-        return;
-      }
-
-      const { url, key } = await saveImageToAws(
-        blob,
-        form["filename"] as string
-      );
-
-      const imageUrl = await getImageUrlFromAws(key);
-      console.log({ imageUrl });
-    } catch (error) {
-      console.error("Failed to purchase map", error);
-    } finally {
-      setIsPurchasing(false);
-    }
-  };
-
   const handleUpload = async () => {
-    if (isPurchasing) return;
-    setIsPurchasing(true);
+    if (isUploading) return;
+    setIsUploading(true);
     try {
       const blob = await captureImage();
       if (!blob) {
@@ -416,13 +361,14 @@ export const App = () => {
         return;
       }
 
-      const { url, key } = await saveImageToAws(
+      const { url, key } = await saveImageToAws({
         blob,
-        form["filename"] as string
-      );
+        filename: form["filename"] as string,
+        mapConfigId: form.id,
+      });
       const imageUrl = await getImageUrlFromAws(key);
-
-      await maps.upsert({
+      console.log(key, imageUrl);
+      const result = await maps.upsert({
         form,
         givenFeatures: features,
         bbox,
@@ -433,10 +379,13 @@ export const App = () => {
         imageUrl,
         s3Key: key,
       });
+      console.log("Upload result", result);
+      setToast({ message: "Map saved to server", type: "success" });
     } catch (error) {
       console.error("Failed to upload map", error);
+      setToast({ message: "Failed to save map to server", type: "error" });
     } finally {
-      setIsPurchasing(false);
+      setIsUploading(false);
     }
   };
 
@@ -473,10 +422,11 @@ export const App = () => {
         console.error("Failed to capture image");
         return;
       }
-      const { url, key } = await saveImageToAws(
+      const { url, key } = await saveImageToAws({
         blob,
-        form["filename"] as string
-      );
+        filename: form["filename"] as string,
+        mapConfigId: form.id,
+      });
       const imageUrl = await getImageUrlFromAws(key);
 
       const newMapConfig = await maps.upsert({
@@ -503,7 +453,6 @@ export const App = () => {
         price: form["print.price"],
       });
       await order.addItem({
-        orderId,
         orderItem: {
           mapConfigId,
           itemPrice: form["print.price"] || 0,
@@ -636,10 +585,10 @@ export const App = () => {
             collisions={collisions}
             onConfigChange={onConfigChange}
             onFormChange={onFormChange}
-            onPurchase={handlePurchase}
             onAddToOrder={handleAddToOrder}
             onUpload={handleUpload}
             isPurchasing={isPurchasing}
+            isUploading={isUploading}
             renderSketch={renderSketch({
               config: config!,
               form,

@@ -124,6 +124,7 @@ export const basicFormElements: FormElements = {
     "Zoom Level",
     { min: 12, max: 15 },
   ],
+  "print.quantity": ["number", "the quantity of the print", 1, "Quantity"],
 } satisfies FormElements;
 
 export const advancedFormElements: FormElements = {

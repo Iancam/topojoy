@@ -32,6 +32,8 @@ export const handler = async (
         filename: true,
         createdAt: true,
         updatedAt: true,
+        imageUrl: true,
+        s3Key: true,
         // Placeholder for future image field
       },
     });

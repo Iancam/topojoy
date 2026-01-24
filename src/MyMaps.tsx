@@ -2,7 +2,8 @@ import React from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { Link } from "react-router";
 import { Header } from "./components/Header";
-
+import { maps as mapAPI, getImageUrlFromAws } from "./api";
+import { MapThumbnail } from "./components/MapThumbnail";
 export type MapListItem = {
   id: string;
   title: string;
@@ -10,6 +11,7 @@ export type MapListItem = {
   createdAt: string;
   updatedAt: string;
   imageUrl?: string | null;
+  s3Key?: string | null;
 };
 
 export default function MyMaps() {
@@ -25,25 +27,10 @@ export default function MyMaps() {
     const run = async () => {
       if (!userId) return;
       setLoading(true);
-      try {
-        const res = await fetch(
-          `/.netlify/functions/map-all?userId=${encodeURIComponent(userId)}`
-        );
-        if (!res.ok) {
-          throw new Error(`Failed to load maps (${res.status})`);
-        }
-
-        const json = await res.json();
-        if (json.success && mounted) {
-          setMaps(json.data as MapListItem[]);
-        } else if (mounted) {
-          setError(json.message || "Failed to load maps");
-        }
-      } catch (e: any) {
-        if (mounted) setError(e.message || "Network error");
-      } finally {
-        if (mounted) setLoading(false);
-      }
+      const json = await mapAPI.all({ userId });
+      console.log(json);
+      setMaps(json as MapListItem[]);
+      setLoading(false);
     };
     run();
     return () => {
@@ -60,16 +47,8 @@ export default function MyMaps() {
 
     try {
       setDeletingId(id);
-      const res = await fetch("/.netlify/functions/map-delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, userId }),
-      });
+      const json = await mapAPI.delete({ id, userId });
 
-      if (!res.ok) {
-        const json = await res.json().catch(() => null);
-        throw new Error(json?.message || "Failed to delete map");
-      }
       setRemovingIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
       setTimeout(() => {
         setMaps((prev) => (prev ? prev.filter((m) => m.id !== id) : prev));
@@ -116,8 +95,17 @@ export default function MyMaps() {
               >
                 <Link to={`/app/?configId=${m.id}`}>
                   <div className="aspect-video bg-gray-100 flex items-center justify-center text-gray-400">
-                    {/* Placeholder for future thumbnail */}
-                    <span className="text-sm">No image</span>
+                    {m.s3Key ? (
+                      <MapThumbnail title={m.title} s3Key={m.s3Key} />
+                    ) : m.imageUrl ? (
+                      <img
+                        src={m.imageUrl}
+                        alt={m.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-sm">No image</span>
+                    )}
                   </div>
                   <div className="p-4 flex flex-col gap-3">
                     <h2 className="text-lg font-medium text-gray-900 truncate">

@@ -32,6 +32,13 @@ export const handler = async (event: any) => {
       },
     },
   });
+
+  if (!order) {
+    return {
+      statusCode: 404,
+      body: JSON.stringify({ message: "No pending order found" }),
+    };
+  }
   return {
     statusCode: 200,
     body: JSON.stringify(order),

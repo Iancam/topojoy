@@ -55,9 +55,15 @@ export const handler = async (event: any) => {
         data: { quantity, totalPrice: newTotal },
       });
 
+      const sum = await tx.orderItem.aggregate({
+        where: { orderId: item.orderId },
+        _sum: { totalPrice: true },
+      });
+      const newTotalOrder = sum._sum.totalPrice ?? 0;
+
       const updatedOrder = await tx.order.update({
         where: { id: item.orderId },
-        data: { totalPrice: { increment: diff } },
+        data: { totalPrice: newTotalOrder },
         include: {
           orderItems: {
             include: {

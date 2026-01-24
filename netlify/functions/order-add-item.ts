@@ -98,6 +98,7 @@ export async function handler(event: any, context: any) {
       const newOrder = await prisma.order.create({
         data: {
           userId,
+          totalPrice: orderItem.totalPrice,
           status: "pending",
           orderItems: {
             create: orderItem,
@@ -106,12 +107,18 @@ export async function handler(event: any, context: any) {
       });
       return { statusCode: 200, body: JSON.stringify(newOrder) };
     }
+    const sum = await prisma.orderItem.aggregate({
+      where: { orderId: order?.id },
+      _sum: { totalPrice: true },
+    });
+    const newTotal = (sum._sum.totalPrice ?? 0) + orderItem.totalPrice;
 
     const updatedOrder = await prisma.order.update({
       where: {
         id: order.id,
       },
       data: {
+        totalPrice: newTotal,
         orderItems: {
           create: orderItem,
         },

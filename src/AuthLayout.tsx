@@ -9,10 +9,14 @@ export default function AuthLayout() {
   console.log("test", userId);
 
   React.useEffect(() => {
+    if (!isLoaded) return;
     if (!userId) {
-      navigate("/sign-in");
+      navigate("/sign-in", {
+        state: { from: location.pathname + location.search },
+        replace: true,
+      });
     }
-  }, []);
+  }, [isLoaded, navigate, userId, location.pathname, location.search]);
 
   if (!isLoaded) return "Loading...";
 

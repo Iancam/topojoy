@@ -2,6 +2,7 @@ import React from "react";
 import { cn } from "../lib/utils";
 import { ArrowLeft, ArrowRight, Download, Upload } from "lucide-react";
 import { SignInButton, useUser } from "@clerk/clerk-react";
+import { useSearchParams } from "react-router";
 export type MultiStepFormStep = {
   title: string;
   content: React.ReactNode;
@@ -22,6 +23,7 @@ export type MultiStepFormProps = {
   onPurchase?: () => void;
   onAddToOrder?: () => void;
   isPurchasing?: boolean;
+  isUploading?: boolean;
 };
 
 export const MultiStepForm: React.FC<MultiStepFormProps> = ({
@@ -37,13 +39,33 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
   onUpload,
   onAddToOrder,
   isPurchasing,
+  isUploading,
 }) => {
-  const [current, setCurrent] = React.useState(initialStep);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const urlStep = searchParams.get("step");
+  const parsedUrlStep = urlStep != null ? Number(urlStep) : NaN;
+  const safeInitialStep =
+    Number.isFinite(parsedUrlStep) &&
+    parsedUrlStep >= 0 &&
+    parsedUrlStep < steps.length
+      ? parsedUrlStep
+      : initialStep;
+
+  const [current, setCurrent] = React.useState(safeInitialStep);
   const { isSignedIn } = useUser();
   const total = steps.length;
   const isFirst = current === 0;
   const isLast = current === total - 1;
   const percent = total > 1 ? Math.round(((current + 1) / total) * 100) : 100;
+
+  React.useEffect(() => {
+    setSearchParams((prev) => {
+      const updated = new URLSearchParams(prev);
+      updated.set("step", String(current));
+      return updated;
+    });
+  }, [current, setSearchParams]);
 
   const goPrev = () => setCurrent((c) => Math.max(0, c - 1));
   const goNext = () => {
@@ -151,11 +173,16 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
                     <button
                       type="button"
                       onClick={onUpload}
-                      className="px-2 py-1.5 rounded-md border text-xs font-medium bg-white text-gray-700 border-gray-300 hover:bg-gray-50 transition-colors inline-flex items-center justify-center"
+                      className="px-2 py-1.5 rounded-md border text-xs font-medium bg-white text-gray-700 border-gray-300 hover:bg-gray-50 transition-colors inline-flex items-center justify-center disabled:opacity-60"
+                      disabled={isUploading}
                       aria-label="Upload image"
                       title="save to server"
                     >
-                      <Upload className="h-4 w-4" aria-hidden="true" />
+                      {isUploading ? (
+                        <span className="inline-block w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4" aria-hidden="true" />
+                      )}
                       <span className="sr-only">Upload image</span>
                     </button>
                   )}

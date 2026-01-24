@@ -51,9 +51,16 @@ export const handler = async (event: any) => {
     const updated = await prisma.$transaction(async (tx) => {
       await tx.orderItem.delete({ where: { id: itemId } });
 
+      const sum = await tx.orderItem.aggregate({
+        where: { orderId },
+        _sum: { totalPrice: true },
+      });
+
+      const newTotal = sum._sum.totalPrice ?? 0;
+
       const updatedOrder = await tx.order.update({
         where: { id: orderId },
-        data: { totalPrice: { decrement: itemTotal } },
+        data: { totalPrice: newTotal },
         include: {
           orderItems: {
             include: {

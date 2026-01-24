@@ -5,7 +5,13 @@ import {
   useStripe,
 } from "@stripe/react-stripe-js";
 
-export const StripePaymentForm = ({ onBack }: { onBack: () => void }) => {
+export const StripePaymentForm = ({
+  onBack,
+  onSuccess,
+}: {
+  onBack: () => void;
+  onSuccess: () => void;
+}) => {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
@@ -28,9 +34,9 @@ export const StripePaymentForm = ({ onBack }: { onBack: () => void }) => {
         setSubmitting(false);
         return;
       }
-      // In a real app, you might verify the payment via webhook and then
-      // redirect to a confirmation step. For now, rely on the checkout stepper.
-      window.location.search = "?step=confirm";
+      // Hand control back to the parent so it can mark the order paid
+      // and move to the confirmation step.
+      onSuccess();
     } catch (err: any) {
       setError("Payment failed");
       setSubmitting(false);

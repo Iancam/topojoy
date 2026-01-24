@@ -1,3 +1,5 @@
+import { getShippingPrice } from "../lib";
+
 export const handler = async (event: any) => {
   if (event.httpMethod !== "POST") {
     return {
@@ -37,60 +39,10 @@ export const handler = async (event: any) => {
       };
     }
 
-    const authHeader = () => {
-      return process.env.NODE_ENV === "production"
-        ? `Basic ${Buffer.from(`${process.env.LUMAPRINTS_API_KEY}:${process.env.LUMAPRINTS_API_SECRET}`).toString("base64")}`
-        : `Basic ${Buffer.from(`${process.env.sbx_lumaprints_key}:${process.env.sbx_lumaprints_secret}`).toString("base64")}`;
-    };
-
-    const response = await fetch(
-      "https://us.api-sandbox.lumaprints.com/api/v1/pricing/shipping",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: authHeader(),
-        },
-        body: JSON.stringify({
-          recipient: {
-            firstName: address.name,
-            lastName: "",
-            company: "",
-            addressLine1: address.line1,
-            addressLine2: address.line2 || "",
-            city: address.city,
-            state: address.state,
-            zipCode: address.postalCode,
-            country: address.country,
-            phone: address.phone || "",
-          },
-          orderItems: items.map((item) => ({
-            subcategoryId: item.subcategoryId,
-            quantity: item.quantity,
-            width: item.width,
-            height: item.height,
-            orderItemOptions: item.options ?? [],
-          })),
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const text = await response.text();
-      console.error("Lumaprints shipping error", response.status, text);
-      return {
-        statusCode: response.status,
-        body: JSON.stringify({
-          message: "Failed to fetch shipping options from Lumaprints",
-        }),
-      };
-    }
-
-    const json = await response.json();
-
+    const shippingPrices = await getShippingPrice({ address, items });
     return {
       statusCode: 200,
-      body: JSON.stringify(json),
+      body: JSON.stringify(shippingPrices),
     };
   } catch (error) {
     console.error("print-shipping-post error", error);

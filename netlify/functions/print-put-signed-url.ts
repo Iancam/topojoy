@@ -1,6 +1,5 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import crypto from "node:crypto";
 
 const s3 = new S3Client({
   region: process.env.MY_AWS_REGION,
@@ -10,27 +9,30 @@ const s3 = new S3Client({
   },
 });
 
-function getExtenson(filename: string, fallback = "png") {
+function getExtension(filename?: string | null, fallback = "png") {
+  if (!filename) return fallback;
   const parts = filename.split(".");
-  return parts[parts.length - 1] || fallback;
+  const ext = parts[parts.length - 1];
+  return ext || fallback;
 }
 
 export const handler = async (event: any) => {
-  const { filename, contentType } = JSON.parse(event.body);
-  const ext = getExtenson(filename);
+  const { filename, contentType, mapConfigId } = JSON.parse(event.body || "{}");
 
-  const date = new Date();
-  const uniqueKey = `prints/${date.getFullYear()}/${String(
-    date.getMonth() + 1
-  ).padStart(2, "0")}/${String(date.getDate()).padStart(
-    2,
-    "0"
-  )}/${date.getTime()}-${crypto.randomUUID()}.${ext}`;
+  // Derive a safe extension from the filename, defaulting to png
+  const ext = getExtension(filename, "png");
+
+  // If contentType is not provided, assume PNG (what the frontend currently sends)
+  const finalContentType =
+    contentType ||
+    (ext === "jpg" || ext === "jpeg" ? "image/jpeg" : "image/png");
+
+  const uniqueKey = `${mapConfigId}.${ext}`;
 
   const command = new PutObjectCommand({
     Bucket: process.env.S3_BUCKET_NAME,
     Key: uniqueKey,
-    ContentType: contentType,
+    ContentType: finalContentType,
   });
 
   const url = await getSignedUrl(s3, command, { expiresIn: 60 });

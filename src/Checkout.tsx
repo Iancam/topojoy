@@ -7,11 +7,12 @@ import {
 } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { useSearchParams } from "react-router";
-import type { CartOrder } from "./api";
-import { order } from "./api";
+import { order, getImageUrlFromAws } from "./api";
 import { Header } from "./components/Header";
 import { formatMoney } from "./lib/utils";
 import { StripePaymentForm } from "./StripePaymentForm";
+import { useCartContext } from "./cartContext";
+import { MapThumbnail } from "./components/MapThumbnail";
 
 const CHECKOUT_STEPS = ["shipping", "method", "payment", "confirm"] as const;
 
@@ -68,9 +69,8 @@ const isValidStep = (value: string | null): value is CheckoutStep => {
 
 export const Checkout = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [cart, setCart] = useState<CartOrder | null | undefined>(undefined);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
+  const { cart, loading, error } = useCartContext();
+  const [localError, setLocalError] = useState<string | null>(null);
   const [submittingShipping, setSubmittingShipping] = useState<boolean>(false);
 
   const [shippingForm, setShippingForm] = useState({
@@ -89,6 +89,7 @@ export const Checkout = () => {
   const [selectedShippingIndex, setSelectedShippingIndex] = useState<
     number | null
   >(null);
+  const [totalAmount, setTotalAmount] = useState<number | null>(null);
   const [shippingError, setShippingError] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [creatingPaymentIntent, setCreatingPaymentIntent] =
@@ -128,26 +129,6 @@ export const Checkout = () => {
     }
   }, [shippingForm]);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    order
-      .getCart()
-      .then((data) => {
-        if (!cancelled) setCart(data);
-      })
-      .catch((err) => {
-        console.error("Failed to load cart for checkout", err);
-        if (!cancelled) setError("Failed to load cart");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const goToStep = (next: CheckoutStep) => {
     setSearchParams((prev) => {
       const updated = new URLSearchParams(prev);
@@ -161,6 +142,17 @@ export const Checkout = () => {
   const items = cart?.orderItems || [];
   const orderTotal =
     cart?.totalPrice ?? items.reduce((sum, i) => sum + (i.totalPrice ?? 0), 0);
+
+  // Selected shipping cost (in cents) if a method has been chosen
+  const selectedShippingCostCents =
+    selectedShippingIndex != null &&
+    shippingOptions &&
+    shippingOptions[selectedShippingIndex] &&
+    typeof shippingOptions[selectedShippingIndex].cost === "number"
+      ? Math.round(shippingOptions[selectedShippingIndex].cost * 100)
+      : 0;
+
+  const grandTotalCents = orderTotal + selectedShippingCostCents;
 
   const handleShippingChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -192,6 +184,10 @@ export const Checkout = () => {
 
     setSubmittingShipping(true);
     try {
+      // set address in order
+      await order.update({
+        address: shippingForm,
+      });
       const data = await order.getShippingOptions({
         address: shippingForm,
         items: items.map((item) => ({
@@ -211,6 +207,37 @@ export const Checkout = () => {
       setShippingError("Failed to load shipping options.");
     } finally {
       setSubmittingShipping(false);
+    }
+  };
+
+  const handleContinueToPayment = async () => {
+    if (
+      !shippingOptions ||
+      selectedShippingIndex === null ||
+      !shippingOptions[selectedShippingIndex]
+    ) {
+      return;
+    }
+    const selected = shippingOptions[selectedShippingIndex];
+    const costShippingCents =
+      typeof selected.cost === "number" ? Math.round(selected.cost * 100) : 0;
+    setCreatingPaymentIntent(true);
+    if (!cart) {
+      setLocalError("Failed to load cart");
+      return;
+    }
+    try {
+      const data = await order.createPaymentIntent({
+        selectedShippingIndex,
+      });
+      setClientSecret(data.clientSecret);
+      setTotalAmount(data.amount);
+      goToStep("payment");
+    } catch (err) {
+      console.error("Failed to create payment intent", err);
+      setShippingError("Failed to start payment.");
+    } finally {
+      setCreatingPaymentIntent(false);
     }
   };
 
@@ -457,38 +484,7 @@ export const Checkout = () => {
               selectedShippingIndex === null ||
               creatingPaymentIntent
             }
-            onClick={async () => {
-              if (
-                !shippingOptions ||
-                selectedShippingIndex === null ||
-                !shippingOptions[selectedShippingIndex]
-              ) {
-                return;
-              }
-              const selected = shippingOptions[selectedShippingIndex];
-              const costShippingCents =
-                typeof selected.cost === "number"
-                  ? Math.round(selected.cost * 100)
-                  : 0;
-              setCreatingPaymentIntent(true);
-              if (!cart) {
-                setError("Failed to load cart");
-                return;
-              }
-              const costTotalCents = costShippingCents + cart?.totalPrice;
-              try {
-                const data = await order.createPaymentIntent({
-                  shippingCostCents: costTotalCents,
-                });
-                setClientSecret(data.clientSecret);
-                goToStep("payment");
-              } catch (err) {
-                console.error("Failed to create payment intent", err);
-                setShippingError("Failed to start payment.");
-              } finally {
-                setCreatingPaymentIntent(false);
-              }
-            }}
+            onClick={handleContinueToPayment}
           >
             {creatingPaymentIntent
               ? "Preparing payment…"
@@ -509,7 +505,20 @@ export const Checkout = () => {
 
         {clientSecret && stripePromise && (
           <Elements stripe={stripePromise} options={{ clientSecret }}>
-            <StripePaymentForm onBack={() => goToStep("method")} />
+            <StripePaymentForm
+              onBack={() => goToStep("method")}
+              onSuccess={async () => {
+                try {
+                  // Mark the current pending order as paid
+                  await order.update({ status: "paid" });
+                  // Submit the paid order to Lumaprints
+                  await order.submitToLumaprints({});
+                } catch (err) {
+                  console.error("Post-payment processing failed", err);
+                }
+                goToStep("confirm");
+              }}
+            />
           </Elements>
         )}
       </div>
@@ -570,22 +579,81 @@ export const Checkout = () => {
         <div className="grid gap-6 md:grid-cols-[2fr,1fr]">
           <div className="space-y-4">
             {loading && <p className="text-sm text-gray-500">Loading cart…</p>}
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            {!loading && !error && (!cart || items.length === 0) && (
-              <p className="text-sm text-gray-500">Your cart is empty.</p>
+            {(error || localError) && (
+              <p className="text-sm text-red-600">{error || localError}</p>
             )}
-            {!loading && !error && cart && items.length > 0 && steps[step]}
+            {!loading &&
+              !error &&
+              !localError &&
+              (!cart || items.length === 0) && (
+                <p className="text-sm text-gray-500">Your cart is empty.</p>
+              )}
+            {!loading &&
+              !error &&
+              !localError &&
+              cart &&
+              items.length > 0 &&
+              steps[step]}
           </div>
 
           <aside className="border rounded-lg p-4 bg-white shadow-sm h-fit space-y-3">
             <h2 className="text-lg font-semibold">Summary</h2>
+            {items.length > 0 && (
+              <div className="space-y-2">
+                {items.map((item) => {
+                  const s3Key = item.mapConfig?.s3Key;
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-3 text-xs text-gray-700"
+                    >
+                      <div className="w-12 h-9 bg-gray-100 flex items-center justify-center overflow-hidden rounded">
+                        {s3Key ? (
+                          <MapThumbnail
+                            title={item.filename || "Map preview"}
+                            s3Key={s3Key}
+                          />
+                        ) : (
+                          <span className="text-[10px] text-gray-400">
+                            No image
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 truncate">
+                        <div className="truncate font-medium">
+                          {item.filename || "Untitled map"}
+                        </div>
+                        <div className="text-[11px] text-gray-500">
+                          {item.printType} · {item.width}&quot; × {item.height}
+                          &quot; · Qty {item.quantity}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Items</span>
               <span className="font-medium">{items.length}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Total</span>
+              <span className="text-gray-600">Items subtotal</span>
               <span className="font-semibold">{formatMoney(orderTotal)}</span>
+            </div>
+            {selectedShippingCostCents > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Shipping</span>
+                <span className="font-semibold">
+                  {formatMoney(selectedShippingCostCents)}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between text-sm border-t pt-2 mt-1">
+              <span className="text-gray-800 font-semibold">Total</span>
+              <span className="font-semibold">
+                {formatMoney(totalAmount || grandTotalCents)}
+              </span>
             </div>
           </aside>
         </div>

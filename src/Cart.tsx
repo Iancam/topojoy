@@ -1,43 +1,28 @@
-import { useEffect, useState } from "react";
-import type { CartOrder } from "./api";
-import { order } from "./api";
+import { useState, useEffect } from "react";
+import { order, getImageUrlFromAws } from "./api";
 import { Link } from "react-router";
 import { Header } from "./components/Header";
 import { formatMoney } from "./lib/utils";
+import { useCartContext } from "./cartContext";
+import { MapThumbnail } from "./components/MapThumbnail";
 
 export const Cart = () => {
-  const [cart, setCart] = useState<CartOrder | null | undefined>(undefined);
-  const [error, setError] = useState<string | null>(null);
+  const { cart, loading, error, refresh, setCart } = useCartContext();
+  const [localError, setLocalError] = useState<string | null>(null);
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    order
-      .getCart()
-      .then((data) => {
-        if (!cancelled) setCart(data);
-      })
-      .catch((err) => {
-        console.error("Failed to load cart", err);
-        if (!cancelled) setError("Failed to load cart");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const emptyCart = !cart || !cart.orderItems || cart.orderItems.length === 0;
 
-  if (error || emptyCart) {
+  if (error || localError || emptyCart) {
     return (
       <div>
         <Header />
         <div className="max-w-3xl mx-auto py-8 px-4 my-15">
           <h1 className="text-2xl font-semibold mb-4">Your Cart</h1>
-          {error && <p className="text-sm text-red-600"></p>}
-          {cart === undefined && (
-            <p className="text-sm text-gray-500">Loading…</p>
+          {(error || localError) && (
+            <p className="text-sm text-red-600">{error || localError}</p>
           )}
+          {loading && <p className="text-sm text-gray-500">Loading…</p>}
           {emptyCart && (
             <p className="text-sm text-gray-500">
               You don&apos;t have any maps in your cart yet.
@@ -54,26 +39,45 @@ export const Cart = () => {
 
   const handleQuantityChange = async (itemId: string, quantity: number) => {
     if (quantity < 1) return;
+    if (!cart) return;
+
+    // optimistic update
+    const prevCart = cart;
+    const nextItems = cart.orderItems.map((item) =>
+      item.id === itemId ? { ...item, quantity } : item
+    );
+    const nextCart = { ...cart, orderItems: nextItems };
+    setCart(nextCart);
+
     setUpdatingItemId(itemId);
     try {
-      const updated = await order.updateItem({ itemId, quantity });
-      setCart(updated);
+      await order.updateItem({ itemId, quantity });
+      await refresh();
     } catch (err) {
       console.error("Failed to update quantity", err);
-      setError("Failed to update quantity");
+      setLocalError("Failed to update quantity");
+      setCart(prevCart);
     } finally {
       setUpdatingItemId(null);
     }
   };
 
   const handleRemove = async (itemId: string) => {
+    if (!cart) return;
+
+    const prevCart = cart;
+    const nextItems = cart.orderItems.filter((item) => item.id !== itemId);
+    const nextCart = { ...cart, orderItems: nextItems };
+    setCart(nextCart);
+
     setUpdatingItemId(itemId);
     try {
-      const updated = await order.removeItem({ itemId });
-      setCart(updated);
+      await order.removeItem({ itemId });
+      await refresh();
     } catch (err) {
       console.error("Failed to remove item", err);
-      setError("Failed to remove item");
+      setLocalError("Failed to remove item");
+      setCart(prevCart);
     } finally {
       setUpdatingItemId(null);
     }
@@ -82,13 +86,13 @@ export const Cart = () => {
   return (
     <div>
       <Header />
-      <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
+      <div className="max-w-4xl mx-auto py-8 px-4 mt-15 space-y-6">
         <h1 className="text-2xl font-semibold">Your Cart</h1>
 
         <div className="grid gap-6 md:grid-cols-[2fr,1fr]">
           <div className="space-y-4">
             {items.map((item) => {
-              const imageUrl = item.mapConfig?.s3Key;
+              const s3Key = item.mapConfig?.s3Key;
               return (
                 <article
                   key={item.id}
@@ -103,11 +107,10 @@ export const Cart = () => {
                     className="flex-1 flex gap-4 no-underline text-inherit"
                   >
                     <div className="w-32 h-24 bg-gray-100 flex items-center justify-center overflow-hidden rounded">
-                      {imageUrl ? (
-                        <img
-                          src={imageUrl}
-                          alt={item.filename || "Map preview"}
-                          className="w-full h-full object-cover"
+                      {s3Key ? (
+                        <MapThumbnail
+                          title={item.filename || "Map preview"}
+                          s3Key={s3Key}
                         />
                       ) : (
                         <span className="text-xs text-gray-400">No image</span>
