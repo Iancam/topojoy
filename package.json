@@ -69,7 +69,7 @@
     "lodash-es": "^4.17.21",
     "lucide-react": "^0.479.0",
     "mobx-shallow-undo": "^1.1.0",
-    "netlify-cli": "^23.13.1",
+    "netlify-cli": "^23.13.5",
     "osmtogeojson": "^3.0.0-beta.5",
     "p5": "^1.11.3",
     "pg": "^8.16.3",

@@ -1,9 +1,9 @@
 import Stripe from "stripe";
-import { PrismaClient } from "@prisma/client";
+// import { PrismaClient } from "@prisma/client";
 import { createClerkClient } from "@clerk/backend";
 import { auth, getShippingPrice } from "../lib";
+import prisma from "../lib/prisma";
 
-const prisma = new PrismaClient();
 const stripeSecretKey = process.env.SBX_STRIPE_SECRET_KEY;
 
 if (!stripeSecretKey) {
@@ -36,16 +36,6 @@ export const handler = async (event: any) => {
       };
     }
 
-    const { selectedShippingIndex } = JSON.parse(event.body || "{}") as {
-      selectedShippingIndex?: number;
-    };
-    if (typeof selectedShippingIndex !== "number") {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "No shipping option selected" }),
-      };
-    }
-
     const order = await prisma.order.findFirst({
       where: {
         userId: authUserId,
@@ -66,8 +56,9 @@ export const handler = async (event: any) => {
     }
     const address = order?.recipient;
     const items = order?.orderItems;
+    const shippingMethod = order?.shippingMethod;
 
-    if (!address || !items) {
+    if (!address || !items || !shippingMethod) {
       return {
         statusCode: 400,
         body: JSON.stringify({ message: "No address or items found" }),
@@ -103,13 +94,16 @@ export const handler = async (event: any) => {
       };
     }
 
-    const shippingCostCents =
-      shippingMethods?.[selectedShippingIndex].cost * 100;
+    const selectedShippingOption = shippingMethods.filter(
+      (method: any) => method.method === shippingMethod
+    )[0];
+
+    const shippingCostCents = selectedShippingOption.cost * 100;
     if (!shippingCostCents) {
       return {
         statusCode: 500,
         body: JSON.stringify({
-          message: `No shipping cost associated with index ${selectedShippingIndex} found`,
+          message: `No shipping cost associated with ${shippingMethod} found`,
         }),
       };
     }

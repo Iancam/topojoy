@@ -17,17 +17,15 @@ function getExtension(filename?: string | null, fallback = "png") {
 }
 
 export const handler = async (event: any) => {
-  const { filename, contentType, mapConfigId } = JSON.parse(event.body || "{}");
+  const { filename, mapConfigId } = JSON.parse(event.body || "{}");
 
   // Derive a safe extension from the filename, defaulting to png
-  const ext = getExtension(filename, "png");
+  const ext = "png";
 
   // If contentType is not provided, assume PNG (what the frontend currently sends)
-  const finalContentType =
-    contentType ||
-    (ext === "jpg" || ext === "jpeg" ? "image/jpeg" : "image/png");
+  const finalContentType = "image/png";
 
-  const uniqueKey = `${mapConfigId}.${ext}`;
+  const uniqueKey = `maps/${mapConfigId}.${ext}`;
 
   const command = new PutObjectCommand({
     Bucket: process.env.S3_BUCKET_NAME,

@@ -10,13 +10,28 @@ import { useSearchParams } from "react-router";
 import { order, getImageUrlFromAws } from "./api";
 import { Header } from "./components/Header";
 import { formatMoney } from "./lib/utils";
-import { StripePaymentForm } from "./StripePaymentForm";
+import { StripePaymentForm } from "./components/StripePaymentForm";
 import { useCartContext } from "./cartContext";
 import { MapThumbnail } from "./components/MapThumbnail";
 
 const CHECKOUT_STEPS = ["shipping", "method", "payment", "confirm"] as const;
 
 type CheckoutStep = (typeof CHECKOUT_STEPS)[number];
+
+const SHIPPING_METHODS = [
+  "default",
+  "pickup",
+  "ground",
+  "ground_economy",
+  "2_day",
+  "overnight",
+  "usps_ground_advantage",
+  "usps_priority_mail",
+  "usps_first_class_mail_international",
+  "usps_priority_mail_international",
+  "usps_priority_mail_express_international",
+  "freight",
+];
 
 const describeShippingMethod = (option: {
   carrier?: string;
@@ -69,7 +84,7 @@ const isValidStep = (value: string | null): value is CheckoutStep => {
 
 export const Checkout = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { cart, loading, error } = useCartContext();
+  const { cart, loading, error, refresh } = useCartContext();
   const [localError, setLocalError] = useState<string | null>(null);
   const [submittingShipping, setSubmittingShipping] = useState<boolean>(false);
 
@@ -94,7 +109,9 @@ export const Checkout = () => {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [creatingPaymentIntent, setCreatingPaymentIntent] =
     useState<boolean>(false);
-
+  const [latestOrder, setLatestOrder] = useState<any | null>(null);
+  const [latestLoading, setLatestLoading] = useState(false);
+  const [latestError, setLatestError] = useState<string | null>(null);
   const step: CheckoutStep = useMemo(() => {
     const raw = searchParams.get("step");
     if (!isValidStep(raw)) return "shipping";
@@ -153,6 +170,24 @@ export const Checkout = () => {
       : 0;
 
   const grandTotalCents = orderTotal + selectedShippingCostCents;
+
+  useEffect(() => {
+    if (step !== "confirm") return;
+    setLatestLoading(true);
+    setLatestError(null);
+    order
+      .getLatest({})
+      .then((data) => {
+        setLatestOrder(data);
+      })
+      .catch((err) => {
+        console.error("Failed to load latest order", err);
+        setLatestError("Failed to load order status.");
+      })
+      .finally(() => {
+        setLatestLoading(false);
+      });
+  }, [step]);
 
   const handleShippingChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -227,9 +262,11 @@ export const Checkout = () => {
       return;
     }
     try {
-      const data = await order.createPaymentIntent({
-        selectedShippingIndex,
+      await order.update({
+        shippingMethod: shippingOptions[selectedShippingIndex].method,
       });
+
+      const data = await order.createPaymentIntent({});
       setClientSecret(data.clientSecret);
       setTotalAmount(data.amount);
       goToStep("payment");
@@ -510,9 +547,8 @@ export const Checkout = () => {
               onSuccess={async () => {
                 try {
                   // Mark the current pending order as paid
-                  await order.update({ status: "paid" });
                   // Submit the paid order to Lumaprints
-                  await order.submitToLumaprints({});
+                  refresh();
                 } catch (err) {
                   console.error("Post-payment processing failed", err);
                 }
@@ -526,10 +562,24 @@ export const Checkout = () => {
     confirm: (
       <div className="space-y-4">
         <h2 className="text-lg font-semibold">Order confirmation</h2>
-        <p className="text-sm text-gray-500">
-          TODO: show real order confirmation once backend order creation is
-          wired up.
-        </p>
+        {latestLoading && (
+          <p className="text-sm text-gray-500">Loading your order…</p>
+        )}
+        {latestError && <p className="text-sm text-red-600">{latestError}</p>}
+        {latestOrder && !latestLoading && !latestError && (
+          <div className="text-sm text-gray-700 space-y-1">
+            <div>
+              <span className="font-semibold">Order ID:</span> {latestOrder.id}
+            </div>
+            <div>
+              <span className="font-semibold">Status:</span>{" "}
+              <span className="capitalize">{latestOrder.status}</span>
+            </div>
+            <div className="text-xs text-gray-500">
+              Placed at {new Date(latestOrder.createdAt).toLocaleString()}
+            </div>
+          </div>
+        )}
         <div className="flex justify-between gap-2">
           <button
             type="button"

@@ -1,8 +1,7 @@
 import type { HandlerEvent, HandlerContext } from "@netlify/functions";
 
-import { PrismaClient } from "@prisma/client";
 import { Webhook } from "svix";
-const prisma = new PrismaClient();
+import prisma from "../lib/prisma";
 
 export const handler = async (event: HandlerEvent, context: HandlerContext) => {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;

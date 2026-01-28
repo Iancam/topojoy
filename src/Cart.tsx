@@ -13,6 +13,9 @@ export const Cart = () => {
 
   const emptyCart = !cart || !cart.orderItems || cart.orderItems.length === 0;
 
+  useEffect(() => {
+    refresh();
+  }, []);
   if (error || localError || emptyCart) {
     return (
       <div>

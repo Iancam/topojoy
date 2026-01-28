@@ -292,6 +292,7 @@ const orderAPIData = {
     "POST",
     "Failed to submit order to Lumaprints",
   ],
+  getLatest: ["order-latest", "GET", "Failed to get latest order"],
 };
 
 type createPaymentIntentBody = {

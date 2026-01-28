@@ -1,8 +1,7 @@
-import { PrismaClient } from "@prisma/client";
 import { createClerkClient } from "@clerk/backend";
 import { auth } from "../lib";
+import prisma from "../lib/prisma";
 
-const prisma = new PrismaClient();
 const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
   publishableKey: process.env.VITE_CLERK_PUBLISHABLE_KEY,
@@ -75,7 +74,7 @@ export const handler = async (event: any) => {
     if (typeof rest.shippingMethod === "string") {
       updateData.shippingMethod = rest.shippingMethod;
     }
-    if (typeof rest.status === "string") {
+    if (rest.status === "cancelled") {
       updateData.status = rest.status;
     }
     if (recipientId) {

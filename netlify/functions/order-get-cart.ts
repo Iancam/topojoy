@@ -1,8 +1,7 @@
-import { PrismaClient } from "@prisma/client";
 import { createClerkClient } from "@clerk/backend";
 import { auth } from "../lib";
+import prisma from "../lib/prisma";
 
-const prisma = new PrismaClient();
 const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
   publishableKey: process.env.VITE_CLERK_PUBLISHABLE_KEY,
@@ -13,7 +12,7 @@ export const handler = async (event: any) => {
   if (!authUserId) {
     return {
       statusCode: 401,
-      body: JSON.stringify({ error: "Unauthorized" }),
+      body: JSON.stringify({ message: "Unauthorized" }),
     };
   }
   // const { userId } = JSON.parse(event.body);
@@ -34,9 +33,15 @@ export const handler = async (event: any) => {
   });
 
   if (!order) {
+    const order = await prisma.order.create({
+      data: {
+        userId: authUserId,
+        status: "pending",
+      },
+    });
     return {
-      statusCode: 404,
-      body: JSON.stringify({ message: "No pending order found" }),
+      statusCode: 200,
+      body: JSON.stringify(order),
     };
   }
   return {

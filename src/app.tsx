@@ -27,6 +27,7 @@ import { addHeightsToForm, convertToNestedObject } from "./lib/utils";
 import _ from "lodash";
 import { Header } from "./components/Header.tsx";
 import { printTypes } from "./components/PrintOptions.tsx";
+import { useCartContext } from "./cartContext.tsx";
 
 type ToastState = {
   message: string;
@@ -92,6 +93,7 @@ export const App = () => {
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
+  const cartContext = useCartContext();
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => {
@@ -351,6 +353,65 @@ export const App = () => {
     });
   };
 
+  const captureImageForPrint = (targetWidth: number, targetHeight: number) => {
+    const container = p5Ref.current;
+    if (!container) return;
+    const img = container.querySelector("img") as HTMLImageElement | null;
+    if (!img) return;
+
+    const imgWidth = img.width;
+    const imgHeight = img.height;
+    if (!imgWidth || !imgHeight || !targetWidth || !targetHeight) return;
+
+    const imgAspect = imgWidth / imgHeight;
+    const targetAspect = targetWidth / targetHeight;
+
+    let sx = 0;
+    let sy = 0;
+    let sw = imgWidth;
+    let sh = imgHeight;
+
+    if (imgAspect > targetAspect) {
+      // Image is too wide: crop left/right
+      sw = imgHeight * targetAspect;
+      sx = (imgWidth - sw) / 2;
+    } else if (imgAspect < targetAspect) {
+      // Image is too tall: crop top/bottom
+      sh = imgWidth / targetAspect;
+      sy = (imgHeight - sh) / 2;
+    }
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = sw;
+    canvas.height = sh;
+    if (!ctx) return;
+
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+
+    console.log("PRINT CROP", {
+      imgWidth,
+      imgHeight,
+      targetWidth,
+      targetHeight,
+      crop: { sx, sy, sw, sh },
+      imgAspect: imgAspect,
+      targetAspect: targetAspect,
+      finalAspect: sw / sh,
+      diff: Math.abs(sw / sh - targetAspect) / targetAspect,
+    });
+
+    return new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error("Failed to capture cropped image"));
+          return;
+        }
+        resolve(blob);
+      }, "image/png");
+    });
+  };
+
   const handleUpload = async () => {
     if (isUploading) return;
     setIsUploading(true);
@@ -367,7 +428,6 @@ export const App = () => {
         mapConfigId: form.id,
       });
       const imageUrl = await getImageUrlFromAws(key);
-      console.log(key, imageUrl);
       const result = await maps.upsert({
         form,
         givenFeatures: features,
@@ -416,7 +476,11 @@ export const App = () => {
       return;
     }
     try {
-      const blob = await captureImage();
+      const size = form["print.size"];
+      const blob =
+        size && size.width && size.height
+          ? await captureImageForPrint(size.width, size.height)
+          : await captureImage();
 
       if (!blob) {
         console.error("Failed to capture image");
@@ -427,7 +491,7 @@ export const App = () => {
         filename: form["filename"] as string,
         mapConfigId: form.id,
       });
-      const imageUrl = await getImageUrlFromAws(key);
+      // const imageUrl = await getImageUrlFromAws(key);
 
       const newMapConfig = await maps.upsert({
         form,
@@ -437,7 +501,7 @@ export const App = () => {
         user,
         configName: config,
         defaultConfig: configs[config],
-        imageUrl,
+        // imageUrl,
         s3Key: key,
       });
       console.log({ newMapConfig });
@@ -448,10 +512,6 @@ export const App = () => {
       }
       const printType =
         printTypes[form["print.type"] as keyof typeof printTypes];
-      console.log({
-        quantity: form["print.quantity"],
-        price: form["print.price"],
-      });
       await order.addItem({
         orderItem: {
           mapConfigId,
@@ -466,6 +526,7 @@ export const App = () => {
           filename: form["filename"] as string,
         },
       });
+      cartContext.refresh();
       setToast({ message: "Map added to cart", type: "success" });
     } catch (error) {
       setToast({ message: "Failed to add to cart map", type: "error" });

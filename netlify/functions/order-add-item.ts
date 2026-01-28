@@ -1,7 +1,7 @@
-import { PrismaClient } from "@prisma/client";
 import { createClerkClient } from "@clerk/backend";
 import { auth } from "../lib";
-const prisma = new PrismaClient();
+import prisma from "../lib/prisma";
+
 const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
   publishableKey: process.env.VITE_CLERK_PUBLISHABLE_KEY,
