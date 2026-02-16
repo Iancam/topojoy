@@ -31,7 +31,7 @@ const initKernels = () => {
       },
       {
         dynamicArguments: true,
-      }
+      },
     )
     // .setPipeline(true)
     .setDynamicOutput(true);
@@ -68,11 +68,54 @@ const initKernels = () => {
       },
       {
         dynamicArguments: true,
-      }
+      },
     )
     .setDynamicOutput(true);
-  return { toHeights, slope };
+
+  const dxdy = gpu
+    .createKernel(
+      function (hArray, metersPerPixel, sunAz, sunEl, vert) {
+        const { x, y } = this.thread;
+        const height = hArray[y][x];
+
+        const eleN = vert * hArray[y][x - 1];
+        const eleS = vert * hArray[y][x + 1];
+        const eleE = vert * hArray[y + 1][x];
+        const eleW = vert * hArray[y - 1][x];
+        const d = 3 * metersPerPixel;
+
+        let dzdx = (eleE - eleW) / d;
+        let dzdy = (eleN - eleS) / d;
+        const mag = Math.sqrt(dzdx * dzdx + dzdy * dzdy);
+        const safe = 1.0 / (1.0 + mag);
+
+        dzdx *= safe;
+        dzdy *= safe;
+
+        const slope =
+          Math.atan(Math.sqrt(dzdx ** 2 + dzdy ** 2)) * (180 / Math.PI);
+        const aspect =
+          d !== 0 // counterclockwise from east
+            ? (Math.atan2(dzdy, dzdx) * (180 / Math.PI) + 180) % 360
+            : (90 * (d > 0 ? 1 : -1) + 180) % 360;
+
+        const El = (Math.PI / 180) * sunEl;
+        const Az = (Math.PI / 180) * sunAz;
+
+        const cosIncidence =
+          Math.sin(El) * Math.cos(slope) +
+          Math.cos(El) * Math.sin(slope) * Math.cos(Az - aspect);
+
+        return [height, dzdx, dzdy, cosIncidence];
+      },
+      {
+        dynamicArguments: true,
+      },
+    )
+    .setDynamicOutput(true);
+  return { toHeights, slope, dxdy };
 };
+
 /**
  * Takes an image and pixel distance and returns a map of height, slope and
  * aspect values for each pixel, as well as the minimum, maximum, and range of
@@ -91,8 +134,22 @@ const initKernels = () => {
  *  height: number
  * } heightmap
  */
-export function processPixels(image, metersPerPixel, sunAz, sunEl, vert) {
-  const { toHeights, slope } = initKernels();
+export function processPixels(
+  image,
+  { metersPerPixel, sunAz, sunEl, vert },
+  processorName = "slope",
+) {
+  const { toHeights, slope, dxdy } = initKernels();
+  const kernel = {
+    slope: slope,
+    dxdy: dxdy,
+    heights: toHeights,
+  }[processorName];
+
+  if (!kernel) {
+    throw new Error(`Unknown kernel: ${processorName}`);
+  }
+
   const { width, height, data } = image;
   const step = height / N_SLICES;
   const numChannels = 4;
@@ -100,8 +157,8 @@ export function processPixels(image, metersPerPixel, sunAz, sunEl, vert) {
   const slices = times(N_SLICES, (i) =>
     data.slice(
       i * step * width * numChannels,
-      (i + 1) * step * width * numChannels
-    )
+      (i + 1) * step * width * numChannels,
+    ),
   ).map((data) => {
     const htex = toHeights.setOutput([width, step])(data, width);
 
@@ -132,12 +189,12 @@ export function processPixels(image, metersPerPixel, sunAz, sunEl, vert) {
       }
     }
 
-    const pixels = slope.setOutput([width, step])(
+    const pixels = kernel.setOutput([width, step])(
       htex,
       metersPerPixel,
       sunAz,
       sunEl,
-      vert
+      vert,
     );
 
     // calculate min and max, and store heights
@@ -245,7 +302,7 @@ export function tilesForFeatures(feature, zoom) {
     ([x0, y0, x1, y1], [x, y]) => {
       return [min(x0, x), min(y0, y), max(x1, x), max(y1, y)];
     },
-    [Infinity, Infinity, -Infinity, -Infinity]
+    [Infinity, Infinity, -Infinity, -Infinity],
   );
 
   let tiles = [];
@@ -264,7 +321,7 @@ export function tilesForFeatures(feature, zoom) {
         max(east, east1),
         max(north, north1),
       ],
-      [Infinity, Infinity, -Infinity, -Infinity]
+      [Infinity, Infinity, -Infinity, -Infinity],
     );
 
   const [west, south, east, north] = latLngBox;
@@ -350,7 +407,7 @@ export function stitchMapTiles(tiles, gridWidth, tileWidth, tileHeight) {
  *     image. The second is `canvas`, a canvas element that the image has been
  *     drawn onto.
  */
-export async function processImage(feature, zoom) {
+export async function processImage(feature, zoom, kernelName = "slope") {
   const { tiles, bounds } = tilesForFeatures(feature, zoom);
   const canvas = await stitchMapTiles(tiles, bounds.width, 256, 256);
   const ctx = canvas.getContext("2d");
@@ -361,10 +418,13 @@ export async function processImage(feature, zoom) {
 
   const topo = processPixels(
     pixels,
-    getMetersPerPixelAtLatitude(lat, zoom),
-    45,
-    45,
-    1
+    {
+      metersPerPixel: getMetersPerPixelAtLatitude(lat, zoom),
+      sunAz: 45,
+      sunEl: 45,
+      vert: 1,
+    },
+    kernelName,
   );
 
   return { topo, canvas, bounds };

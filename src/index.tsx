@@ -12,6 +12,8 @@ import { Cart } from "./Cart";
 import { Checkout } from "./Checkout";
 import { SignInPage } from "./SignInPage";
 import { CartProvider } from "./cartContext";
+import { Terms } from "./Terms";
+import { Privacy } from "./Privacy";
 const AppError = () => {
   const error = useRouteError();
   console.log(error);
@@ -74,6 +76,14 @@ const router = createBrowserRouter([
             element: <Checkout />,
           },
         ],
+      },
+      {
+        path: "/terms",
+        element: <Terms />,
+      },
+      {
+        path: "/privacy",
+        element: <Privacy />,
       },
     ],
   },

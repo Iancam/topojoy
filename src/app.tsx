@@ -59,7 +59,7 @@ export const App = () => {
       obj[key] = value;
       return obj;
     },
-    {}
+    {},
   );
   const [sketchDims, setSketchDims] = useState({ width: 0, height: 0 });
   const [form, setForm] = useState<Record<string, any>>(preForm);
@@ -75,7 +75,7 @@ export const App = () => {
 
   const [isInitialRun, setIsInitialRun] = useState(() => {
     const isInitialRun = JSON.parse(
-      localStorage.getItem(LS.IS_DEFAULT_KEEP_LIST_SET) || "false"
+      localStorage.getItem(LS.IS_DEFAULT_KEEP_LIST_SET) || "false",
     );
     return isInitialRun;
   });
@@ -120,7 +120,7 @@ export const App = () => {
             acc[feat.type].push(normalizeFeatureName(feat.name));
             return acc;
           },
-          {} as Record<string, string[]>
+          {} as Record<string, string[]>,
         );
         setFeatures(feats);
         renderSketch({
@@ -135,7 +135,7 @@ export const App = () => {
       console.log("loading data from localStorage");
       const bbox = JSON.parse(localStorage.getItem(LS.GEOJSON_BBOX) || "{}");
       const selectedTrails = JSON.parse(
-        localStorage.getItem(LS.GEOJSON_SELECTED_TRAIL_SEGMENTS) || "[]"
+        localStorage.getItem(LS.GEOJSON_SELECTED_TRAIL_SEGMENTS) || "[]",
       );
       const configName = localStorage.getItem(LS.CONFIG) || "Original";
       const form = getFormFromLocalStorage(preForm, configName, configs);
@@ -149,7 +149,7 @@ export const App = () => {
       getGeoJSONFromOSM(bounds.latLngBox).then((geoJSON) => {
         const rawFeats = getFeatures(
           { box: bounds.box, zoom: downstreamConfig.zoomLevel },
-          geoJSON
+          geoJSON,
         );
         const feats = Object.entries(rawFeats).reduce(
           (acc, [key, value]) => {
@@ -158,7 +158,7 @@ export const App = () => {
             acc[type] = Object.keys(value).map(normalizeFeatureName);
             return acc;
           },
-          {} as Record<string, string[]>
+          {} as Record<string, string[]>,
         );
         setFeatures(feats);
         renderSketch({
@@ -247,7 +247,7 @@ export const App = () => {
           sketch: p5,
           keepLists: any,
           sketchCollisions: Record<string, string[]>,
-          sketchFeatures: Record<string, string[]>
+          sketchFeatures: Record<string, string[]>,
         ) => {
           setSketchDims({ width: sketch.width, height: sketch.height });
           setForm((prev: any) => ({
@@ -290,7 +290,7 @@ export const App = () => {
               _.mapKeys(sketchFeatures, (value, key) => {
                 return key.slice(0, -1);
               }),
-              (value) => Object.keys(value)
+              (value) => Object.keys(value),
             );
             setFeatures(features);
             setCollisions(_.cloneDeep(sketchCollisions));
@@ -298,7 +298,7 @@ export const App = () => {
 
           // hide loading once image is ready
           setIsRendering(false);
-        }
+        },
       );
 
       const myp5 = new p5(sketch, p5Ref.current);
@@ -339,9 +339,11 @@ export const App = () => {
     if (!img) return;
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
-    canvas.width = img.width;
-    canvas.height = img.height;
-    ctx?.drawImage(img, 0, 0);
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    canvas.width = w;
+    canvas.height = h;
+    ctx?.drawImage(img, 0, 0, w, h);
     return new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((blob) => {
         if (!blob) {
@@ -359,8 +361,8 @@ export const App = () => {
     const img = container.querySelector("img") as HTMLImageElement | null;
     if (!img) return;
 
-    const imgWidth = img.width;
-    const imgHeight = img.height;
+    const imgWidth = img.naturalWidth || img.width;
+    const imgHeight = img.naturalHeight || img.height;
     if (!imgWidth || !imgHeight || !targetWidth || !targetHeight) return;
 
     const imgAspect = imgWidth / imgHeight;
@@ -439,6 +441,7 @@ export const App = () => {
         imageUrl,
         s3Key: key,
       });
+      console.log("image url", imageUrl);
       console.log("Upload result", result);
       setToast({ message: "Map saved to server", type: "success" });
     } catch (error) {
@@ -460,8 +463,12 @@ export const App = () => {
       // setIsFilenamePromptOpen(true);
       const filename = prompt(
         "Please enter a unique filename",
-        form["filename"]
+        form["filename"],
       );
+      if (!filename) {
+        setIsPurchasing(false);
+        return;
+      }
       setForm({
         ...form,
         filename,
@@ -476,7 +483,7 @@ export const App = () => {
       return;
     }
     try {
-      const size = form["print.size"];
+      const size = form["print.sizeActual"] || form["print.size"];
       const blob =
         size && size.width && size.height
           ? await captureImageForPrint(size.width, size.height)
@@ -538,7 +545,6 @@ export const App = () => {
 
   const onFormChange = (arg1: any, arg2: any) => {
     // if arg1 is a string, do the normal thing
-    console.log({ arg1, arg2 });
     if (typeof arg1 === "string") {
       const key = arg1 as string;
       const value = arg2;
@@ -602,7 +608,7 @@ export const App = () => {
     if (configId) return;
     localStorage.setItem(
       LS.IS_DEFAULT_KEEP_LIST_SET,
-      JSON.stringify(isInitialRun)
+      JSON.stringify(isInitialRun),
     );
   }, [isInitialRun]);
 
@@ -669,18 +675,7 @@ export const App = () => {
             isLoading={isRendering}
             sketchDims={sketchDims}
             printType={form["print.type"]}
-            printSize={
-              form["print.size"]
-                ? (() => {
-                    const m = String(form["print.size"]).match(
-                      /^(\d+)[xX](\d+)$/
-                    );
-                    return m
-                      ? { width: Number(m[1]), height: Number(m[2]) }
-                      : null;
-                  })()
-                : null
-            }
+            printSize={form["print.size"]}
           ></P5Canvas>
         </div>
       </div>

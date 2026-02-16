@@ -6,9 +6,14 @@ export const Header = () => {
   const { itemCount: cartItemCount } = useCartContext();
 
   return (
-    <div className="text-white bg-slate-800 font-sans px-3 flex justify-between h-15 fixed top-0 left-0 right-0">
+    <div className="text-[#d5f7ff] bg-[#071e25] font-sans px-4 flex justify-between h-15 fixed top-0 left-0 right-0 border-b border-[#0e3942]/80 shadow-md shadow-black/40">
       <div className="font-extrabold flex items-center tracking-wide text-base">
-        <Link to="/">TopoJoy</Link>
+        <Link
+          to="/"
+          className="text-teal-500 hover:text-pink-400 transition-colors duration-200"
+        >
+          TopoJoy
+        </Link>
       </div>
       <div className="flex-grow flex justify-end">
         <div style={{ height: "42px" }}></div>

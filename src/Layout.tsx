@@ -14,13 +14,17 @@ if (import.meta.env.DEV && !PUBLISHABLE_KEY) {
 
 export const Layout = ({ children }: { children?: React.ReactNode }) => {
   return (
-    <div>
+    <div className="min-h-screen flex flex-col">
       {import.meta.env.DEV && PUBLISHABLE_KEY ? (
         <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
-          <Outlet />
+          <div className="flex-1">
+            <Outlet />
+          </div>
         </ClerkProvider>
       ) : (
-        <Outlet />
+        <div className="flex-1">
+          <Outlet />
+        </div>
       )}
     </div>
   );

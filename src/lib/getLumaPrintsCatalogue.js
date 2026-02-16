@@ -9,7 +9,7 @@ var requestOptions = {
 };
 
 const response = await fetch(
-  "https://us.api-sandbox.lumaprints.com/api/v1/products/categories",
+  `https://us.${process.env.NODE_ENV === "production" ? "api" : "api-sandbox"}.lumaprints.com/api/v1/products/categories`,
   requestOptions
 ).then((response) => response.json());
 //  .then(result => console.log(result))
@@ -25,15 +25,13 @@ const categories = [
   { id: 108, name: "Foam-mounted Fine Art Paper" },
 ];
 
-
-
 // get all subcategory options
 const subcategoryOptions = Object.values(subcategories)
   .flat()
   .map((s) => {
     const scid = s.subcategoryId;
     return fetch(
-      `https://us.api-sandbox.lumaprints.com/api/v1/products/subcategories/${scid}/options`,
+      `https://us.${process.env.NODE_ENV === "production" ? "api" : "api-sandbox"}.lumaprints.com/api/v1/products/subcategories/${scid}/options`,
       requestOptions
     )
       .then((response) => response.json())

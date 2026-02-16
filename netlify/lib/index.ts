@@ -67,7 +67,7 @@ export const getShippingPrice = async ({
     })),
   };
   const response = await fetch(
-    "https://us.api-sandbox.lumaprints.com/api/v1/pricing/shipping",
+    `https://us.${process.env.NODE_ENV === "production" ? "api" : "api-sandbox"}.lumaprints.com/api/v1/pricing/shipping`,
     {
       method: "POST",
       headers: {

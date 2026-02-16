@@ -8,18 +8,21 @@ export const handler = async (event: any) => {
 
   const prices = await Promise.all(
     products.map(({ subcategoryId, width, height, score, options }: any) =>
-      fetch("https://us.api-sandbox.lumaprints.com/api/v1/pricing/product", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: authHeader(),
+      fetch(
+        `https://us.${process.env.NODE_ENV === "production" ? "api" : "api-sandbox"}.lumaprints.com/api/v1/pricing/product`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: authHeader(),
+          },
+          body: JSON.stringify({
+            size: { width, height },
+            options,
+            subcategoryId,
+          }),
         },
-        body: JSON.stringify({
-          size: { width, height },
-          options,
-          subcategoryId,
-        }),
-      }).then((res) => {
+      ).then((res) => {
         return res.json().then((json) => ({
           subcategoryId,
           width,
@@ -27,15 +30,14 @@ export const handler = async (event: any) => {
           score,
           options,
           ...json,
-          price: json.price * 100, // convert to cents
+          price: Number(json.price) * 100, // convert to cents
         }));
-      })
-    )
+      }),
+    ),
   );
 
   return {
     statusCode: 200,
-    success: true,
     body: JSON.stringify(prices),
   };
 };

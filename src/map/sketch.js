@@ -28,10 +28,9 @@ export const sketchFactory = (
   selectedTrails,
   config,
   callback,
-  options = {}
+  options = {},
 ) => {
-  chroma;
-  const { contourLines = false } = options;
+  const { style = "joyDivision" } = options;
   return {
     sketch: (sketch) => {
       let copperplateLight;
@@ -46,7 +45,8 @@ export const sketchFactory = (
       sketch.setup = async function setup() {
         const { topo, canvas, bounds } = await processImage(
           boundsGeojson,
-          config.zoomLevel
+          config.zoomLevel,
+          style === "joyDivision" ? "dxdy" : "slope",
         );
         // it feels wrong not enforcing immutable data, but
         // this is significantly simpler, and still easy to reason about
@@ -68,7 +68,7 @@ export const sketchFactory = (
         });
         config.textSizeMultiplier = textSizeMultiplier(
           canvas.width,
-          canvas.height
+          canvas.height,
         );
 
         const geoJSON = await getGeoJSONFromOSM(bounds.latLngBox);
@@ -91,27 +91,27 @@ export const sketchFactory = (
 
         const features = getFeatures(
           { box: bounds.box, zoom: config.zoomLevel },
-          geoJSON
+          geoJSON,
         );
         const userSelectedTrails = selectedTrails.map(
-          featuresToScreenCoords(config.zoomLevel, bounds.box, true)
+          featuresToScreenCoords(config.zoomLevel, bounds.box, true),
         );
 
         const labelManager = labelManagerFactory(sketch);
-        if (contourLines) {
+        if (style === "contour") {
           // WARNING: this path is untested
           await contourCurvesPath(
             sketch,
             boundsGeojson,
             config,
             colorAt,
-            curveCount
+            curveCount,
           );
-        } else {
+        } else if (style === "basic") {
           // const multiplier = config.backgroundText.highContrast ? 0.6 : 0.8;
           times(
             0.6 * config.curveCount,
-            genCurve(sketch, config, topo)
+            genCurve(sketch, config, topo),
           ).forEach(colorAndDrawCurve(sketch, colorAt));
           drawLayers(
             config,
@@ -120,16 +120,31 @@ export const sketchFactory = (
             colorAt,
             features,
             userSelectedTrails,
-            labelManager
+            labelManager,
           );
           if (config.legend?.enabled) drawLegend(sketch, config, topo, colorAt);
+        } else if (style === "joyDivision") {
+          // const config1 = {
+          //   spacing: 50,
+          //   amplitude: 50,
+          // };
+          joyDivision(sketch, {}, topo);
+          drawLayers(
+            config,
+            bounds,
+            topo,
+            colorAt,
+            features,
+            userSelectedTrails,
+            labelManager,
+          );
         }
         callback(
           OGCanvas,
           sketch,
           labelManager.keepLists(),
           labelManager.collisions.object(),
-          features
+          features,
         );
       };
 
@@ -137,7 +152,7 @@ export const sketchFactory = (
         config,
         bounds,
         { mountains, rivers, trails, lakes },
-        { addLabels }
+        { addLabels },
       ) => {
         drawTitle(
           sketch,
@@ -145,7 +160,7 @@ export const sketchFactory = (
           bounds.latLngBox,
           config.background,
           copperplateBold,
-          addLabels
+          addLabels,
         );
         mountainLayer(
           sketch,
@@ -155,7 +170,7 @@ export const sketchFactory = (
             ...config.mountain,
             labelSize: config.mountain.labelSize * config.textSizeMultiplier,
           },
-          addLabels
+          addLabels,
         );
 
         namedLines(
@@ -168,7 +183,7 @@ export const sketchFactory = (
             font: courier,
             textSize: config.river.textSize * config.textSizeMultiplier,
           },
-          addLabels
+          addLabels,
         );
 
         namedLines(
@@ -181,7 +196,7 @@ export const sketchFactory = (
             font: courier,
             textSize: config.trail.textSize * config.textSizeMultiplier,
           },
-          addLabels
+          addLabels,
         );
 
         lakesLabels(
@@ -194,7 +209,7 @@ export const sketchFactory = (
             textColor: config.river.textColor,
             weight: config.river.weight,
           },
-          addLabels
+          addLabels,
         );
       };
 
@@ -205,7 +220,7 @@ export const sketchFactory = (
         colorAt,
         features,
         userSelectedTrails,
-        labelManager
+        labelManager,
       ) => {
         placeLabelsWithoutCollision(config, bounds, features, labelManager);
         // labelManager.labels().forEach(({ bbox }) => {
@@ -222,7 +237,7 @@ export const sketchFactory = (
           {
             ...config.river,
             style: "basic",
-          }
+          },
         );
         drawLines(
           sketch,
@@ -232,7 +247,7 @@ export const sketchFactory = (
           {
             ...config.trail,
             style: "basic",
-          }
+          },
         );
 
         drawLines(
@@ -247,7 +262,7 @@ export const sketchFactory = (
               config.trail.selectedTrailColor,
             ],
             style: "basic",
-          }
+          },
         );
         drawLakes(sketch, _.pick(features.lakes, keepLists.lake), {
           color: config.river.colorRange[0],
@@ -259,7 +274,7 @@ export const sketchFactory = (
           backgroundColor: config.background,
         });
         times(0.2 * config.curveCount, genCurve(sketch, config, topo)).forEach(
-          colorAndDrawCurve(sketch, colorAt)
+          colorAndDrawCurve(sketch, colorAt),
         );
 
         labelManager.drawLabels();
@@ -291,7 +306,7 @@ export const sketchFactory = (
               : sketch.random([angleTransforms[0], angleTransforms[1]]),
             // angleTransform: random([angleTransforms[3], angleTransforms[2]]),
             // angleTransform: random(angleTransforms), // make it gridlike
-          }
+          },
         );
       };
       const colorAndDrawCurve = (sketch, colorAt) => (c) => {
@@ -309,11 +324,11 @@ export const sketchFactory = (
         boundsGeojson,
         config,
         colorAt,
-        curveCount
+        curveCount,
       ) => {
         const { tiles, bounds } = tilesForFeatures(
           boundsGeojson,
-          config.zoomLevel
+          config.zoomLevel,
         );
         const webglCanvas = await stitchMapTiles(tiles, bounds.width, 256, 256);
 
@@ -424,7 +439,7 @@ export const sketchFactory = (
             // Add last point twice for proper curve end
             sketch.curveVertex(
               points[points.length - 1][0],
-              points[points.length - 1][1]
+              points[points.length - 1][1],
             );
 
             sketch.endShape();
@@ -435,6 +450,28 @@ export const sketchFactory = (
         sketch.randomSeed(originalSeed);
         sketch.pop();
       }
+
+      const joyDivision = (sketch, config, topo) => {
+        const { spacing = 10, amplitude = 150, xRes = 5 } = config;
+        const { width, height, magnitude, min, pixels } = topo;
+        console.log(topo);
+        sketch.stroke("white");
+        sketch.strokeWeight(2);
+        sketch.noFill();
+        for (let y = 0; y < height; y += spacing) {
+          sketch.beginShape();
+          for (let x = 0; x < width; x += xRes) {
+            let [elev, dx, dy, cosIncidence] = pixels[y][x];
+            let hnorm = (elev - min) / magnitude; // normalized 0-1
+            hnorm = Math.min(1, Math.max(0, hnorm));
+            const eased = hnorm * hnorm * (3 - 2 * hnorm); // smoothstep(0,1,h)
+            const Dy = y - amplitude * (eased - 0.5);
+            // const Dx = x + dx * amplitude * (eased - 0.5);
+            sketch.vertex(x, Dy);
+          }
+          sketch.endShape();
+        }
+      };
       p5.disableFriendlyErrors = true;
     },
   };

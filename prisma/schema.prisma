@@ -112,6 +112,11 @@ model Order {
   userId String?
   user User? @relation(fields: [userId], references: [clerkId])
 
+  submissionErrorMessage String?
+  submissionErrorAt DateTime?
+
+  paymentIntentId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

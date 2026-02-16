@@ -110,8 +110,10 @@ export async function submitOrderToLumaprints(orderId: string) {
     orderItems,
   };
 
+  console.log("orderItems", orderItems);
+
   const response = await fetch(
-    "https://us.api-sandbox.lumaprints.com/api/v1/orders",
+    `https://us.${process.env.NODE_ENV === "production" ? "api" : "api-sandbox"}.lumaprints.com/api/v1/orders`,
     {
       method: "POST",
       headers: {
@@ -125,6 +127,14 @@ export async function submitOrderToLumaprints(orderId: string) {
   if (!response.ok) {
     const text = await response.text();
     console.error("Lumaprints order submit error", response.status, text);
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        submissionErrorMessage: text.slice(0, 1000),
+        submissionErrorAt: new Date(),
+      },
+    });
     throw new Error(
       `Failed to submit order to Lumaprints: ${response.status} ${text}`
     );

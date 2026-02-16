@@ -575,6 +575,14 @@ export const Checkout = () => {
               <span className="font-semibold">Status:</span>{" "}
               <span className="capitalize">{latestOrder.status}</span>
             </div>
+            {latestOrder.submissionErrorMessage && (
+              <div>
+                <span className="font-semibold">Submission error:</span>{" "}
+                <span className="text-red-600">
+                  {latestOrder.submissionErrorMessage}
+                </span>
+              </div>
+            )}
             <div className="text-xs text-gray-500">
               Placed at {new Date(latestOrder.createdAt).toLocaleString()}
             </div>

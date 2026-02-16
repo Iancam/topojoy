@@ -14,13 +14,11 @@ if (!webhookSecret) {
   throw new Error("STRIPE_WEBHOOK_SECRET is not set");
 }
 
-const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: "2024-04-10",
-});
+const stripe = new Stripe(stripeSecretKey);
 
 export const handler = async (
   event: HandlerEvent,
-  _context: HandlerContext
+  _context: HandlerContext,
 ) => {
   if (event.httpMethod !== "POST") {
     return {
@@ -33,17 +31,18 @@ export const handler = async (
     event.headers["stripe-signature"] || event.headers["Stripe-Signature"];
   const rawBody = event.body || "";
 
-  let stripeEvent: Stripe.Event;
+  let stripeEvent = JSON.parse(event.body || "null");
+
   try {
     stripeEvent = stripe.webhooks.constructEvent(
       rawBody,
       sig as string,
-      webhookSecret
+      webhookSecret,
     );
   } catch (err: any) {
     console.error(
       "stripe-webhook signature verification failed",
-      err?.message || err
+      err?.message || err,
     );
     return {
       statusCode: 400,
@@ -53,25 +52,28 @@ export const handler = async (
     };
   }
 
+  console.log("stripeEvent.type", stripeEvent.type);
   try {
     if (stripeEvent.type === "payment_intent.succeeded") {
       const paymentIntent = stripeEvent.data.object as Stripe.PaymentIntent;
       const orderId = paymentIntent.metadata?.orderId;
-
+      console.log("orderId", orderId);
       if (!orderId) {
         console.warn(
           "payment_intent.succeeded missing orderId metadata",
-          paymentIntent.id
+          paymentIntent.id,
         );
-        await stripe.paymentIntents.cancel(paymentIntent.id);
+        // await stripe.paymentIntents.cancel(paymentIntent.id);
       } else {
         const order = await prisma.order.findUnique({ where: { id: orderId } });
+
+        console.log("order", order);
+
         if (!order) {
           console.warn("Order not found for payment_intent", {
             orderId,
             paymentIntentId: paymentIntent.id,
           });
-          await stripe.paymentIntents.cancel(paymentIntent.id);
         } else if (order.status !== "paid" && order.status !== "submitted") {
           await prisma.order.update({
             where: { id: orderId },
@@ -88,7 +90,7 @@ export const handler = async (
       if (!orderId) {
         console.warn(
           "payment_intent.payment_failed missing orderId metadata",
-          paymentIntent.id
+          paymentIntent.id,
         );
       } else {
         const order = await prisma.order.findUnique({ where: { id: orderId } });

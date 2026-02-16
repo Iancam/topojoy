@@ -18,6 +18,12 @@ export const printTypes = {
     options: [
       { optionId: 36, optionName: "0.25in Bleed (0.25in on each side)" },
     ],
+    transform: (w: number, h: number) => {
+      return {
+        width: w - 0.5,
+        height: h - 0.5,
+      };
+    },
   },
 
   framed: {
@@ -88,7 +94,7 @@ const getMatchScore = (
   printW: number,
   printH: number,
   imgW: number,
-  imgH: number
+  imgH: number,
 ) => {
   // if (!imgW || !imgH) (console.warn("Image dimensions not provided");
   const printRatio = printW / printH;
@@ -102,35 +108,6 @@ const getDPI = (imgW: number, imgH: number, printW: number, printH: number) => {
   const dpiX = imgW / printW;
   const dpiY = imgH / printH;
   return Math.min(dpiX, dpiY);
-};
-
-const selectSpanningSizes = (
-  sizes: (size & { score: number })[],
-  maxCount: number
-) => {
-  if (sizes.length <= maxCount) {
-    return _.sortBy(sizes, ["width", "height"]);
-  }
-
-  const sorted = _.sortBy(sizes, ["width", "height"]);
-  const result: (size & { score: number })[] = [];
-  const slots = maxCount;
-  const lastIndex = sorted.length - 1;
-
-  for (let i = 0; i < slots; i += 1) {
-    const t = slots === 1 ? 0 : i / (slots - 1);
-    const idx = Math.round(t * lastIndex);
-    const picked = sorted[idx];
-    if (
-      !result.find(
-        (r) => r.width === picked.width && r.height === picked.height
-      )
-    ) {
-      result.push(picked);
-    }
-  }
-
-  return _.sortBy(result, ["width", "height"]);
 };
 
 export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
@@ -151,7 +128,7 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
   if (!imgW || !imgH) console.warn("Image dimensions not provided");
 
   const sizes = generateSizes(printTypes[printTypeKey]);
-  const minDPI = 150;
+  const minDPI = 120;
   const scoredSizes = sizes
     .map(
       (s: {
@@ -159,17 +136,30 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
         height: number;
         subcategoryId: string;
         options: { optionId: number; optionName: string }[];
-      }) => ({
-        ...s,
-        options: s.options.map((o) => o.optionId),
-        score: getMatchScore(s.width, s.height, imgW, imgH),
-      })
+      }) => {
+        const t = printTypes[printTypeKey].transform;
+        const transformedSize = t ? t(s.width, s.height) : null;
+        return {
+          ...s,
+          transformedSize,
+          options: s.options.map((o) => o.optionId),
+          score: t
+            ? getMatchScore(
+                transformedSize.width,
+                transformedSize.height,
+                imgW,
+                imgH,
+              )
+            : getMatchScore(s.width, s.height, imgW, imgH),
+        };
+      },
     )
     .sort((a, b) => b.score - a.score);
 
   const recommended = scoredSizes
     .filter(
-      (s) => s.score >= 0.975 && getDPI(imgW, imgH, s.width, s.height) >= minDPI
+      (s) =>
+        s.score >= 0.975 && getDPI(imgW, imgH, s.width, s.height) >= minDPI,
     )
     // .slice(0, numSizes)
     .sort((a, b) => a.width - b.width || a.height - b.height);
@@ -180,7 +170,7 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
       setRecommendedPrices(prices);
       setLoadingSizes(false);
     });
-  }, [form["print.type"]]);
+  }, [form["print.type"], imgW, imgH]);
 
   const noRecSizes = recommended.length === 0;
   const noLegitDPI =
@@ -193,9 +183,15 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
   };
 
   const handleSizeSelect = (w: number, h: number, price: number) => {
+    const t =
+      printTypes[form["print.type"] as keyof typeof printTypes].transform;
     onFormChange(
-      { "print.size": { width: w, height: h }, "print.price": price },
-      null
+      {
+        "print.size": { width: w, height: h },
+        "print.sizeActual": t ? t(w, h) : { width: w, height: h },
+        "print.price": price,
+      },
+      null,
     );
     // onFormChange("print.price", price);
   };
@@ -304,7 +300,7 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
               (e) =>
                 onFormChange(
                   "print.contribution",
-                  Number(e.target.value) * 100 || 0
+                  Number(e.target.value) * 100 || 0,
                 ) // convert to cents
             }
           />

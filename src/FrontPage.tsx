@@ -87,6 +87,15 @@ export const FrontPage = () => {
         className="py-12 px-4 max-w-[700px] mx-auto text-slate-700 leading-7 prose"
         dangerouslySetInnerHTML={{ __html: html }}
       ></section>
+      <footer className="border-t border-gray-200 py-4 text-center text-xs text-gray-500">
+        <Link to="/privacy" className="hover:underline">
+          Privacy Policy
+        </Link>
+        <span className="mx-2">·</span>
+        <Link to="/terms" className="hover:underline">
+          Terms of Service
+        </Link>
+      </footer>
     </div>
   );
 };

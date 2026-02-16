@@ -55,3 +55,9 @@ declare module "*.js" {
   const content: any;
   export default content;
 }
+
+declare module "*.md" {
+  export const html: string;
+  const value: { html: string };
+  export default value;
+}
