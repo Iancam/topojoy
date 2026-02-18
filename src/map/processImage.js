@@ -139,6 +139,10 @@ export function processPixels(
   { metersPerPixel, sunAz, sunEl, vert },
   processorName = "slope",
 ) {
+  if (processorName === "none") {
+    return null;
+  }
+
   const { toHeights, slope, dxdy } = initKernels();
   const kernel = {
     slope: slope,

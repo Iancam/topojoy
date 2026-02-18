@@ -39,34 +39,33 @@ export const Header = () => {
           </div>
 
           {/* only show if in dev */}
-          {import.meta.env.DEV && (
-            <div>
-              <SignedIn>
-                <div className="flex items-center ml-auto">
-                  <Link to="/my-maps">
-                    {/* make it look good */}
-                    <span className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
-                      My Maps
-                    </span>
-                  </Link>
-                  <Link to="/cart">
-                    <span className="relative inline-flex items-center gap-1 text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
-                      <span>Cart</span>
-                      {cartItemCount > 0 && (
-                        <span className="inline-flex items-center justify-center min-w-[16px] h-4 rounded-full bg-red-500 text-[10px] px-1">
-                          {cartItemCount}
-                        </span>
-                      )}
-                    </span>
-                  </Link>
-                  <UserButton afterSignOutUrl="/sign-in" />
-                </div>
-              </SignedIn>
-              <SignedOut>
-                <Link to="/sign-in">Sign In</Link>
-              </SignedOut>
-            </div>
-          )}
+
+          <div>
+            <SignedIn>
+              <div className="flex items-center ml-auto">
+                <Link to="/my-maps">
+                  {/* make it look good */}
+                  <span className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
+                    My Maps
+                  </span>
+                </Link>
+                <Link to="/cart">
+                  <span className="relative inline-flex items-center gap-1 text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
+                    <span>Cart</span>
+                    {cartItemCount > 0 && (
+                      <span className="inline-flex items-center justify-center min-w-[16px] h-4 rounded-full bg-red-500 text-[10px] px-1">
+                        {cartItemCount}
+                      </span>
+                    )}
+                  </span>
+                </Link>
+                <UserButton afterSignOutUrl="/sign-in" />
+              </div>
+            </SignedIn>
+            <SignedOut>
+              <Link to="/sign-in">Sign In</Link>
+            </SignedOut>
+          </div>
         </div>
       </div>
     </div>

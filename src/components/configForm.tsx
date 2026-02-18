@@ -172,6 +172,21 @@ const RenderFormElement = ({
         </span>
       </div>
     ),
+    select: (
+      <select
+        className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
+        value={value}
+        onChange={(e) => onFormChange(id, e.target.value)}
+      >
+        {(props?.options || []).map(
+          (opt: { value: string; label: string }, index: number) => (
+            <option key={opt.value ?? index} value={opt.value}>
+              {opt.label}
+            </option>
+          ),
+        )}
+      </select>
+    ),
   };
 
   const element = cases[elementType] || null;
@@ -207,7 +222,7 @@ export const ConfigForm = ({
 }: ConfigFormProps) => {
   const toFormElement = (
     FormElement: string | React.ComponentType<any>,
-    i: number
+    i: number,
   ) => {
     const [elementType, description, defaultValue, label, props] =
       typeof FormElement === "string"

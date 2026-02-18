@@ -28,9 +28,7 @@ export const sketchFactory = (
   selectedTrails,
   config,
   callback,
-  options = {},
 ) => {
-  const { style = "joyDivision" } = options;
   return {
     sketch: (sketch) => {
       let copperplateLight;
@@ -46,7 +44,12 @@ export const sketchFactory = (
         const { topo, canvas, bounds } = await processImage(
           boundsGeojson,
           config.zoomLevel,
-          style === "joyDivision" ? "dxdy" : "slope",
+          {
+            joyDivision: "dxdy",
+            contour: "slope",
+            original: "slope",
+            dxdy: "dxdy",
+          }[config.eleVis],
         );
         // it feels wrong not enforcing immutable data, but
         // this is significantly simpler, and still easy to reason about
@@ -98,16 +101,16 @@ export const sketchFactory = (
         );
 
         const labelManager = labelManagerFactory(sketch);
-        if (style === "contour") {
+        if (config.eleVis === "contour") {
           // WARNING: this path is untested
           await contourCurvesPath(
             sketch,
             boundsGeojson,
             config,
             colorAt,
-            curveCount,
+            config.curveCount,
           );
-        } else if (style === "basic") {
+        } else if (config.eleVis === "original") {
           // const multiplier = config.backgroundText.highContrast ? 0.6 : 0.8;
           times(
             0.6 * config.curveCount,
@@ -123,11 +126,7 @@ export const sketchFactory = (
             labelManager,
           );
           if (config.legend?.enabled) drawLegend(sketch, config, topo, colorAt);
-        } else if (style === "joyDivision") {
-          // const config1 = {
-          //   spacing: 50,
-          //   amplitude: 50,
-          // };
+        } else if (config.eleVis === "joyDivision") {
           joyDivision(sketch, {}, topo);
           drawLayers(
             config,
@@ -138,6 +137,19 @@ export const sketchFactory = (
             userSelectedTrails,
             labelManager,
           );
+        } else if (config.eleVis === "dxdy") {
+          dxdy(sketch, config, topo, colorAt);
+          drawLayers(
+            config,
+            bounds,
+            topo,
+            colorAt,
+            features,
+            userSelectedTrails,
+            labelManager,
+          );
+        } else if (config.eleVis === "JDDots") {
+          JDDots();
         }
         callback(
           OGCanvas,
@@ -291,6 +303,7 @@ export const sketchFactory = (
         const y = Math.floor(sketch.random(0, topo.height - 1));
         const [elevation, slope, aspect, cosIncidence] = topo.pixels[y][x];
         const random = sketch.random();
+        // makes curves less likely to be drawn on flat areas
         if (slope / 70 < random) {
           return null;
         }
@@ -450,6 +463,63 @@ export const sketchFactory = (
         sketch.randomSeed(originalSeed);
         sketch.pop();
       }
+
+      // topo pixels structure [elevation, dx, dy, cosIncidence]
+      const dxdy = (sketch, config, topo, colorAt, dxdyTransform = "none") => {
+        const transform = {
+          none: (dx, dy) => [dx, dy],
+          erosion: (dx, dy) => [-dy, dx],
+          crossHatch: (dx, dy) => sketch.random([-dy, dx], [dx, dy]),
+        }[dxdyTransform];
+        const gradientMakeCurve = (
+          length,
+          step_length,
+          topo,
+          dxdyTransform,
+        ) => {
+          const [x, y] = [
+            Math.floor(sketch.random(0, topo.width - 1)),
+            Math.floor(sketch.random(0, topo.height - 1)),
+          ];
+          let curvePoints = [
+            [x, y, topo.pixels[y][x][1], topo.pixels[y][x][2]],
+          ];
+          let last = (array) => array[array.length - 1];
+          for (let i = 0; i < length; i++) {
+            // normalize dx, dy ?
+            const [x, y, dx, dy] = last(curvePoints);
+            const [tdx, tdy] = dxdyTransform(dx, dy);
+            let mag = Math.sqrt(tdx * tdx + tdy * tdy);
+            const maxMag = 1.0;
+            if (mag > maxMag) mag = maxMag;
+            let [ndx, ndy] = [tdx / mag, tdy / mag];
+            if (mag === 0) {
+              ndx = 0;
+              ndy = 0;
+            }
+
+            const [nx, ny] = [
+              Math.floor(x + ndx * step_length),
+              Math.floor(y + ndy * step_length),
+            ];
+            if (!topo.pixels[ny]?.[nx]) break;
+            const [e2, dx2, dy2] = topo.pixels[ny][nx];
+            curvePoints.push([nx, ny, dx2, dy2]);
+          }
+          return curvePoints;
+        };
+        const fn = colorAndDrawCurve(sketch, colorAt);
+        for (let i = 0; i < config.curveCount * 0.8; i++) {
+          fn(
+            gradientMakeCurve(
+              config.curve.stepCount,
+              config.curve.stepLength,
+              topo,
+              transform,
+            ),
+          );
+        }
+      };
 
       const joyDivision = (sketch, config, topo) => {
         const { spacing = 10, amplitude = 150, xRes = 5 } = config;

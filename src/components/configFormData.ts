@@ -31,6 +31,7 @@ export const formJourney: {
     description: `Add a title, choose a color scheme, set the curve density, and adjust the zoom level.`,
     formElements: [
       ConfigSelect,
+      "eleVis",
       "filename",
       "title.text",
       "curve.density",
@@ -124,6 +125,20 @@ export const basicFormElements: FormElements = {
     "Zoom Level",
     { min: 12, max: 15 },
   ],
+  eleVis: [
+    "select",
+    "how to visualize elevation: original curves, contour path, or Joy Division style lines",
+    "original",
+    "Elevation Style",
+    {
+      options: [
+        { value: "original", label: "Original" },
+        { value: "dxdy", label: "Gradient" },
+        { value: "joyDivision", label: "Joy Division" },
+        // { value: "contour", label: "Contour" },
+      ],
+    },
+  ],
   "print.quantity": ["number", "the quantity of the print", 1, "Quantity"],
 } satisfies FormElements;
 
@@ -168,4 +183,5 @@ export type FormElementType =
   | "range"
   | "slider"
   | "textarea"
-  | "text";
+  | "text"
+  | "select";

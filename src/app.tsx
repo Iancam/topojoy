@@ -50,9 +50,8 @@ export const App = () => {
 
   const [config, setConfig] = useState("Original");
 
-  const { isSignedIn, user } = import.meta.env.DEV
-    ? useUser()
-    : { isSignedIn: false, user: null };
+  // Always use Clerk's useUser hook so auth works in both development and production.
+  const { isSignedIn, user } = useUser();
 
   const preForm = Object.entries(formElements).reduce(
     (obj, [key, [_, __, value]]) => {
