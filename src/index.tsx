@@ -50,15 +50,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/sign-in",
-        element:
-          // if in dev mode, show sign in button
-          import.meta.env.DEV ? (
-            <SignInPage />
-          ) : (
-            <div className="flex items-center justify-center bg-gray-50 pt-16">
-              <p>Not available in production</p>
-            </div>
-          ),
+        element: <SignInPage />,
       },
       {
         element: <AuthLayout />,
@@ -94,7 +86,7 @@ const root = document.getElementById("app");
 createRoot(root).render(
   <CartProvider>
     <RouterProvider router={router} />
-  </CartProvider>
+  </CartProvider>,
 );
 // const container = document.getElementById("app");
 // const root = createRoot(container);
