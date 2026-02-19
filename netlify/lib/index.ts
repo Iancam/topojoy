@@ -20,7 +20,7 @@ export const auth = async (event: any, clerkClient: any) => {
     clerkRequest.body = event.body;
   }
 
-  try {
+  // try {
     const auth = await clerkClient.authenticateRequest(clerkRequest, {
       authorizedParties,
     });
@@ -31,7 +31,7 @@ export const auth = async (event: any, clerkClient: any) => {
 
     const { userId } = auth.toAuth();
     return userId;
-  } catch (err) {
+  // } catch (err) {
     console.error("Clerk authenticateRequest failed", err);
     // On any Clerk error, treat as unauthenticated instead of crashing the function.
     return null;
