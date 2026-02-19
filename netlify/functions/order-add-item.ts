@@ -36,8 +36,7 @@ export async function handler(event: any, context: any) {
     },
   } = JSON.parse(event.body);
 
-
-  if(quantity <= 0) {
+  if (quantity <= 0) {
     return {
       statusCode: 400,
       body: JSON.stringify({
@@ -46,7 +45,7 @@ export async function handler(event: any, context: any) {
     };
   }
 
-  if(userContribution < 0) {
+  if (userContribution < 0) {
     return {
       statusCode: 400,
       body: JSON.stringify({
@@ -55,7 +54,7 @@ export async function handler(event: any, context: any) {
     };
   }
 
-  if(userContribution > 500000) {
+  if (userContribution > 500000) {
     return {
       statusCode: 400,
       body: JSON.stringify({
@@ -76,7 +75,7 @@ export async function handler(event: any, context: any) {
       body: JSON.stringify({
         products: [
           {
-            Number(subcategoryId),
+            subcategoryId: Number(subcategoryId),
             width,
             height,
             options,
@@ -85,7 +84,6 @@ export async function handler(event: any, context: any) {
       }),
     },
   ).then((res) => res.json() as Promise<{ price: number }[]>);
-  console.log({ officialPrices });
   const officialPrice = officialPrices[0].price;
   if (userPrice !== officialPrice) {
     // todo, add a log of the price mismatch
@@ -100,8 +98,6 @@ export async function handler(event: any, context: any) {
       }),
     };
   }
-
-
 
   const orderItem = {
     // orderId is set implicitly by the nested create under order.orderItems
