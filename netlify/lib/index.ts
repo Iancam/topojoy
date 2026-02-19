@@ -7,23 +7,35 @@ export const auth = async (event: any, clerkClient: any) => {
     ? ["http://localhost:8888"]
     : ["https://topojoy.studio", "https://topojoy.netlify.app"];
 
-  const clerkRequest = {
-    url: `${baseUrl}${event.path}${event.rawQuery ? `?${event.rawQuery}` : ""}`,
-    method: event.httpMethod,
-    headers: event.headers,
-    body: event.body,
-  };
-  const auth = await clerkClient.authenticateRequest(clerkRequest, {
-    authorizedParties,
-  });
+  const method = (event.httpMethod || "").toUpperCase();
 
-  if (!auth.isAuthenticated) {
-    return null;
-    // { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
+  const clerkRequest: any = {
+    url: `${baseUrl}${event.path}${event.rawQuery ? `?${event.rawQuery}` : ""}`,
+    method,
+    headers: event.headers,
+  };
+
+  // Clerk (via undici/Request) does not allow a body on GET/HEAD requests.
+  if (method !== "GET" && method !== "HEAD" && event.body) {
+    clerkRequest.body = event.body;
   }
 
-  const { userId } = auth.toAuth();
-  return userId;
+  try {
+    const auth = await clerkClient.authenticateRequest(clerkRequest, {
+      authorizedParties,
+    });
+
+    if (!auth.isAuthenticated) {
+      return null;
+    }
+
+    const { userId } = auth.toAuth();
+    return userId;
+  } catch (err) {
+    console.error("Clerk authenticateRequest failed", err);
+    // On any Clerk error, treat as unauthenticated instead of crashing the function.
+    return null;
+  }
 };
 
 export const getShippingPrice = async ({
@@ -75,7 +87,7 @@ export const getShippingPrice = async ({
         Authorization: authHeader(),
       },
       body: JSON.stringify(body),
-    }
+    },
   );
 
   if (!response.ok) {
