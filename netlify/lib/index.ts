@@ -21,21 +21,20 @@ export const auth = async (event: any, clerkClient: any) => {
   }
 
   // try {
-    const auth = await clerkClient.authenticateRequest(clerkRequest, {
-      authorizedParties,
-    });
+  const auth = await clerkClient.authenticateRequest(clerkRequest, {
+    authorizedParties,
+  });
 
-    if (!auth.isAuthenticated) {
-      return null;
-    }
-
-    const { userId } = auth.toAuth();
-    return userId;
-  // } catch (err) {
-    console.error("Clerk authenticateRequest failed", err);
-    // On any Clerk error, treat as unauthenticated instead of crashing the function.
+  if (!auth.isAuthenticated) {
     return null;
   }
+
+  const { userId } = auth.toAuth();
+  return userId;
+  // } catch (err) {
+  console.error("Clerk authenticateRequest failed", err);
+  // On any Clerk error, treat as unauthenticated instead of crashing the function.
+  return null;
 };
 
 export const getShippingPrice = async ({
