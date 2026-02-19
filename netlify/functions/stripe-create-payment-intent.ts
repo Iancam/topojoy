@@ -7,7 +7,7 @@ import prisma from "../lib/prisma";
 const stripeSecretKey = process.env.SBX_STRIPE_SECRET_KEY;
 
 if (!stripeSecretKey) {
-  throw new Error("STRIPE_SECRET_KEY is not set");
+  throw new Error("SBX_STRIPE_SECRET_KEY is not set");
 }
 
 const stripe = new Stripe(stripeSecretKey, {
@@ -95,8 +95,17 @@ export const handler = async (event: any) => {
     }
 
     const selectedShippingOption = shippingMethods.filter(
-      (method: any) => method.method === shippingMethod
+      (method: any) => method.method === shippingMethod,
     )[0];
+
+    if (!selectedShippingOption) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          message: `No shipping option associated with ${shippingMethod} found`,
+        }),
+      };
+    }
 
     const shippingCostCents = selectedShippingOption.cost * 100;
     if (!shippingCostCents) {

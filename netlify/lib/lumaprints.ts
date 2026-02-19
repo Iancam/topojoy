@@ -22,10 +22,10 @@ const getImageUrlFromKey = async (key: string) => {
 const getLumaprintsAuthHeader = () => {
   return process.env.NODE_ENV === "production"
     ? `Basic ${Buffer.from(
-        `${process.env.LUMAPRINTS_API_KEY}:${process.env.LUMAPRINTS_API_SECRET}`
+        `${process.env.LUMAPRINTS_API_KEY}:${process.env.LUMAPRINTS_API_SECRET}`,
       ).toString("base64")}`
     : `Basic ${Buffer.from(
-        `${process.env.sbx_lumaprints_key}:${process.env.sbx_lumaprints_secret}`
+        `${process.env.sbx_lumaprints_key}:${process.env.sbx_lumaprints_secret}`,
       ).toString("base64")}`;
 };
 
@@ -83,7 +83,7 @@ export async function submitOrderToLumaprints(orderId: string) {
         orderItemOptions: (item.orderItemOptions as unknown as number[]) || [],
         solidColorHexCode: null,
       };
-    })
+    }),
   );
 
   const body = {
@@ -110,8 +110,6 @@ export async function submitOrderToLumaprints(orderId: string) {
     orderItems,
   };
 
-  console.log("orderItems", orderItems);
-
   const response = await fetch(
     `https://us.${process.env.NODE_ENV === "production" ? "api" : "api-sandbox"}.lumaprints.com/api/v1/orders`,
     {
@@ -121,7 +119,7 @@ export async function submitOrderToLumaprints(orderId: string) {
         Authorization: getLumaprintsAuthHeader(),
       },
       body: JSON.stringify(body),
-    }
+    },
   );
 
   if (!response.ok) {
@@ -136,7 +134,7 @@ export async function submitOrderToLumaprints(orderId: string) {
       },
     });
     throw new Error(
-      `Failed to submit order to Lumaprints: ${response.status} ${text}`
+      `Failed to submit order to Lumaprints: ${response.status} ${text}`,
     );
   }
 

@@ -19,7 +19,7 @@ export async function handler(event: any, context: any) {
     };
   }
   const {
-    orderId,
+    // orderId,
     orderItem: {
       mapConfigId,
       s3Key,
@@ -35,6 +35,35 @@ export async function handler(event: any, context: any) {
       filename,
     },
   } = JSON.parse(event.body);
+
+
+  if(quantity <= 0) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({
+        message: "Quantity must be greater than 0",
+      }),
+    };
+  }
+
+  if(userContribution < 0) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({
+        message: "User contribution must be greater than or equal to 0",
+      }),
+    };
+  }
+
+  if(userContribution > 500000) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({
+        message: "User contribution must be less than $5000",
+      }),
+    };
+  }
+
   // get official price
 
   const officialPrices = await fetch(
@@ -47,14 +76,14 @@ export async function handler(event: any, context: any) {
       body: JSON.stringify({
         products: [
           {
-            subcategoryId,
+            Number(subcategoryId),
             width,
             height,
             options,
           },
         ],
       }),
-    }
+    },
   ).then((res) => res.json() as Promise<{ price: number }[]>);
   console.log({ officialPrices });
   const officialPrice = officialPrices[0].price;
@@ -72,12 +101,14 @@ export async function handler(event: any, context: any) {
     };
   }
 
+
+
   const orderItem = {
     // orderId is set implicitly by the nested create under order.orderItems
     mapConfig: mapConfigId ? { connect: { id: mapConfigId } } : undefined,
     // s3Key,
     // imageUrl,
-    subcategoryId,
+    subcategoryId: Number(subcategoryId),
     width,
     height,
     orderItemOptions: options,

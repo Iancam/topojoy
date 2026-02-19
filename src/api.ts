@@ -80,7 +80,7 @@ const apiCall = (urlPath: string, method: string, errorMessage: string) => {
           method === "GET" || method === "HEAD"
             ? undefined
             : JSON.stringify(body),
-      }
+      },
     );
     const json = await res.json();
     const errorMessageFinal = `${errorMessage}\nServer message: ${json.message}`;
@@ -164,7 +164,7 @@ const formToDTO = ({
         name,
         type: key,
       }));
-    }
+    },
   );
 
   return {
@@ -200,7 +200,7 @@ const DTOToForm = (data: MapConfigDTO) => {
         .map((f) => f.name);
       return acc;
     },
-    {} as { [key: string]: string[] }
+    {} as { [key: string]: string[] },
   );
 
   const ret = {
@@ -213,12 +213,12 @@ const DTOToForm = (data: MapConfigDTO) => {
       .reduce(
         (
           obj: { [key: string]: number },
-          { key, value }: { key: string; value: number }
+          { key, value }: { key: string; value: number },
         ) => {
           obj[key] = value;
           return obj;
         },
-        {}
+        {},
       ),
 
     "backgroundText.text": data.backgroundText,
@@ -287,11 +287,11 @@ const orderAPIData = {
     "POST",
     "Failed to create payment intent",
   ],
-  submitToLumaprints: [
-    "print-submit-order",
-    "POST",
-    "Failed to submit order to Lumaprints",
-  ],
+  // submitToLumaprints: [
+  //   "print-submit-order",
+  //   "POST",
+  //   "Failed to submit order to Lumaprints",
+  // ],
   getLatest: ["order-latest", "GET", "Failed to get latest order"],
 };
 
@@ -352,7 +352,7 @@ export const getPrices = async (
     width: number;
     height: number;
     options: Number[];
-  }[]
+  }[],
 ) => {
   const res = await fetch("/.netlify/functions/print-price-post", {
     method: "POST",

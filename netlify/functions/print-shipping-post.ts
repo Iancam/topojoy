@@ -29,9 +29,6 @@ export const handler = async (event: any) => {
       }[];
     };
 
-    console.log("address", address);
-    console.log("items", items);
-
     if (!address || !items || !Array.isArray(items) || items.length === 0) {
       return {
         statusCode: 400,
