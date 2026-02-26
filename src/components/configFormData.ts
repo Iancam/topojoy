@@ -51,7 +51,7 @@ export const formJourney: {
     ],
   },
   {
-    title: "Background Text",
+    title: "Storytelling",
     description: `Add text to be shown in the background like quotes,
      lyrics, or poetry. Choose the elevation band that the text will
       be visible in, and choose whether to display it in high contrast.`,

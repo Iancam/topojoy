@@ -14,7 +14,7 @@ export const handler = async (event: any) => {
       width: z.number(),
       height: z.number(),
       score: z.number().optional(),
-      options: z.array(z.string()).optional(),
+      options: z.array(z.number()).optional(),
     }),
   );
 
