@@ -41,36 +41,9 @@ interface ConfigFormProps {
   onAnnotationsModeToggle?: () => void;
 }
 
-const collisionFoundFactory =
-  (form: any, collisions: Record<string, string[]>) => (feature: string) => {
-    // get master keeplist
-    const keepMap = [
-      form["river.keepList"],
-      form["trail.keepList"],
-      form["mountain.keepList"],
-      form["lake.keepList"],
-    ]
-      .flat()
-      .reduce((acc, val) => {
-        acc[val] = true;
-        return acc;
-      }, {});
-    const collidesWith = collisions[feature] || [];
-    let collisionsFound: string[] = [feature];
-    for (const feature of collidesWith) {
-      if (keepMap[feature]) {
-        collisionsFound.push(feature);
-      }
-    }
-
-    return collisionsFound;
-  };
-
 const RenderFormElement = ({
   form,
   onFormChange,
-  features,
-  collisions,
   props,
   id,
   elementType,
@@ -87,32 +60,7 @@ const RenderFormElement = ({
   label: string;
   props?: { [key: string]: any };
 }): React.ReactElement | null => {
-  const TooltipWrapper = ({ children }: TooltipWrapperProps) => (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>{children}</TooltipTrigger>
-        <TooltipContent>
-          <p>{description}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-
   const value = form[id];
-  const collisionFound = collisionFoundFactory(form, collisions);
-  const options = (features[id.split(".")[0]] || []).map((feature: string) => {
-    const collides = collisionFound(feature);
-    return {
-      style:
-        collides.length > 1
-          ? {
-              badgeColor: "red",
-            }
-          : undefined,
-      value: feature,
-      label: feature,
-    };
-  });
 
   const cases: Record<FormElementType, React.ReactElement> = {
     text: (
@@ -147,7 +95,7 @@ const RenderFormElement = ({
     ),
     list: (
       <MultiSelect
-        options={options}
+        options={props?.options || []}
         defaultValue={value}
         onValueChange={(v) => onFormChange(id, v)}
       />
@@ -193,6 +141,16 @@ const RenderFormElement = ({
     ),
   };
 
+  const TooltipWrapper = ({ children }: TooltipWrapperProps) => (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{children}</TooltipTrigger>
+        <TooltipContent>
+          <p>{description}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
   const element = cases[elementType] || null;
   return (
     <div key={id} className="flex flex-col gap-2">
@@ -243,8 +201,6 @@ export const ConfigForm = ({
           <RenderFormElement
             form={form}
             onFormChange={onFormChange}
-            features={features}
-            collisions={collisions}
             id={FormElement}
             elementType={elementType}
             description={description}

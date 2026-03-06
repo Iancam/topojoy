@@ -4,6 +4,7 @@ import { ConfigSelect } from "./ConfigSelect";
 import { PrintOptions } from "./PrintOptions";
 import type { MapConfig } from "@/configs/schema";
 import { AnnotationsControl } from "./AnnotationsControl";
+import { CollisionMultiSelect } from "./CollisionMultiSelect";
 
 // Props passed to advanced form components (e.g., ColorPlan)
 export interface AdvancedFormElementProps {
@@ -45,10 +46,10 @@ export const formJourney: {
     description: `Choose which features to show on the map.`,
     formElements: [
       "forceCollisionDetection",
-      "mountain.keepList",
-      "trail.keepList",
-      "river.keepList",
-      "lake.keepList",
+      CollisionMultiSelect("mountain.keepList"),
+      CollisionMultiSelect("trail.keepList"),
+      CollisionMultiSelect("river.keepList"),
+      CollisionMultiSelect("lake.keepList"),
     ],
   },
   {
