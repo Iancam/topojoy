@@ -1,7 +1,9 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import p5 from "p5";
 import { MapConfig } from "../configs/schema";
 import { Maximize2, Minimize2 } from "lucide-react";
+import { AnnotationLayer } from "./AnnotationLayer";
+import type { Annotation } from "./AnnotationLayer";
 
 export const P5Canvas = ({
   mapImageIsExpanded,
@@ -11,6 +13,11 @@ export const P5Canvas = ({
   sketchDims,
   printType,
   printSize,
+  form,
+  onFormChange,
+  // annotations,
+  annotationsMode,
+  // onAnnotationsChange,
 }: {
   mapImageIsExpanded: boolean;
   p5Ref: React.RefObject<HTMLDivElement> | null;
@@ -19,7 +26,21 @@ export const P5Canvas = ({
   sketchDims: { width: number; height: number };
   printType?: string;
   printSize?: { width: number; height: number } | null;
+  form: any;
+  onFormChange: (formUpdate: any) => void;
+  annotations?: Annotation[];
+  annotationsMode?: boolean;
+  onAnnotationsChange?: (annotations: Annotation[]) => void;
 }) => {
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+  const annotations = form.annotations;
+  const onAnnotationsChange = (annotations: Annotation[]) => {
+    onFormChange({
+      annotations,
+    });
+  };
+
   React.useEffect(() => {
     if (!printSize || !sketchDims.width || !sketchDims.height) return;
 
@@ -46,6 +67,38 @@ export const P5Canvas = ({
     });
   }, [printSize, printType, sketchDims.width, sketchDims.height]);
 
+  // Track the rendered image size inside p5Ref so the annotation layer
+  // can be positioned to match it exactly.
+  // Re-run when mapImageIsExpanded changes because toggleMapImageIsExpanded
+  // mutates img inline styles without resizing the container div.
+  useEffect(() => {
+    const container = p5Ref?.current;
+    if (!container) return;
+
+    const update = () => {
+      const img = container.querySelector("img");
+      if (img) {
+        setContainerSize({
+          width: img.offsetWidth || img.width,
+          height: img.offsetHeight || img.height,
+        });
+      }
+    };
+
+    // Small delay so inline style changes from toggleMapImageIsExpanded
+    // have already been applied before we measure.
+    const raf = requestAnimationFrame(update);
+
+    const ro = new ResizeObserver(update);
+    const img = container.querySelector("img");
+    ro.observe(container);
+    if (img) ro.observe(img);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [p5Ref, sketchDims, mapImageIsExpanded]);
+
   return (
     <div className="relative mt-15 h-full w-full overflow-auto">
       <button
@@ -62,6 +115,18 @@ export const P5Canvas = ({
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20">
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/60 border-t-transparent" />
           </div>
+        )}
+        {annotations !== undefined && onAnnotationsChange && (
+          <AnnotationLayer
+            annotations={annotations}
+            annotationsMode={annotationsMode ?? false}
+            containerWidth={containerSize.width}
+            containerHeight={containerSize.height}
+            scale={
+              sketchDims.width ? containerSize.width / sketchDims.width : 1
+            }
+            onChange={onAnnotationsChange}
+          />
         )}
       </div>
     </div>

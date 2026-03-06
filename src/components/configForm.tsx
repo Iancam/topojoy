@@ -15,6 +15,7 @@ import p5 from "p5";
 import { MultiSelect } from "./multi-select";
 import { FormElementType, formJourney, formElements } from "./configFormData";
 import { MultiStepForm } from "./multiStepForm";
+import { ConfigFormContext } from "./configFormContext";
 
 interface TooltipWrapperProps {
   children: React.ReactNode;
@@ -35,6 +36,9 @@ interface ConfigFormProps {
   onFormChange: (key: string, value: any) => void;
   renderSketch: () => p5;
   onSubmitSave?: () => void;
+
+  annotationsMode?: boolean;
+  onAnnotationsModeToggle?: () => void;
 }
 
 const collisionFoundFactory =
@@ -219,6 +223,8 @@ export const ConfigForm = ({
   onFormChange,
   renderSketch,
   onSubmitSave,
+  annotationsMode = false,
+  onAnnotationsModeToggle,
 }: ConfigFormProps) => {
   const toFormElement = (
     FormElement: string | React.ComponentType<any>,
@@ -246,16 +252,7 @@ export const ConfigForm = ({
             props={props}
           />
         ) : (
-          <FormElement
-            config={config}
-            configs={configs}
-            features={features}
-            collisions={collisions}
-            renderFormElement={RenderFormElement}
-            onConfigChange={onConfigChange}
-            onFormChange={onFormChange}
-            form={form}
-          />
+          <FormElement form={form} onFormChange={onFormChange} />
         )}
       </div>
     );
@@ -285,21 +282,34 @@ export const ConfigForm = ({
     ),
   }));
 
+  const ctxValue = {
+    config,
+    configs,
+    features,
+    collisions,
+    onConfigChange,
+    renderFormElement: RenderFormElement,
+    annotationsMode: annotationsMode ?? false,
+    onAnnotationsModeToggle: onAnnotationsModeToggle ?? (() => {}),
+  };
+
   return (
-    <MultiStepForm
-      steps={steps}
-      onSubmit={() => {
-        onSubmitSave?.();
-        //put save image code here
-      }}
-      submitLabel="Save Image"
-      onRender={renderSketch}
-      onSave={onSubmitSave}
-      onUpload={onUpload}
-      onPurchase={onPurchase}
-      onAddToOrder={onAddToOrder}
-      isPurchasing={isPurchasing}
-      isUploading={isUploading}
-    />
+    <ConfigFormContext.Provider value={ctxValue}>
+      <MultiStepForm
+        steps={steps}
+        onSubmit={() => {
+          onSubmitSave?.();
+          //put save image code here
+        }}
+        submitLabel="Save Image"
+        onRender={renderSketch}
+        onSave={onSubmitSave}
+        onUpload={onUpload}
+        // onPurchase={onPurchase}
+        onAddToOrder={onAddToOrder}
+        isPurchasing={isPurchasing}
+        isUploading={isUploading}
+      />
+    </ConfigFormContext.Provider>
   );
 };

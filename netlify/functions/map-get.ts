@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 export const handler = async (
   event: HandlerEvent,
-  _context: HandlerContext
+  _context: HandlerContext,
 ) => {
   try {
     const userId = event.queryStringParameters?.userId || null;
@@ -38,6 +38,7 @@ export const handler = async (
       where: { id: configId },
       include: {
         features: true,
+        annotations: true,
       },
     });
 

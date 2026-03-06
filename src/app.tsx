@@ -28,6 +28,7 @@ import _ from "lodash";
 import { Header } from "./components/Header.tsx";
 import { printTypes } from "./components/PrintOptions.tsx";
 import { useCartContext } from "./cartContext.tsx";
+import type { Annotation } from "./components/AnnotationLayer";
 
 type ToastState = {
   message: string;
@@ -91,6 +92,9 @@ export const App = () => {
   const [isRendering, setIsRendering] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+
+  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [annotationsMode, setAnnotationsMode] = useState(false);
 
   const cartContext = useCartContext();
   useEffect(() => {
@@ -331,6 +335,47 @@ export const App = () => {
     }
   };
 
+  const compositeAnnotations = (
+    canvas: HTMLCanvasElement,
+    img: HTMLImageElement,
+  ) => {
+    const ctx = canvas.getContext("2d");
+    if (!ctx || annotations.length === 0) return;
+    // canvas dimensions equal naturalWidth × naturalHeight.
+    // xRatio/yRatio are stored relative to the display image size, so we
+    // map them to canvas space by multiplying by the natural dimensions.
+    const natW = img.naturalWidth || img.width;
+    const natH = img.naturalHeight || img.height;
+    // Scale font & pin proportionally to how much larger the natural image is
+    // vs the display image, so label sizes look the same on screen and export.
+    const displayW = img.offsetWidth || natW;
+    const displayH = img.offsetHeight || natH;
+    const scaleX = natW / displayW;
+    const scaleY = natH / displayH;
+    for (const ann of annotations) {
+      const x = ann.xRatio * natW;
+      const y = ann.yRatio * natH;
+      ctx.save();
+      ctx.font = `${ann.fontSize * scaleY}px 'Courier New', Courier, monospace`;
+      ctx.fillStyle = ann.color;
+      ctx.shadowColor = "rgba(0,0,0,0.5)";
+      ctx.shadowBlur = 3 * scaleY;
+      ctx.shadowOffsetY = 1 * scaleY;
+      ctx.fillText(ann.text, x + 6 * scaleX, y + (ann.fontSize * scaleY) / 4);
+      ctx.restore();
+      // pin dot
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, 4 * scaleX, 0, Math.PI * 2);
+      ctx.fillStyle = ann.color;
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.4)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+    }
+  };
+
   const captureImage = () => {
     const container = p5Ref.current;
     if (!container) return;
@@ -343,6 +388,7 @@ export const App = () => {
     canvas.width = w;
     canvas.height = h;
     ctx?.drawImage(img, 0, 0, w, h);
+    compositeAnnotations(canvas, img);
     return new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((blob) => {
         if (!blob) {
@@ -389,6 +435,7 @@ export const App = () => {
     if (!ctx) return;
 
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+    compositeAnnotations(canvas, img);
 
     console.log("PRINT CROP", {
       imgWidth,
@@ -663,6 +710,10 @@ export const App = () => {
               features,
             })}
             onSubmitSave={saveImage}
+            annotations={annotations}
+            annotationsMode={annotationsMode}
+            onAnnotationsChange={setAnnotations}
+            onAnnotationsModeToggle={() => setAnnotationsMode((m) => !m)}
           />
         </div>
         {/* Main Content */}
@@ -675,7 +726,12 @@ export const App = () => {
             sketchDims={sketchDims}
             printType={form["print.type"]}
             printSize={form["print.size"]}
-          ></P5Canvas>
+            // annotations={annotations}
+            form={form}
+            onFormChange={onFormChange}
+            annotationsMode={annotationsMode}
+            // onAnnotationsChange={setAnnotations}
+          />
         </div>
       </div>
     </div>

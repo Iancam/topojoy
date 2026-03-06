@@ -21,6 +21,8 @@ model User {
   name  String @db.VarChar(255)
   mapConfigs MapConfig[]
   orders Order[]
+  donations Donation[]
+  giftGivers GiftGiver[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -46,6 +48,17 @@ model Feature {
   @@id([name, mapConfigId, type])
 }
 
+model Annotation {
+  id    String @id @default(cuid())
+  mapConfigId String
+  mapConfig MapConfig @relation(fields: [mapConfigId], references: [id])
+  text String
+  fontSize Int
+  color String
+  xRatio Float
+  yRatio Float
+}
+
 model MapConfig {
   id    String @id @default(cuid())
   user  User @relation(fields: [userId], references: [clerkId])
@@ -65,6 +78,8 @@ model MapConfig {
   backgroundTextElevationRange0 Float
   backgroundTextElevationRange1 Float
   backgroundTextHighContrast Boolean
+
+  annotations Annotation[]
 
   crossHatch Boolean
   colorPlan String @db.VarChar(255)
@@ -121,22 +136,7 @@ model Order {
   updatedAt DateTime @updatedAt
 }
 
-// enum OrderStatus {
-//   pending
-//   processing
-//   shipped
-//   completed
-//   cancelled
-//   failed
-// }
 
-// model OrderItemOption {
-//   id    String @id @default(cuid())
-//   optionName String
-
-//   orderItemId String
-//   orderItem OrderItem @relation(fields: [orderItemId], references: [id])
-// }
 
 model OrderItem {
   id    String @id @default(cuid())
@@ -160,4 +160,37 @@ model OrderItem {
   orderItemOptions Json 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Donation {
+  id String @id @default(cuid())
+  amount Int
+  restricted Boolean  //— how the money can be spent (alone vs. combined)
+  public Boolean //— who can access it (anyone vs. private link holder)
+  message String
+  donateResiduals Boolean
+  donorId String
+  donor User @relation(fields: [donorId], references: [id])
+  exipiryDate DateTime
+  giftGivers GiftGiver[]
+}
+
+model GiftGiver {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  donations Donation[]
+  gratitudeMessage String?
+  reflections String?
+  giftedMaps GiftedMap[]
+}
+
+model GiftedMap {
+  id String @id @default(cuid())
+  amount Int //in cents
+  orderId String
+  gratitudeMessage String?
+  order Order @relation(fields: [orderId], references: [id])
+  giftGiverId String
+  giftGiver GiftGiver @relation(fields: [giftGiverId], references: [userId])
 }

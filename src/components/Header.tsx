@@ -1,9 +1,11 @@
-import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/clerk-react";
 import { Link } from "react-router";
 import { useCartContext } from "../cartContext";
 
 export const Header = () => {
   const { itemCount: cartItemCount } = useCartContext();
+  const { user } = useUser();
+  const isAdmin = (user?.publicMetadata as any)?.role === "admin";
 
   return (
     <div className="text-[#d5f7ff] bg-[#071e25] font-sans px-4 flex justify-between h-15 fixed top-0 left-0 right-0 border-b border-[#0e3942]/80 shadow-md shadow-black/40">
@@ -43,6 +45,13 @@ export const Header = () => {
           <div>
             <SignedIn>
               <div className="flex items-center ml-auto">
+                {isAdmin && (
+                  <Link to="/admin">
+                    <span className="text-yellow-400 text-xs font-bold py-1 px-4 rounded transition-all duration-200">
+                      Admin
+                    </span>
+                  </Link>
+                )}
                 <Link to="/my-maps">
                   {/* make it look good */}
                   <span className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">

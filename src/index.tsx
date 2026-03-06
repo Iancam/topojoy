@@ -8,6 +8,7 @@ import { Layout } from "./Layout";
 import AuthLayout from "./AuthLayout";
 import { FrontPage } from "./FrontPage";
 import MyMaps from "./MyMaps";
+import AdminPage from "./AdminPage";
 import { Cart } from "./Cart";
 import { Checkout } from "./Checkout";
 import { SignInPage } from "./SignInPage";
@@ -66,6 +67,10 @@ const router = createBrowserRouter([
           {
             path: "/checkout",
             element: <Checkout />,
+          },
+          {
+            path: "/admin",
+            element: <AdminPage />,
           },
         ],
       },

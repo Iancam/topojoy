@@ -125,7 +125,6 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
   const currentSize = form["print.size"];
   const imgW = form["print.imageWidth"] || 0;
   const imgH = form["print.imageHeight"] || 0;
-  if (!imgW || !imgH) console.warn("Image dimensions not provided");
 
   const sizes = generateSizes(printTypes[printTypeKey]);
   const minDPI = 120;

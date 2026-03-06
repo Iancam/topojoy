@@ -3,6 +3,7 @@ import { ColorPlan } from "./ColorPlan";
 import { ConfigSelect } from "./ConfigSelect";
 import { PrintOptions } from "./PrintOptions";
 import type { MapConfig } from "@/configs/schema";
+import { AnnotationsControl } from "./AnnotationsControl";
 
 // Props passed to advanced form components (e.g., ColorPlan)
 export interface AdvancedFormElementProps {
@@ -59,6 +60,7 @@ export const formJourney: {
       "backgroundText.text",
       "backgroundText.elevationRange",
       "backgroundText.contrast",
+      AnnotationsControl,
     ],
   },
   {
@@ -125,6 +127,7 @@ export const basicFormElements: FormElements = {
     "Zoom Level",
     { min: 12, max: 15 },
   ],
+  annotations: ["list", "annotations", [], "Annotations"],
   eleVis: [
     "select",
     "how to visualize elevation: original curves, contour path, or Joy Division style lines",

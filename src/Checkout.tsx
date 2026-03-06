@@ -119,7 +119,7 @@ export const Checkout = () => {
   }, [searchParams]);
 
   const stripePromise = loadStripe(
-    import.meta.env.VITE_SBX_STRIPE_PUBLISHABLE_KEY
+    import.meta.env.VITE_SBX_STRIPE_PUBLISHABLE_KEY,
   );
   // Rehydrate shipping form from localStorage on mount
   useEffect(() => {
@@ -139,7 +139,7 @@ export const Checkout = () => {
     try {
       window.localStorage.setItem(
         "checkout:shippingForm",
-        JSON.stringify(shippingForm)
+        JSON.stringify(shippingForm),
       );
     } catch (e) {
       console.error("Failed to persist shipping form", e);
@@ -190,7 +190,7 @@ export const Checkout = () => {
   }, [step]);
 
   const handleShippingChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setShippingForm((prev) => ({ ...prev, [name]: value }));
@@ -234,7 +234,6 @@ export const Checkout = () => {
         })),
       });
       // Lumaprints returns { message, shippingMethods }
-      console.log(data);
       setShippingOptions(data?.shippingMethods || []);
       goToStep("method");
     } catch (err) {
@@ -267,12 +266,13 @@ export const Checkout = () => {
       });
 
       const data = await order.createPaymentIntent({});
+
       setClientSecret(data.clientSecret);
       setTotalAmount(data.amount);
       goToStep("payment");
     } catch (err) {
       console.error("Failed to create payment intent", err);
-      setShippingError("Failed to start payment.");
+      setShippingError("Failed to start payment./n" + (err as Error).message);
     } finally {
       setCreatingPaymentIntent(false);
     }

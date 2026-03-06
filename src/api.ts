@@ -23,6 +23,14 @@ export type MapConfigDTO = {
 
   crossHatch: boolean;
   colorPlan: string;
+  annotations?: {
+    id?: string;
+    text: string;
+    fontSize: number;
+    color: string;
+    xRatio: number;
+    yRatio: number;
+  }[];
 };
 
 export type CartOrder = {
@@ -188,6 +196,22 @@ const formToDTO = ({
       .join(","),
     imageUrl,
     s3Key,
+    annotations: (form.annotations ?? []).map(
+      (ann: {
+        id?: string;
+        text: string;
+        fontSize: number;
+        color: string;
+        xRatio: number;
+        yRatio: number;
+      }) => ({
+        text: ann.text,
+        fontSize: ann.fontSize,
+        color: ann.color,
+        xRatio: ann.xRatio,
+        yRatio: ann.yRatio,
+      }),
+    ),
   };
 };
 
@@ -242,6 +266,7 @@ const DTOToForm = (data: MapConfigDTO) => {
     userId: data.userId,
     id: data.id,
     filename: data.filename,
+    annotations: data.annotations ?? [],
   };
 
   return ret;
@@ -295,6 +320,10 @@ const orderAPIData = {
   getLatest: ["order-latest", "GET", "Failed to get latest order"],
 };
 
+const adminAPIData = {
+  mapsAll: ["admin-maps-all", "GET", "Failed to get all maps"],
+};
+
 type createPaymentIntentBody = {
   amount: number;
   currency: string;
@@ -303,6 +332,7 @@ type createPaymentIntentBody = {
 
 export const maps = mapValues(mapsAPIData, APIDataToAPIFN);
 export const order = mapValues(orderAPIData, APIDataToAPIFN);
+export const admin = mapValues(adminAPIData, APIDataToAPIFN);
 
 export const saveImageToAws = async (body: {
   blob: Blob;
