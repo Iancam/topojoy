@@ -57,14 +57,8 @@ export const handler = async (
     if (stripeEvent.type === "payment_intent.succeeded") {
       const paymentIntent = stripeEvent.data.object as Stripe.PaymentIntent;
       const orderId = paymentIntent.metadata?.orderId;
-      console.log("orderId", orderId);
-      if (!orderId) {
-        console.warn(
-          "payment_intent.succeeded missing orderId metadata",
-          paymentIntent.id,
-        );
-        // await stripe.paymentIntents.cancel(paymentIntent.id);
-      } else {
+      const donationId = paymentIntent.metadata?.donationId;
+      if (orderId) {
         const order = await prisma.order.findUnique({ where: { id: orderId } });
 
         console.log("order", order);
@@ -83,16 +77,27 @@ export const handler = async (
           await submitOrderToLumaprints(orderId);
         }
       }
+      if (donationId) {
+        const donation = await prisma.donation.findUnique({
+          where: { id: donationId },
+        });
+        if (!donation) {
+          console.warn("Donation not found for payment_intent", {
+            donationId,
+            paymentIntentId: paymentIntent.id,
+          });
+        } else if (donation.status !== "paid") {
+          await prisma.donation.update({
+            where: { id: donationId },
+            data: { status: "paid" },
+          });
+        }
+      }
     } else if (stripeEvent.type === "payment_intent.payment_failed") {
       const paymentIntent = stripeEvent.data.object as Stripe.PaymentIntent;
       const orderId = paymentIntent.metadata?.orderId;
-
-      if (!orderId) {
-        console.warn(
-          "payment_intent.payment_failed missing orderId metadata",
-          paymentIntent.id,
-        );
-      } else {
+      const donationId = paymentIntent.metadata?.donationId;
+      if (orderId) {
         const order = await prisma.order.findUnique({ where: { id: orderId } });
         if (!order) {
           console.warn("Order not found for failed payment_intent", {
@@ -102,6 +107,22 @@ export const handler = async (
         } else if (order.status === "pending") {
           await prisma.order.update({
             where: { id: orderId },
+            data: { status: "failed" },
+          });
+        }
+      }
+      if (donationId) {
+        const donation = await prisma.donation.findUnique({
+          where: { id: donationId },
+        });
+        if (!donation) {
+          console.warn("Donation not found for failed payment_intent", {
+            donationId,
+            paymentIntentId: paymentIntent.id,
+          });
+        } else if (donation.status === "pending") {
+          await prisma.donation.update({
+            where: { id: donationId },
             data: { status: "failed" },
           });
         }

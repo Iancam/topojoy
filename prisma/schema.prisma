@@ -15,16 +15,16 @@ datasource db {
 }
 
 model User {
-  id    String @id @default(cuid())
-  clerkId String @unique @db.VarChar(255)
-  email String? @db.VarChar(255)
-  name  String @db.VarChar(255)
+  id        String    @id @default(cuid())
+  clerkId   String    @unique @db.VarChar(255)
+  email     String?   @db.VarChar(255)
+  name      String    @db.VarChar(255)
   mapConfigs MapConfig[]
-  orders Order[]
+  orders    Order[]
   donations Donation[]
-  giftGivers GiftGiver[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  giftedMaps GiftedMap[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 enum featureType {
@@ -88,6 +88,7 @@ model MapConfig {
   s3Key String?
 
   orderItems OrderItem[]
+  giftedMaps GiftedMap[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -132,11 +133,11 @@ model Order {
 
   paymentIntentId String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  giftedMap GiftedMap?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
-
-
 
 model OrderItem {
   id    String @id @default(cuid())
@@ -163,34 +164,48 @@ model OrderItem {
 }
 
 model Donation {
-  id String @id @default(cuid())
-  amount Int
-  restricted Boolean  //— how the money can be spent (alone vs. combined)
-  public Boolean //— who can access it (anyone vs. private link holder)
-  message String
-  donateResiduals Boolean
-  donorId String
-  donor User @relation(fields: [donorId], references: [id])
-  exipiryDate DateTime
-  giftGivers GiftGiver[]
-}
-
-model GiftGiver {
-  id String @id @default(cuid())
-  userId String
-  user User @relation(fields: [userId], references: [id])
-  donations Donation[]
-  gratitudeMessage String?
-  reflections String?
-  giftedMaps GiftedMap[]
+  id               String               @id @default(cuid())
+  amount           Int                  // in cents, original amount
+  status           String               @default("pending")
+  restricted       Boolean              // true = must be used alone, no stacking
+  public           Boolean
+  discretionary    Boolean              // -true, can be used by topojoy org
+  message          String?
+  donateResiduals  Boolean              // if true, leftover goes to communal pool on expiry
+  donorId          String?
+  donor            User?                 @relation(fields: [donorId], references: [id])
+  expiryDate       DateTime
+  allocations      DonationAllocation[]
+  accessToken      String?              @unique // non-null when public: false
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
 }
 
 model GiftedMap {
-  id String @id @default(cuid())
-  amount Int //in cents
-  orderId String
-  gratitudeMessage String?
-  order Order @relation(fields: [orderId], references: [id])
-  giftGiverId String
-  giftGiver GiftGiver @relation(fields: [giftGiverId], references: [userId])
+  id           String               @id @default(cuid())
+  giftGiverId  String
+  giftGiver    User            @relation(fields: [giftGiverId], references: [id])
+  
+  GGgratitudeMessage String?
+  GGreflections      String?
+  RgratitudeMessage String?
+  Rreflections      String?
+
+  orderId      String               @unique
+  order        Order                @relation(fields: [orderId], references: [id])
+  mapConfigId  String
+  mapConfig    MapConfig            @relation(fields: [mapConfigId], references: [id])
+  totalCost    Int                  // in cents
+  allocations  DonationAllocation[]
+  createdAt    DateTime             @default(now())
+}
+
+model DonationAllocation {
+  id           String    @id @default(cuid())
+  donationId   String
+  donation     Donation  @relation(fields: [donationId], references: [id])
+  giftedMapId  String
+  giftedMap    GiftedMap @relation(fields: [giftedMapId], references: [id])
+  amountDrawn  Int       // in cents
+  createdAt    DateTime  @default(now())
 }

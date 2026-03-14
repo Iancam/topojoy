@@ -2,9 +2,10 @@ import React, { useEffect } from "react";
 import type { AdvancedFormElementProps } from "./configFormData";
 import _ from "lodash";
 import { estimatePriceForPrintType } from "@/lib/lumaprintPrices";
-import { getPrices } from "@/api";
+import { donation, getPrices } from "@/api";
 import { Input } from "./ui/input";
 import { formatMoney } from "@/lib/utils";
+import { getStoredGiftToken } from "@/lib/giftToken";
 
 export const printTypes = {
   poster: {
@@ -56,7 +57,7 @@ export const printTypes = {
     options: [
       { optionId: 2, optionName: "Mirror Wrap" },
       { optionId: 11, optionName: "Sawtooth Hanger installed" },
-      { optionId: 224, optionName: "Matte" },
+      { optionId: 259, optionName: "Matte" },
     ],
   },
 };
@@ -73,7 +74,7 @@ const generateSizes = ({
   minimumHeight: number;
   maximumWidth: number;
   maximumHeight: number;
-  subcategoryId: string;
+  subcategoryId: number;
   options: { optionId: number; optionName: string }[];
 }) => {
   const sizes = [];
@@ -110,22 +111,11 @@ const getDPI = (imgW: number, imgH: number, printW: number, printH: number) => {
   return Math.min(dpiX, dpiY);
 };
 
-export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
-  form,
-  onFormChange,
-}) => {
-  // const [sizes, setSizes] = React.useState<size[]>([]);
-  const [loadingSizes, setLoadingSizes] = React.useState(false);
-  // const [sizesError, setSizesError] = React.useState<string | null>(null);
-  const [recommendedPrices, setRecommendedPrices] = React.useState<
-    { price: number; height: number; width: number; options: any[] }[]
-  >([]);
-  const printTypeKey = (form["print.type"] ||
-    "poster") as keyof typeof printTypes;
-  const currentSize = form["print.size"];
-  const imgW = form["print.imageWidth"] || 0;
-  const imgH = form["print.imageHeight"] || 0;
-
+const getRecommendedSizes = (
+  printTypeKey: keyof typeof printTypes,
+  imgW: number,
+  imgH: number,
+) => {
   const sizes = generateSizes(printTypes[printTypeKey]);
   const minDPI = 120;
   const scoredSizes = sizes
@@ -133,7 +123,7 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
       (s: {
         width: number;
         height: number;
-        subcategoryId: string;
+        subcategoryId: number;
         options: { optionId: number; optionName: string }[];
       }) => {
         const t = printTypes[printTypeKey].transform;
@@ -163,36 +153,112 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
     // .slice(0, numSizes)
     .sort((a, b) => a.width - b.width || a.height - b.height);
 
-  useEffect(() => {
-    setLoadingSizes(true);
-    getPrices(recommended).then((prices) => {
-      setRecommendedPrices(prices);
-      setLoadingSizes(false);
-    });
-  }, [form["print.type"], imgW, imgH]);
-
   const noRecSizes = recommended.length === 0;
   const noLegitDPI =
     scoredSizes.filter((s) => getDPI(imgW, imgH, s.width, s.height) >= minDPI)
       .length === 0;
   const noGoodScore = scoredSizes.filter((s) => s.score >= 0.975).length === 0;
 
+  return { recommended, error: { noRecSizes, noLegitDPI, noGoodScore } };
+};
+
+export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
+  form,
+  onFormChange,
+}) => {
+  // const [sizes, setSizes] = React.useState<size[]>([]);
+  const [loadingSizes, setLoadingSizes] = React.useState(false);
+  // const [sizesError, setSizesError] = React.useState<string | null>(null);
+  const [allRecommendedPrices, setAllRecommendedPrices] = React.useState<
+    {
+      price: number;
+      height: number;
+      width: number;
+      options: any[];
+      subcategoryId: number;
+    }[]
+  >([]);
+  const [netGiftAmountCents, setNetGiftAmountCents] = React.useState<
+    Record<string, number>
+  >({});
+  // const [giftBannerMsg, setGiftBannerMsg] = React.useState<string | null>(null);
+  const printTypeKey = (form["print.type"] ||
+    "poster") as keyof typeof printTypes;
+  const currentSize = form["print.size"];
+  const imgW = form["print.imageWidth"] || 0;
+  const imgH = form["print.imageHeight"] || 0;
+
+  const recommendedSizes = Object.fromEntries(
+    Object.keys(printTypes).map((k) => [
+      k,
+      getRecommendedSizes(k as keyof typeof printTypes, imgW, imgH),
+    ]),
+  );
+  const recommendedPrices = allRecommendedPrices.filter((p) => {
+    return p.subcategoryId === printTypes[printTypeKey].subcategoryId;
+  });
+
+  useEffect(() => {
+    setLoadingSizes(true);
+    const token = getStoredGiftToken();
+
+    const allRecommendedSizes = Object.values(recommendedSizes)
+      .map((v) => v.recommended)
+      .flat();
+    if (allRecommendedSizes.length < 1) return;
+    getPrices(allRecommendedSizes).then((prices) => {
+      setAllRecommendedPrices(prices);
+      if (!token) setLoadingSizes(false);
+    });
+
+    if (!token) return;
+    const biggestItemPerType = Object.values(recommendedSizes).map((r) => ({
+      ...r.recommended[r.recommended.length - 1],
+      quantity: 1,
+    }));
+    donation
+      .getGiftValue({ accessToken: token, items: biggestItemPerType })
+      .then((data: any) => {
+        setNetGiftAmountCents(data.adjustedAmountPerItemCents);
+        setLoadingSizes(false);
+      })
+      .catch(() => {});
+    // apply gift if available
+  }, [imgW, imgH]);
+
+  const effectivePrice = (rawPrice: number) =>
+    Math.max(
+      0,
+      rawPrice -
+        (netGiftAmountCents[printTypes[printTypeKey].subcategoryId] || 0),
+    );
+
+  console.log({
+    netGiftAmountCents,
+    recommendedPrices,
+    adjustedPrices: recommendedPrices.map((p) => ({
+      price: effectivePrice(p.price),
+    })),
+  });
+
+  const { noRecSizes, noLegitDPI, noGoodScore } =
+    recommendedSizes[printTypeKey].error;
+
   const handleTypeChange = (type: string) => {
     onFormChange("print.type", type);
   };
 
-  const handleSizeSelect = (w: number, h: number, price: number) => {
+  const handleSizeSelect = (w: number, h: number, rawPrice: number) => {
     const t =
       printTypes[form["print.type"] as keyof typeof printTypes].transform;
     onFormChange(
       {
         "print.size": { width: w, height: h },
         "print.sizeActual": t ? t(w, h) : { width: w, height: h },
-        "print.price": price,
+        "print.price": effectivePrice(rawPrice),
       },
       null,
     );
-    // onFormChange("print.price", price);
   };
   return (
     <div className="space-y-4">
@@ -238,13 +304,16 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
                   currentSize?.width === s.width &&
                   currentSize?.height === s.height;
                 // const matchPercent = Math.round(s.score * 100);
-                const price = s.price;
-                if (!price) return null;
+                const rawPrice = s.price;
+                if (!rawPrice) return null;
+                const discounted = effectivePrice(rawPrice);
                 return (
                   <button
                     key={`${s.width}x${s.height}`}
                     type="button"
-                    onClick={() => handleSizeSelect(s.width, s.height, price)}
+                    onClick={() =>
+                      handleSizeSelect(s.width, s.height, rawPrice)
+                    }
                     className={`text-left px-2 py-1.5 rounded border text-xs transition-colors ${
                       isSelected
                         ? "border-blue-600 bg-blue-50 text-blue-700"
@@ -256,7 +325,7 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
                         {s.width}" × {s.height}"
                       </span>
                       <span className="text-[10px] text-gray-500 ml-1">
-                        {formatMoney(price)}
+                        {formatMoney(discounted)}
                       </span>
                     </div>
                   </button>

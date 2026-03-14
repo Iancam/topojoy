@@ -589,33 +589,19 @@ export const App = () => {
     }
   };
 
-  const KEEP_LIST_KEYS = [
-    "mountain.keepList",
-    "trail.keepList",
-    "river.keepList",
-    "lake.keepList",
-  ];
-
-  const onFormChange = (arg1: any, arg2: any) => {
+  const onFormChange = (arg1: any, arg2?: any) => {
     // if arg1 is a string, do the normal thing
     if (typeof arg1 === "string") {
       const key = arg1 as string;
       const value = arg2;
-      const extra = KEEP_LIST_KEYS.includes(key)
-        ? { forceCollisionDetection: false }
-        : {};
       setForm({
         ...form,
         [key]: value,
-        ...extra,
       });
     } else if (typeof arg1 === "object") {
-      const keys = Object.keys(arg1);
-      const touchesKeepList = keys.some((k) => KEEP_LIST_KEYS.includes(k));
       setForm({
         ...form,
         ...arg1,
-        ...(touchesKeepList ? { forceCollisionDetection: false } : {}),
       });
     }
   };

@@ -123,12 +123,19 @@ const fromDTO =
     };
   };
 
-const APIDataToAPIFN = ([urlPath, method, errorMessage, ...transformers]: [
+type APIEntry = [
   string,
   string,
   string,
   ...((apiFn: (body: any) => Promise<any>) => (body: any) => Promise<any>)[],
-]) => {
+];
+
+const APIDataToAPIFN = ([
+  urlPath,
+  method,
+  errorMessage,
+  ...transformers
+]: APIEntry) => {
   const base = apiCall(urlPath, method, errorMessage);
   if (transformers.length === 0) {
     return base;
@@ -272,7 +279,7 @@ const DTOToForm = (data: MapConfigDTO) => {
   return ret;
 };
 
-const mapsAPIData = {
+const mapsAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
   upsert: [
     "map-upsert",
     "POST",
@@ -287,16 +294,15 @@ const mapsAPIData = {
     (fn: (body: any) => Promise<any>) => {
       return async (body: any) => {
         const json = await fn(body);
-        console.log(json);
         return json as MapListItem[];
       };
     },
   ],
   get: ["map-get", "GET", "Failed to load map", fromDTO(DTOToForm)],
   delete: ["map-delete", "POST", "Failed to delete map"],
-};
+});
 
-const orderAPIData = {
+const orderAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
   addItem: ["order-add-item", "POST", "Failed to add item to order"],
   getCart: ["order-get-cart", "GET", "Failed to get cart"],
   update: ["order-update", "POST", "Failed to update"],
@@ -318,21 +324,45 @@ const orderAPIData = {
   //   "Failed to submit order to Lumaprints",
   // ],
   getLatest: ["order-latest", "GET", "Failed to get latest order"],
-};
+});
 
-const adminAPIData = {
+const adminAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
   mapsAll: ["admin-maps-all", "GET", "Failed to get all maps"],
-};
+});
 
-type createPaymentIntentBody = {
-  amount: number;
-  currency: string;
-  paymentMethodId: string;
-};
+const donationAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
+  createPaymentIntent: [
+    "donation-create-payment-intent",
+    "POST",
+    "Failed to create donation payment intent",
+  ],
+  getGiftValue: ["donation-gift-value", "POST", "Failed to get gift value"],
+});
 
-export const maps = mapValues(mapsAPIData, APIDataToAPIFN);
-export const order = mapValues(orderAPIData, APIDataToAPIFN);
-export const admin = mapValues(adminAPIData, APIDataToAPIFN);
+export const maps = Object.fromEntries(
+  Object.entries(mapsAPIData).map(([key, value]) => [
+    key,
+    APIDataToAPIFN(value),
+  ]),
+);
+export const order = Object.fromEntries(
+  Object.entries(orderAPIData).map(([key, value]) => [
+    key,
+    APIDataToAPIFN(value),
+  ]),
+);
+export const admin = Object.fromEntries(
+  Object.entries(adminAPIData).map(([key, value]) => [
+    key,
+    APIDataToAPIFN(value),
+  ]),
+);
+export const donation = Object.fromEntries(
+  Object.entries(donationAPIData).map(([key, value]) => [
+    key,
+    APIDataToAPIFN(value),
+  ]),
+);
 
 export const saveImageToAws = async (body: {
   blob: Blob;
@@ -378,7 +408,7 @@ export const getImageUrlFromAws = async (key: string) => {
 
 export const getPrices = async (
   products: {
-    subcategoryId: string;
+    subcategoryId: number;
     width: number;
     height: number;
     options: Number[];
@@ -399,7 +429,7 @@ export const getPrices = async (
   // if (!json.success) throw new Error(json.message || "Failed to get prices");
   return json as {
     price: number;
-    subcategoryId: string;
+    subcategoryId: number;
     width: number;
     height: number;
     options: number[];

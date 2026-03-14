@@ -33,6 +33,13 @@ export const Header = () => {
           </div>
           <div className="pr-3"></div>
           <div className="flex items-center ml-auto">
+            <Link to="/donate">
+              <span className="text-teal-400 text-xs font-bold py-1 px-4 rounded transition-all duration-200">
+                Donate
+              </span>
+            </Link>
+          </div>
+          <div className="flex items-center ml-auto">
             <Link to="/app">
               <span className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
                 App

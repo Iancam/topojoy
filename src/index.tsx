@@ -9,6 +9,8 @@ import AuthLayout from "./AuthLayout";
 import { FrontPage } from "./FrontPage";
 import MyMaps from "./MyMaps";
 import AdminPage from "./AdminPage";
+import DonationPage from "./DonationPage";
+import GiftPage from "./GiftPage";
 import { Cart } from "./Cart";
 import { Checkout } from "./Checkout";
 import { SignInPage } from "./SignInPage";
@@ -73,6 +75,14 @@ const router = createBrowserRouter([
             element: <AdminPage />,
           },
         ],
+      },
+      {
+        path: "/donate",
+        element: <DonationPage />,
+      },
+      {
+        path: "/gift/:accessToken",
+        element: <GiftPage />,
       },
       {
         path: "/terms",
