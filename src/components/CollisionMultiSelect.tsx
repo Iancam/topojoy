@@ -26,6 +26,12 @@ const collisionFoundFactory =
     return collisionsFound;
   };
 
+const setFCDFalse =
+  (onFormChange: (record: Record<string, any>) => void) =>
+  (arg1: any, arg2: any) => {
+    onFormChange({ forceCollisionDetection: false, [arg1]: arg2 });
+  };
+
 export const CollisionMultiSelect =
   (id: string) =>
   ({
@@ -54,11 +60,11 @@ export const CollisionMultiSelect =
     );
     return renderFormElement({
       form,
-      onFormChange,
+      onFormChange: setFCDFalse(onFormChange),
       id,
       elementType: "list",
       description: "Features that will be shown on the map",
-      label: `${id.split(".")[0].charAt(0).toUpperCase() + id.split(".")[0].slice(1)} Keep List`,
+      label: `${id.split(".")[0].charAt(0).toUpperCase() + id.split(".")[0].slice(1)}s To Display`,
       props: {
         options,
       },

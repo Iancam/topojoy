@@ -52,8 +52,6 @@ const RenderFormElement = ({
 }: {
   form: any;
   onFormChange: (key: string, value: any) => void;
-  features: { [key: string]: string[] };
-  collisions: Record<string, string[]>;
   id: string;
   elementType: FormElementType;
   description: string;
@@ -165,6 +163,42 @@ const RenderFormElement = ({
   );
 };
 
+export const toFormElement =
+  (
+    form: any,
+    onFormChange: (key: string, value: any) => void,
+    elementLookup?: Record<string, any>,
+  ) =>
+  (FormElement: string | React.ComponentType<any>, i: number) => {
+    const lookup = elementLookup ?? formElements;
+    const [elementType, description, defaultValue, label, props, oFCDecorator] =
+      typeof FormElement === "string"
+        ? lookup[FormElement]
+        : ["", "", "", "", {}, undefined];
+
+    const decoratedOFC = oFCDecorator?.(onFormChange) || onFormChange;
+    return (
+      <div
+        key={typeof FormElement === "string" ? FormElement : i}
+        className="flex flex-col gap-2 mt-4"
+      >
+        {typeof FormElement === "string" ? (
+          <RenderFormElement
+            form={form}
+            onFormChange={decoratedOFC}
+            id={FormElement}
+            elementType={elementType}
+            description={description}
+            label={label}
+            props={props}
+          />
+        ) : (
+          <FormElement form={form} onFormChange={onFormChange} />
+        )}
+      </div>
+    );
+  };
+
 // Reusable multistep form wrapper
 export const ConfigForm = ({
   config,
@@ -184,42 +218,14 @@ export const ConfigForm = ({
   annotationsMode = false,
   onAnnotationsModeToggle,
 }: ConfigFormProps) => {
-  const toFormElement = (
-    FormElement: string | React.ComponentType<any>,
-    i: number,
-  ) => {
-    const [elementType, description, defaultValue, label, props] =
-      typeof FormElement === "string"
-        ? formElements[FormElement]
-        : ["", "", "", "", {}];
-    return (
-      <div
-        key={typeof FormElement === "string" ? FormElement : i}
-        className="flex flex-col gap-2 mt-4"
-      >
-        {typeof FormElement === "string" ? (
-          <RenderFormElement
-            form={form}
-            onFormChange={onFormChange}
-            id={FormElement}
-            elementType={elementType}
-            description={description}
-            label={label}
-            props={props}
-          />
-        ) : (
-          <FormElement form={form} onFormChange={onFormChange} />
-        )}
-      </div>
-    );
-  };
-
   const steps = formJourney.map((step) => ({
     title: step.title,
     content: (
       <div>
         <div className="flex flex-col gap-2 mt-4">
-          {step.formElements.map(toFormElement)}
+          {step.formElements.map(
+            toFormElement(form, onFormChange, formElements),
+          )}
         </div>
         {step.advanced && step.advanced.length > 0 && (
           <details className="mt-4 group">
@@ -230,7 +236,7 @@ export const ConfigForm = ({
               </span>
             </summary>
             <div className="pl-4 mt-2 flex flex-col gap-2">
-              {step.advanced.map(toFormElement)}
+              {step.advanced.map(toFormElement(form, onFormChange))}
             </div>
           </details>
         )}

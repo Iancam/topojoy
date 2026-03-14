@@ -19,7 +19,17 @@ export interface AdvancedFormElementProps {
 export interface FormElements {
   [key: string]:
     | [FormElementType, string, any, string]
-    | [FormElementType, string, any, string, { [key: string]: any }];
+    | [FormElementType, string, any, string, { [key: string]: any }]
+    | [
+        FormElementType,
+        string,
+        any,
+        string,
+        { [key: string]: any },
+        (
+          onFormChange: (arg1: any, arg2?: any) => void,
+        ) => (arg1: any, arg2?: any) => void,
+      ];
 }
 
 export const formJourney: {
@@ -108,11 +118,10 @@ export const basicFormElements: FormElements = {
   ],
   "title.text": ["text", "the text of the title", "", "Title"],
 
+  // these aren't used directly in the form journey, but initialize form data
   "mountain.keepList": ["list", "mountains to show", [], "Mountain Keep List"],
-
   "lake.keepList": ["list", "lakes to show", [], "Lake Keep List"],
   "trail.keepList": ["list", "trails to show", [], "Trail Keep List"],
-
   "river.keepList": ["list", "rivers to show", [], "River Keep List"],
 
   "curve.density": [
