@@ -33,6 +33,7 @@ export const MapThumbnail: React.FC<{
     <img
       src={src}
       alt={title}
+      crossOrigin="anonymous"
       className="w-full h-full object-cover"
       onError={() => setSrc(null)}
     />
