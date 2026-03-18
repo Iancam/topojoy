@@ -93,7 +93,7 @@ export const App = () => {
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  // const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [annotationsMode, setAnnotationsMode] = useState(false);
 
   const cartContext = useCartContext();
@@ -310,36 +310,13 @@ export const App = () => {
       return myp5;
     };
 
-  // Trigger a PNG download from the latest rendered image
-  const saveImage = () => {
-    const container = p5Ref.current;
-    if (!container) return;
-
-    const download = () => {
-      const img = container.querySelector("img") as HTMLImageElement | null;
-
-      if (!img) return;
-      //human readable date
-      const date = new Date().toISOString();
-      const a = document.createElement("a");
-      a.href = img.src;
-      a.download = `topojoy-${form["title.text"]}-${date}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    };
-
-    // If an image is present, download immediately. Otherwise render then wait.
-    if (container.querySelector("img")) {
-      download();
-    }
-  };
-
   const compositeAnnotations = (
     canvas: HTMLCanvasElement,
     img: HTMLImageElement,
   ) => {
     const ctx = canvas.getContext("2d");
+    const { annotations } = form;
+
     if (!ctx || annotations.length === 0) return;
     // canvas dimensions equal naturalWidth × naturalHeight.
     // xRatio/yRatio are stored relative to the display image size, so we
@@ -353,6 +330,7 @@ export const App = () => {
     const scaleX = natW / displayW;
     const scaleY = natH / displayH;
     for (const ann of annotations) {
+      console.log(ann);
       const x = ann.xRatio * natW;
       const y = ann.yRatio * natH;
       ctx.save();
@@ -398,6 +376,21 @@ export const App = () => {
         resolve(blob);
       }, "image/png");
     });
+  };
+
+  // Trigger a PNG download from the latest rendered image
+  const saveImage = async () => {
+    const blob = await captureImage();
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const date = new Date().toISOString();
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `topojoy-${form["title.text"]}-${date}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const captureImageForPrint = (targetWidth: number, targetHeight: number) => {
@@ -710,9 +703,7 @@ export const App = () => {
               features,
             })}
             onSubmitSave={saveImage}
-            annotations={annotations}
             annotationsMode={annotationsMode}
-            onAnnotationsChange={setAnnotations}
             onAnnotationsModeToggle={() => setAnnotationsMode((m) => !m)}
           />
         </div>
