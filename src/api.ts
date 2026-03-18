@@ -2,6 +2,12 @@ import { flow, mapValues } from "lodash";
 import { MapConfig } from "./configs/schema";
 import { convertToNestedObject } from "./lib/utils";
 
+/**
+ * The app is small, and will likely remain small. A layer between
+ * the client and the api would enable things that I wouldn't use,
+ * and would cost more to maintain.
+ */
+
 export type MapConfigDTO = {
   userId: string;
   id?: string;
@@ -99,12 +105,6 @@ const apiCall = (urlPath: string, method: string, errorMessage: string) => {
     return json;
   };
 };
-
-/**
- * The app is small, and will likely remain small. A layer between
- * the client and the api would enable things that I wouldn't use,
- * and would cost more to maintain.
- */
 
 const toDTO =
   (toDTO: (body: any) => any) => (apiCallFn: (body: any) => Promise<any>) => {
@@ -222,7 +222,8 @@ const formToDTO = ({
   };
 };
 
-const DTOToForm = (data: MapConfigDTO) => {
+const DTOToForm = (dataObj: { AWSPutURL: string; mapConfig: MapConfigDTO }) => {
+  const data = dataObj.mapConfig;
   const keeplists = ["lake", "mountain", "river", "trail"].reduce(
     (acc, type) => {
       const features = data.features || [];
@@ -276,7 +277,7 @@ const DTOToForm = (data: MapConfigDTO) => {
     annotations: data.annotations ?? [],
   };
 
-  return ret;
+  return { ...ret, AWSPutURL: dataObj.AWSPutURL };
 };
 
 const mapsAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
@@ -285,6 +286,7 @@ const mapsAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
     "POST",
     "Failed to save map",
     toDTO(formToDTO),
+
     fromDTO(DTOToForm),
   ],
   all: [
@@ -366,26 +368,16 @@ export const donation = Object.fromEntries(
 
 export const saveImageToAws = async (body: {
   blob: Blob;
-  filename: string;
-  mapConfigId: string;
+  AWSPutUrl: string;
 }) => {
-  const res = await fetch("/.netlify/functions/print-put-signed-url", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) throw new Error("Failed to save image");
-
-  const { url, key } = await res.json();
-
-  const response = await fetch(url, {
+  const response = await fetch(body.AWSPutUrl, {
     method: "PUT",
     body: body.blob,
   });
 
   if (!response.ok) throw new Error("Failed to save image");
 
-  return { url, key };
+  // return { url, key };
 };
 
 // use to send to lumaprints

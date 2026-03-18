@@ -1,5 +1,6 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { getAWSKey, putAWSImage } from "../lib/aws";
 
 const s3 = new S3Client({
   region: process.env.MY_AWS_REGION,
@@ -19,24 +20,17 @@ function getExtension(filename?: string | null, fallback = "png") {
 export const handler = async (event: any) => {
   const { filename, mapConfigId } = JSON.parse(event.body || "{}");
 
-  // Derive a safe extension from the filename, defaulting to png
-  const ext = "png";
+  if (!mapConfigId) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "mapConfigId is required" }),
+    };
+  }
 
-  // If contentType is not provided, assume PNG (what the frontend currently sends)
-  const finalContentType = "image/png";
-
-  const uniqueKey = `maps/${mapConfigId}.${ext}`;
-
-  const command = new PutObjectCommand({
-    Bucket: process.env.S3_BUCKET_NAME,
-    Key: uniqueKey,
-    ContentType: finalContentType,
-  });
-
-  const url = await getSignedUrl(s3, command, { expiresIn: 60 });
+  const url = await putAWSImage(mapConfigId, s3);
 
   return {
     statusCode: 200,
-    body: JSON.stringify({ url, key: uniqueKey }),
+    body: JSON.stringify({ url, key: getAWSKey(mapConfigId) }),
   };
 };

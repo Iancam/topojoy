@@ -453,6 +453,28 @@ export const App = () => {
     });
   };
 
+  const upsertMap = async (
+    mapConfigData: {
+      form: Record<string, string>;
+      givenFeatures: any;
+      bbox: [number, number, number, number];
+      selectedTrails: string[];
+      user: any;
+      configName: string;
+      defaultConfig: Record<string, any>;
+    },
+    blob: Blob,
+  ) => {
+    const newMapConfig = await maps.upsert(mapConfigData);
+    const AWSPutUrl = newMapConfig.AWSPutURL;
+    saveImageToAws({
+      blob,
+      AWSPutUrl,
+    });
+    onFormChange({ id: newMapConfig.id, s3Key: newMapConfig.s3Key });
+    return newMapConfig;
+  };
+
   const handleUpload = async () => {
     if (isUploading) return;
     setIsUploading(true);
@@ -463,25 +485,19 @@ export const App = () => {
         return;
       }
 
-      const { url, key } = await saveImageToAws({
+      const newMapConfig = await upsertMap(
+        {
+          form,
+          givenFeatures: features,
+          bbox,
+          selectedTrails,
+          user,
+          configName: config,
+          defaultConfig: configs[config],
+        },
         blob,
-        filename: form["filename"] as string,
-        mapConfigId: form.id,
-      });
-      const imageUrl = await getImageUrlFromAws(key);
-      const result = await maps.upsert({
-        form,
-        givenFeatures: features,
-        bbox,
-        selectedTrails,
-        user,
-        configName: config,
-        defaultConfig: configs[config],
-        imageUrl,
-        s3Key: key,
-      });
-      console.log("image url", imageUrl);
-      console.log("Upload result", result);
+      );
+
       setToast({ message: "Map saved to server", type: "success" });
     } catch (error) {
       console.error("Failed to upload map", error);
@@ -532,24 +548,20 @@ export const App = () => {
         console.error("Failed to capture image");
         return;
       }
-      const { url, key } = await saveImageToAws({
-        blob,
-        filename: form["filename"] as string,
-        mapConfigId: form.id,
-      });
-      // const imageUrl = await getImageUrlFromAws(key);
 
-      const newMapConfig = await maps.upsert({
-        form,
-        givenFeatures: features,
-        bbox,
-        selectedTrails,
-        user,
-        configName: config,
-        defaultConfig: configs[config],
-        // imageUrl,
-        s3Key: key,
-      });
+      const newMapConfig = await upsertMap(
+        {
+          form,
+          givenFeatures: features,
+          bbox,
+          selectedTrails,
+          user,
+          configName: config,
+          defaultConfig: configs[config],
+        },
+        blob,
+      );
+
       console.log({ newMapConfig });
       const mapConfigId = newMapConfig.id;
       if (!mapConfigId) {
@@ -582,7 +594,7 @@ export const App = () => {
     }
   };
 
-  const onFormChange = (arg1: any, arg2?: any) => {
+  function onFormChange(arg1: any, arg2?: any) {
     // if arg1 is a string, do the normal thing
     if (typeof arg1 === "string") {
       const key = arg1 as string;
@@ -597,7 +609,7 @@ export const App = () => {
         ...arg1,
       });
     }
-  };
+  }
   const onConfigChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setConfig(e.target.value);
     setForm(addHeightsToForm(configs[e.target.value], form));

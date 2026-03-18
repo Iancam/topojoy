@@ -1,5 +1,15 @@
 import { z } from "zod";
 import prisma from "../lib/prisma";
+import { getAWSKey, putAWSImage } from "../lib/aws";
+import { S3Client } from "@aws-sdk/client-s3";
+
+const s3 = new S3Client({
+  region: process.env.MY_AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.MY_AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.MY_AWS_SECRET_ACCESS_KEY!,
+  },
+});
 
 export const handler = async (event: any) => {
   // respond to post request
@@ -51,59 +61,67 @@ export const handler = async (event: any) => {
       const { annotations, ...mapConfigData } = validatedBody;
       // convert colorPlan to csv string
       // save to db
-      const config = await prisma.$transaction(async (tx) => {
-        const cfg = await tx.mapConfig.upsert({
-          where: {
-            filename_userId: {
-              filename: mapConfigData.filename || "",
-              userId: mapConfigData.userId,
+
+      const uuid = mapConfigData.id || crypto.randomUUID();
+      const s3Key = getAWSKey(uuid);
+
+      const [url, config] = await Promise.all([
+        putAWSImage(uuid, s3),
+        prisma.$transaction(async (tx) => {
+          const cfg = await tx.mapConfig.upsert({
+            where: {
+              filename_userId: {
+                filename: mapConfigData.filename || "",
+                userId: mapConfigData.userId,
+              },
             },
-          },
-          update: {
-            ...mapConfigData,
-            id: undefined,
-            features: {},
-            bbox: mapConfigData.bbox,
-            selectedTrails: mapConfigData.selectedTrails,
-          },
-          create: {
-            ...mapConfigData,
-            id: undefined,
-            features: {
-              create: [],
+            update: {
+              ...mapConfigData,
+              id: undefined,
+              features: {},
+              bbox: mapConfigData.bbox,
+              selectedTrails: mapConfigData.selectedTrails,
             },
-            bbox: mapConfigData.bbox,
-            selectedTrails: mapConfigData.selectedTrails,
-          },
-        });
-        await tx.feature.deleteMany({
-          where: { mapConfigId: cfg.id },
-        });
-        await tx.feature.createMany({
-          data: validatedBody.features.map((feature) => ({
-            ...feature,
-            mapConfigId: cfg.id,
-          })),
-        });
-        await tx.annotation.deleteMany({
-          where: { mapConfigId: cfg.id },
-        });
-        await tx.annotation.createMany({
-          data: validatedBody.annotations.map((ann) => ({
-            text: ann.text,
-            fontSize: ann.fontSize,
-            color: ann.color,
-            xRatio: ann.xRatio,
-            yRatio: ann.yRatio,
-            mapConfigId: cfg.id,
-          })),
-        });
-        return cfg;
-      });
+            create: {
+              ...mapConfigData,
+              s3Key,
+              id: uuid,
+              features: {
+                create: [],
+              },
+              bbox: mapConfigData.bbox,
+              selectedTrails: mapConfigData.selectedTrails,
+            },
+          });
+          await Promise.all([
+            tx.feature.deleteMany({ where: { mapConfigId: cfg.id } }),
+            tx.annotation.deleteMany({ where: { mapConfigId: cfg.id } }),
+          ]);
+          await Promise.all([
+            tx.feature.createMany({
+              data: validatedBody.features.map((feature) => ({
+                ...feature,
+                mapConfigId: cfg.id,
+              })),
+            }),
+            tx.annotation.createMany({
+              data: validatedBody.annotations.map((ann) => ({
+                text: ann.text,
+                fontSize: ann.fontSize,
+                color: ann.color,
+                xRatio: ann.xRatio,
+                yRatio: ann.yRatio,
+                mapConfigId: cfg.id,
+              })),
+            }),
+          ]);
+          return cfg;
+        }),
+      ]);
 
       return {
         statusCode: 200,
-        body: JSON.stringify(config),
+        body: JSON.stringify({ AWSPutURL: url, mapConfig: config }),
       };
     } catch (error) {
       console.log(error);
