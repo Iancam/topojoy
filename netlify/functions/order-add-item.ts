@@ -20,6 +20,7 @@ export async function handler(event: any, context: any) {
   }
   const {
     // orderId,
+    donationAccessToken,
     orderItem: {
       mapConfigId,
       s3Key,
@@ -85,6 +86,9 @@ export async function handler(event: any, context: any) {
     },
   ).then((res) => res.json() as Promise<{ price: number }[]>);
   const officialPrice = officialPrices[0].price;
+
+  // get the
+
   if (userPrice !== officialPrice) {
     // todo, add a log of the price mismatch
     console.error({

@@ -121,6 +121,22 @@ export const Checkout = () => {
   const stripePromise = loadStripe(
     import.meta.env.VITE_SBX_STRIPE_PUBLISHABLE_KEY,
   );
+  // Load gift token and fetch available credit on mount
+  useEffect(() => {
+    const token = getStoredGiftToken();
+    if (!token) return;
+    setGiftToken(token);
+    donation
+      .getGiftValue({ accessToken: token, items: [] })
+      .then((data: { availableAmountCents?: number }) => {
+        console.log(data);
+        if (typeof data.availableAmountCents === "number") {
+          setGiftCreditCents(data.availableAmountCents);
+        }
+      })
+      .catch((_err: unknown) => {});
+  }, []);
+
   // Rehydrate shipping form from localStorage on mount
   useEffect(() => {
     try {

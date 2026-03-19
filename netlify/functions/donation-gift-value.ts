@@ -39,7 +39,13 @@ export const handler = async (event: any) => {
   try {
     const donation = await prisma.donation.findUnique({
       where: { accessToken },
-      select: { id: true, amount: true, status: true, expiryDate: true },
+      select: {
+        id: true,
+        amount: true,
+        status: true,
+        expiryDate: true,
+        allocations: { select: { amountDrawn: true } },
+      },
     });
     if (!donation) {
       return {
@@ -59,6 +65,22 @@ export const handler = async (event: any) => {
       return {
         statusCode: 410,
         body: JSON.stringify({ message: "Gift has expired" }),
+      };
+    }
+
+    // How much of the donation is still available (not yet drawn by prior allocations)
+    const alreadyDrawnCents = donation.allocations.reduce(
+      (sum, a) => sum + a.amountDrawn,
+      0,
+    );
+    const availableAmountCents = donation.amount - alreadyDrawnCents;
+
+    if (availableAmountCents <= 0) {
+      return {
+        statusCode: 409,
+        body: JSON.stringify({
+          message: "Gift has already been fully redeemed",
+        }),
       };
     }
 
@@ -99,7 +121,7 @@ export const handler = async (event: any) => {
       adjustedAmountPerItemCents = Object.fromEntries(
         shippingCostEntries.map(([id, cost]) => [
           id,
-          donation.amount - (cost as number),
+          Math.max(0, availableAmountCents - (cost as number)),
         ]),
       );
     } catch (err) {
@@ -111,6 +133,8 @@ export const handler = async (event: any) => {
       body: JSON.stringify({
         donationId: donation.id,
         grossAmountCents: donation.amount,
+        alreadyDrawnCents,
+        availableAmountCents,
         shippingCosts: shippingCostObject,
         adjustedAmountPerItemCents,
       }),

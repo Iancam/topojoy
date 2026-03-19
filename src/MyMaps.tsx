@@ -28,7 +28,6 @@ export default function MyMaps() {
       if (!userId) return;
       setLoading(true);
       const json = await mapAPI.all({ userId });
-      console.log(json);
       setMaps(json as MapListItem[]);
       setLoading(false);
     };
@@ -41,7 +40,7 @@ export default function MyMaps() {
   const handleDelete = async (id: string) => {
     if (!userId) return;
     const confirmed = window.confirm(
-      "Delete this map? This action cannot be undone."
+      "Delete this map? This action cannot be undone.",
     );
     if (!confirmed) return;
 
@@ -132,7 +131,11 @@ export default function MyMaps() {
                     <div className="flex justify-end">
                       <button
                         type="button"
-                        onClick={() => handleDelete(m.id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDelete(m.id);
+                        }}
                         disabled={deletingId === m.id}
                         className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
                       >

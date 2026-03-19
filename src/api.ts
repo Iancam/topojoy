@@ -222,8 +222,8 @@ const formToDTO = ({
   };
 };
 
-const DTOToForm = (dataObj: { AWSPutURL: string; mapConfig: MapConfigDTO }) => {
-  const data = dataObj.mapConfig;
+const DTOToForm = (mapConfig: MapConfigDTO & { AWSPutURL?: string }) => {
+  const data = mapConfig;
   const keeplists = ["lake", "mountain", "river", "trail"].reduce(
     (acc, type) => {
       const features = data.features || [];
@@ -277,7 +277,7 @@ const DTOToForm = (dataObj: { AWSPutURL: string; mapConfig: MapConfigDTO }) => {
     annotations: data.annotations ?? [],
   };
 
-  return { ...ret, AWSPutURL: dataObj.AWSPutURL };
+  return { ...ret, AWSPutURL: mapConfig.AWSPutURL };
 };
 
 const mapsAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
@@ -368,9 +368,9 @@ export const donation = Object.fromEntries(
 
 export const saveImageToAws = async (body: {
   blob: Blob;
-  AWSPutUrl: string;
+  AWSPutURL: string;
 }) => {
-  const response = await fetch(body.AWSPutUrl, {
+  const response = await fetch(body.AWSPutURL, {
     method: "PUT",
     body: body.blob,
   });

@@ -71,6 +71,7 @@ export const App = () => {
   const [mapImageIsExpanded, setMapImageIsExpanded] = useState(false);
 
   const p5Ref = useRef<HTMLDivElement>(null);
+  const p5MountRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   const [isInitialRun, setIsInitialRun] = useState(() => {
@@ -230,16 +231,23 @@ export const App = () => {
         nestedForm.lake.drop = true;
       }
 
-      if (!p5Ref.current) return;
+      // if (!p5Ref.current) return;
       let myBbox = bbox;
 
       let mySelectedTrails = selectedTrails;
       // show loading while rendering
       setIsRendering(true);
 
-      while (p5Ref.current.firstChild) {
-        p5Ref.current.removeChild(p5Ref.current.firstChild);
+      const mountNode = p5MountRef.current;
+      if (!mountNode) return;
+
+      while (mountNode.firstChild) {
+        mountNode.removeChild(mountNode.firstChild);
       }
+
+      // (while (p5Ref.current.firstChild) {
+      //   p5Ref.current.removeChild(p5Ref.current.firstChild);
+      // )}
 
       const { sketch } = sketchFactory(
         myBbox,
@@ -272,7 +280,7 @@ export const App = () => {
           img.style.left = "0";
           img.style.zIndex = "-1";
 
-          p5Ref.current?.appendChild(img); // 2. use <img>, not <canvas>
+          p5MountRef.current?.appendChild(img); // 2. use <img>, not <canvas>
           sketch.remove();
           if (isInitialRun || form.forceCollisionDetection) {
             setIsInitialRun(false);
@@ -304,7 +312,7 @@ export const App = () => {
         },
       );
 
-      const myp5 = new p5(sketch, p5Ref.current);
+      const myp5 = new p5(sketch, p5MountRef.current!);
       myp5.noLoop();
 
       return myp5;
@@ -355,7 +363,7 @@ export const App = () => {
   };
 
   const captureImage = () => {
-    const container = p5Ref.current;
+    const container = p5MountRef.current;
     if (!container) return;
     const img = container.querySelector("img") as HTMLImageElement | null;
     if (!img) return;
@@ -394,7 +402,7 @@ export const App = () => {
   };
 
   const captureImageForPrint = (targetWidth: number, targetHeight: number) => {
-    const container = p5Ref.current;
+    const container = p5MountRef.current;
     if (!container) return;
     const img = container.querySelector("img") as HTMLImageElement | null;
     if (!img) return;
@@ -469,7 +477,7 @@ export const App = () => {
     const AWSPutUrl = newMapConfig.AWSPutURL;
     saveImageToAws({
       blob,
-      AWSPutUrl,
+      AWSPutURL: AWSPutUrl,
     });
     onFormChange({ id: newMapConfig.id, s3Key: newMapConfig.s3Key });
     return newMapConfig;
@@ -620,7 +628,7 @@ export const App = () => {
     setMapImageIsExpanded(expanded);
     console.log(sketchDims);
     console.log("toggling map image is expanded");
-    const img = p5Ref.current?.firstElementChild;
+    const img = p5MountRef.current?.firstElementChild;
     if (img instanceof HTMLImageElement) {
       if (expanded) {
         img.style.width = `${sketchDims.width}px`;
@@ -725,6 +733,7 @@ export const App = () => {
             mapImageIsExpanded={mapImageIsExpanded}
             toggleMapImageIsExpanded={toggleMapImageIsExpanded}
             p5Ref={p5Ref}
+            p5MountRef={p5MountRef}
             isLoading={isRendering}
             sketchDims={sketchDims}
             printType={form["print.type"]}

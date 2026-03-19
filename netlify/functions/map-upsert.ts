@@ -121,7 +121,7 @@ export const handler = async (event: any) => {
 
       return {
         statusCode: 200,
-        body: JSON.stringify({ AWSPutURL: url, mapConfig: config }),
+        body: JSON.stringify({ ...config, AWSPutURL: url }),
       };
     } catch (error) {
       console.log(error);

@@ -8,6 +8,7 @@ import type { Annotation } from "./AnnotationLayer";
 export const P5Canvas = ({
   mapImageIsExpanded,
   p5Ref,
+  p5MountRef,
   toggleMapImageIsExpanded,
   isLoading,
   sketchDims,
@@ -21,6 +22,7 @@ export const P5Canvas = ({
 }: {
   mapImageIsExpanded: boolean;
   p5Ref: React.RefObject<HTMLDivElement> | null;
+  p5MountRef: React.RefObject<HTMLDivElement> | null;
   toggleMapImageIsExpanded: (e: React.MouseEvent) => void;
   isLoading: boolean;
   sketchDims: { width: number; height: number };
@@ -111,12 +113,13 @@ export const P5Canvas = ({
         ref={p5Ref}
         className={`relative inset-0 w-[calc(100vw-20rem)] h-full`}
       >
+        <div ref={p5MountRef} className="absolute inset-0"></div>
         {isLoading && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20">
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/60 border-t-transparent" />
           </div>
         )}
-        {annotations !== undefined && onAnnotationsChange && (
+        {!isLoading && annotations !== undefined && onAnnotationsChange && (
           <AnnotationLayer
             annotations={annotations}
             annotationsMode={annotationsMode ?? false}

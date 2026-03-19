@@ -181,6 +181,9 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
   const [netGiftAmountCents, setNetGiftAmountCents] = React.useState<
     Record<string, number>
   >({});
+  const [availableAmountCents, setAvailableAmountCents] = React.useState<
+    number | null
+  >(null);
   // const [giftBannerMsg, setGiftBannerMsg] = React.useState<string | null>(null);
   const printTypeKey = (form["print.type"] ||
     "poster") as keyof typeof printTypes;
@@ -220,26 +223,21 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
       .getGiftValue({ accessToken: token, items: biggestItemPerType })
       .then((data: any) => {
         setNetGiftAmountCents(data.adjustedAmountPerItemCents);
+        setAvailableAmountCents(data.availableAmountCents);
         setLoadingSizes(false);
       })
       .catch(() => {});
     // apply gift if available
   }, [imgW, imgH]);
 
-  const effectivePrice = (rawPrice: number) =>
-    Math.max(
-      0,
-      rawPrice -
-        (netGiftAmountCents[printTypes[printTypeKey].subcategoryId] || 0),
-    );
+  const giftCreditCents =
+    availableAmountCents !== null
+      ? (netGiftAmountCents[String(printTypes[printTypeKey].subcategoryId)] ??
+        availableAmountCents)
+      : 0;
 
-  console.log({
-    netGiftAmountCents,
-    recommendedPrices,
-    adjustedPrices: recommendedPrices.map((p) => ({
-      price: effectivePrice(p.price),
-    })),
-  });
+  const effectivePrice = (rawPrice: number) =>
+    Math.max(0, rawPrice - giftCreditCents);
 
   const { noRecSizes, noLegitDPI, noGoodScore } =
     recommendedSizes[printTypeKey].error;
@@ -255,7 +253,7 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
       {
         "print.size": { width: w, height: h },
         "print.sizeActual": t ? t(w, h) : { width: w, height: h },
-        "print.price": effectivePrice(rawPrice),
+        "print.price": rawPrice,
       },
       null,
     );
@@ -324,8 +322,21 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
                       <span>
                         {s.width}" × {s.height}"
                       </span>
-                      <span className="text-[10px] text-gray-500 ml-1">
-                        {formatMoney(discounted)}
+                      <span className="text-[10px] ml-1 flex items-center gap-1">
+                        {discounted < rawPrice && (
+                          <span className="line-through text-gray-400">
+                            {formatMoney(rawPrice)}
+                          </span>
+                        )}
+                        <span
+                          className={
+                            discounted < rawPrice
+                              ? "text-teal-600 font-semibold"
+                              : "text-gray-500"
+                          }
+                        >
+                          {formatMoney(discounted)}
+                        </span>
                       </span>
                     </div>
                   </button>
@@ -346,34 +357,35 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
           }
         />
       </div>
-
-      <div className="mt-6 space-y-2">
-        <h3 className="text-sm font-medium text-gray-900">
-          Chip in, if you&apos;d like
-        </h3>
-        <p className="text-xs text-gray-600 leading-relaxed">
-          Right now, these prices come directly from my distributor, with no
-          markup. This is as close as I can sustainably get to a pay-what-you
-          want model, and it&apos;s my first step toward participating in a gift
-          economy. If you&apos;d like to support me, you can add a contribution
-          here.
-        </p>
-        <div className="flex items-center gap-2 max-w-xs">
-          <span className="text-sm text-gray-700">$</span>
-          <Input
-            type="number"
-            min={0}
-            className="text-sm"
-            onChange={
-              (e) =>
-                onFormChange(
-                  "print.contribution",
-                  Number(e.target.value) * 100 || 0,
-                ) // convert to cents
-            }
-          />
+      {!getStoredGiftToken() && (
+        <div className="mt-6 space-y-2">
+          <h3 className="text-sm font-medium text-gray-900">
+            Chip in, if you&apos;d like
+          </h3>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            Right now, these prices come directly from my distributor, with no
+            markup. This is as close as I can sustainably get to a pay-what-you
+            want model, and it&apos;s my first step toward participating in a
+            gift economy. If you&apos;d like to support me, you can add a
+            contribution here.
+          </p>
+          <div className="flex items-center gap-2 max-w-xs">
+            <span className="text-sm text-gray-700">$</span>
+            <Input
+              type="number"
+              min={0}
+              className="text-sm"
+              onChange={
+                (e) =>
+                  onFormChange(
+                    "print.contribution",
+                    Number(e.target.value) * 100 || 0,
+                  ) // convert to cents
+              }
+            />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
