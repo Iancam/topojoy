@@ -1,8 +1,7 @@
-import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
-import { html } from "./content/about.md";
-import "./index.css";
+import { html } from "../content/about.md";
+import "../index.css";
 import { Link } from "react-router";
-import { Header } from "./components/Header";
+import { Header } from "../components/Header";
 export const FrontPage = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-8 pt-20">

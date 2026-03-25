@@ -1,9 +1,9 @@
 import React from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { Link } from "react-router";
-import { Header } from "./components/Header";
-import { maps as mapAPI, getImageUrlFromAws } from "./api";
-import { MapThumbnail } from "./components/MapThumbnail";
+import { Header } from "../components/Header";
+import { maps as mapAPI, getImageUrlFromAws } from "../api";
+import { MapThumbnail } from "../components/MapThumbnail";
 export type MapListItem = {
   id: string;
   title: string;

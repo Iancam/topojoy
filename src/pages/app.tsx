@@ -1,34 +1,34 @@
 import { useState, useRef, useEffect } from "react";
-import { TourMap } from "./walkthrough";
+import { TourMap } from "../walkthrough.js";
 import p5 from "p5";
-import { sketchFactory } from "./map/sketch";
+import { sketchFactory } from "../map/sketch.js";
 
-import { formElements } from "./components/configFormData";
+import { formElements } from "../components/configFormData.ts";
 
 import { useAuth } from "@clerk/clerk-react";
 // Import configs with correct paths
-import { snowMesaConfig, emeraldLakesConfig } from "./configs/index.ts";
-import { MapConfig } from "./configs/schema.ts";
-import { ConfigForm } from "./components/configForm.tsx";
-import { P5Canvas } from "./components/p5Canvas.tsx";
-import { getGeoJSONFromOSM, getFeatures } from "./map/trails.js";
-import { tilesForFeatures } from "./map/processImage.js";
-import { getImageUrlFromAws, maps, order, saveImageToAws } from "./api.ts";
+import { snowMesaConfig, emeraldLakesConfig } from "../configs/index.ts";
+import { MapConfig } from "../configs/schema.ts";
+import { ConfigForm } from "../components/configForm.tsx";
+import { P5Canvas } from "../components/p5Canvas.tsx";
+import { getGeoJSONFromOSM, getFeatures } from "../map/trails.js";
+import { tilesForFeatures } from "../map/processImage.js";
+import { getImageUrlFromAws, maps, order, saveImageToAws } from "../api.ts";
 import {
   fitToParent,
   getFormFromLocalStorage,
   LS,
   needsFilenamePrompt,
   normalizeFeatureName,
-} from "./lib/utils";
+} from "../lib/utils.ts";
 import { useUser } from "@clerk/clerk-react";
 import { useSearchParams } from "react-router";
-import { addHeightsToForm, convertToNestedObject } from "./lib/utils";
+import { addHeightsToForm, convertToNestedObject } from "../lib/utils.ts";
 import _ from "lodash";
-import { Header } from "./components/Header.tsx";
-import { printTypes } from "./components/PrintOptions.tsx";
-import { useCartContext } from "./cartContext.tsx";
-import type { Annotation } from "./components/AnnotationLayer";
+import { Header } from "../components/Header.tsx";
+import { printTypes } from "../components/PrintOptions.tsx";
+import { useCartContext } from "../cartContext.tsx";
+import type { Annotation } from "../components/AnnotationLayer.tsx";
 
 type ToastState = {
   message: string;
@@ -98,6 +98,14 @@ export const App = () => {
   const [annotationsMode, setAnnotationsMode] = useState(false);
 
   const cartContext = useCartContext();
+
+  useEffect(() => {
+    setForm((prev: any) => ({
+      ...prev,
+      "cart.orderId": cartContext.cart?.id ?? null,
+    }));
+  }, [cartContext.cart?.id]);
+
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => {

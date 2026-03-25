@@ -1,21 +1,58 @@
 import { useState, useEffect } from "react";
-import { order, getImageUrlFromAws } from "./api";
+import { donation, order } from "../api";
 import { Link } from "react-router";
-import { Header } from "./components/Header";
-import { formatMoney } from "./lib/utils";
-import { useCartContext } from "./cartContext";
-import { MapThumbnail } from "./components/MapThumbnail";
+import { Header } from "../components/Header";
+import { formatMoney } from "../lib/utils";
+import { useCartContext } from "../cartContext";
+import { MapThumbnail } from "../components/MapThumbnail";
+import { getStoredGiftToken } from "@/lib/giftToken";
 
 export const Cart = () => {
   const { cart, loading, error, refresh, setCart } = useCartContext();
   const [localError, setLocalError] = useState<string | null>(null);
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
+  const [giftAdjustments, setGiftAdjustments] = useState<Record<
+    string,
+    number
+  > | null>(null);
 
   const emptyCart = !cart || !cart.orderItems || cart.orderItems.length === 0;
 
   useEffect(() => {
     refresh();
   }, []);
+
+  useEffect(() => {
+    const token = getStoredGiftToken();
+    if (!token) return;
+    const items = cart?.orderItems;
+    if (!items?.length) return;
+    donation
+      .getGiftValue({
+        accessToken: token,
+        orderId: cart?.id,
+        items: items.map((item) => ({
+          subcategoryId: item.subcategoryId,
+          width: item.width,
+          height: item.height,
+          options: item.orderItemOptions,
+        })),
+      })
+      .then((data: any) => {
+        if (!data?.items) return;
+        const adjustments: Record<string, number> = {};
+        items.forEach((item, i) => {
+          const adj = data.items[i]?.adjustedAmountAvailable;
+          if (typeof adj === "number") {
+            adjustments[item.id] = adj;
+          }
+        });
+        setGiftAdjustments(adjustments);
+      })
+      .catch(() => {
+        // gift token invalid or expired — silently ignore
+      });
+  }, [cart?.orderItems]);
   if (error || localError || emptyCart) {
     return (
       <div>
@@ -39,6 +76,13 @@ export const Cart = () => {
   const items = cart.orderItems;
   const orderTotal =
     cart.totalPrice ?? items.reduce((sum, i) => sum + (i.totalPrice ?? 0), 0);
+  const adjustedTotal = giftAdjustments
+    ? items.reduce((sum, item) => {
+        const adj = giftAdjustments[item.id];
+        const price = item.itemPrice ?? 0;
+        return sum + Math.max(0, price - (adj ?? 0)) * (item.quantity ?? 1);
+      }, 0)
+    : null;
 
   const handleQuantityChange = async (itemId: string, quantity: number) => {
     if (quantity < 1) return;
@@ -47,7 +91,7 @@ export const Cart = () => {
     // optimistic update
     const prevCart = cart;
     const nextItems = cart.orderItems.map((item) =>
-      item.id === itemId ? { ...item, quantity } : item
+      item.id === itemId ? { ...item, quantity } : item,
     );
     const nextCart = { ...cart, orderItems: nextItems };
     setCart(nextCart);
@@ -127,8 +171,29 @@ export const Cart = () => {
                         {item.printType} · {item.width}&quot; × {item.height}
                         &quot;
                       </div>
-                      <div className="text-gray-900 text-sm font-medium mt-1">
-                        Item: {formatMoney(item.itemPrice)}
+                      <div className="text-sm font-medium mt-1">
+                        {giftAdjustments?.[item.id] != null ? (
+                          <>
+                            <span className="line-through text-gray-400 mr-1">
+                              {formatMoney(item.itemPrice)}
+                            </span>
+                            <span className="text-green-700">
+                              {formatMoney(
+                                Math.max(
+                                  0,
+                                  item.itemPrice - giftAdjustments[item.id],
+                                ),
+                              )}
+                            </span>
+                            <span className="ml-1 text-xs text-green-600">
+                              (gift applied)
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-gray-900">
+                            {formatMoney(item.itemPrice)}
+                          </span>
+                        )}
                         {item.userContribution
                           ? ` · Contribution: ${formatMoney(item.userContribution)}`
                           : ""}
@@ -185,7 +250,22 @@ export const Cart = () => {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Total</span>
-              <span className="font-semibold">{formatMoney(orderTotal)}</span>
+              <div className="text-right">
+                {adjustedTotal !== null ? (
+                  <>
+                    <div className="line-through text-gray-400 text-xs">
+                      {formatMoney(orderTotal)}
+                    </div>
+                    <div className="font-semibold text-green-700">
+                      {formatMoney(adjustedTotal)}
+                    </div>
+                  </>
+                ) : (
+                  <span className="font-semibold">
+                    {formatMoney(orderTotal)}
+                  </span>
+                )}
+              </div>
             </div>
             <Link to="/checkout?step=shipping">
               <button

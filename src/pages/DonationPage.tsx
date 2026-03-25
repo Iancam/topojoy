@@ -1,15 +1,15 @@
 import React from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
-import { Header } from "./components/Header";
-import { toFormElement } from "./components/configForm";
-import { StripePaymentForm } from "./components/StripePaymentForm";
-import { donation } from "./api";
+import { Header } from "../components/Header";
+import { toFormElement } from "../components/configForm";
+import { StripePaymentForm } from "../components/StripePaymentForm";
+import { donation } from "../api";
 import {
   donationFormElements,
   donationJourney,
   DonationForm,
-} from "./components/donationFormData";
+} from "../components/donationFormData";
 
 const stripePromise = loadStripe(
   import.meta.env.VITE_SBX_STRIPE_PUBLISHABLE_KEY,

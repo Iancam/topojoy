@@ -1,9 +1,9 @@
 import React from "react";
 import { useUser } from "@clerk/clerk-react";
 import { Link } from "react-router";
-import { Header } from "./components/Header";
-import { MapThumbnail } from "./components/MapThumbnail";
-import { admin } from "./api";
+import { Header } from "../components/Header";
+import { MapThumbnail } from "../components/MapThumbnail";
+import { admin } from "../api";
 
 type AdminMapItem = {
   id: string;

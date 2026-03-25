@@ -7,12 +7,17 @@ import {
 } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { useSearchParams } from "react-router";
-import { order, getImageUrlFromAws } from "./api";
-import { Header } from "./components/Header";
-import { formatMoney } from "./lib/utils";
-import { StripePaymentForm } from "./components/StripePaymentForm";
-import { useCartContext } from "./cartContext";
-import { MapThumbnail } from "./components/MapThumbnail";
+import { order, getImageUrlFromAws, donation } from "../api";
+import { Header } from "../components/Header";
+import { formatMoney } from "../lib/utils";
+import { StripePaymentForm } from "../components/StripePaymentForm";
+import { useCartContext } from "../cartContext";
+import { MapThumbnail } from "../components/MapThumbnail";
+import { getStoredGiftToken } from "../lib/giftToken";
+import {
+  getAmountOwedCents,
+  getShippingSubmitButtonLabel,
+} from "./checkoutLogic";
 
 const CHECKOUT_STEPS = ["shipping", "method", "payment", "confirm"] as const;
 
@@ -121,21 +126,52 @@ export const Checkout = () => {
   const stripePromise = loadStripe(
     import.meta.env.VITE_SBX_STRIPE_PUBLISHABLE_KEY,
   );
-  // Load gift token and fetch available credit on mount
+  const [giftToken, setGiftToken] = useState<string | null>(null);
+  const [giftCreditCents, setGiftCreditCents] = useState<number | null>(null);
+  const [giftAdjustedTotal, setGiftAdjustedTotal] = useState<number | null>(
+    null,
+  );
+  const [giftShippingMethod, setGiftShippingMethod] = useState<string | null>(
+    null,
+  );
+
+  // Load gift token on mount
   useEffect(() => {
     const token = getStoredGiftToken();
     if (!token) return;
     setGiftToken(token);
+  }, []);
+
+  // Fetch per-item gift adjustments once cart items and token are available
+  useEffect(() => {
+    if (!giftToken || !items.length) return;
+
     donation
-      .getGiftValue({ accessToken: token, items: [] })
-      .then((data: { availableAmountCents?: number }) => {
-        console.log(data);
+      .getGiftValue({
+        accessToken: giftToken,
+        orderId: cart?.id,
+        items: [] as any[],
+        // items: items.map((item) => ({
+        //   subcategoryId: item.subcategoryId,
+        //   width: item.width,
+        //   height: item.height,
+        //   options: item.orderItemOptions ?? [],
+        // })),
+      })
+      .then((data: any) => {
         if (typeof data.availableAmountCents === "number") {
+          console.log(data);
           setGiftCreditCents(data.availableAmountCents);
         }
+
+        const aggregate = data.items?.[0];
+
+        if (!aggregate) return;
+        setGiftAdjustedTotal(aggregate.adjustedAmountAvailable);
+        setGiftShippingMethod(aggregate.minShippingMethod);
       })
       .catch((_err: unknown) => {});
-  }, []);
+  }, [giftToken, cart?.orderItems]);
 
   // Rehydrate shipping form from localStorage on mount
   useEffect(() => {
@@ -149,6 +185,19 @@ export const Checkout = () => {
       console.error("Failed to restore shipping form", e);
     }
   }, []);
+
+  useEffect(() => {
+    if (!cart?.id) return;
+
+    setSearchParams(
+      (prev) => {
+        const updated = new URLSearchParams(prev);
+        if (!updated.get("orderId")) updated.set("orderId", cart.id);
+        return updated;
+      },
+      { replace: true },
+    );
+  }, [cart?.id]);
 
   // Persist shipping form whenever it changes
   useEffect(() => {
@@ -186,17 +235,22 @@ export const Checkout = () => {
       : 0;
 
   const grandTotalCents = orderTotal + selectedShippingCostCents;
+  const amountOwedCents = getAmountOwedCents(giftAdjustedTotal);
 
   useEffect(() => {
     if (step !== "confirm") return;
+    const orderId = searchParams.get("orderId");
+    if (!orderId) return;
     setLatestLoading(true);
     setLatestError(null);
+
     order
-      .getLatest({})
-      .then((data) => {
+      .get({ orderId })
+      .then((data: unknown) => {
+        console.log(data);
         setLatestOrder(data);
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         console.error("Failed to load latest order", err);
         setLatestError("Failed to load order status.");
       })
@@ -249,9 +303,30 @@ export const Checkout = () => {
           options: item.orderItemOptions ?? [],
         })),
       });
-      // Lumaprints returns { message, shippingMethods }
-      setShippingOptions(data?.shippingMethods || []);
-      goToStep("method");
+      const methods: any[] = data?.shippingMethods || [];
+      setShippingOptions(methods);
+
+      // If the user has a gift token, auto-select the preset cheapest method and skip the method step
+      if (giftToken && giftShippingMethod) {
+        // if the preset method is not in the list of methods, use the first method
+        const presetIndex = methods.findIndex(
+          (m) => m.method === giftShippingMethod,
+        );
+        const resolvedIndex = presetIndex >= 0 ? presetIndex : 0;
+        setSelectedShippingIndex(resolvedIndex);
+        await order.update({ shippingMethod: methods[resolvedIndex].method });
+
+        const data = await order.createPaymentIntent({ giftToken });
+
+        setTotalAmount(data.amount);
+        if (data.freeOrder) {
+          goToStep("confirm");
+        } else {
+          goToStep("payment");
+        }
+      } else {
+        goToStep("method");
+      }
     } catch (err) {
       console.error("Failed to fetch shipping options", err);
       setShippingError("Failed to load shipping options.");
@@ -281,10 +356,17 @@ export const Checkout = () => {
         shippingMethod: shippingOptions[selectedShippingIndex].method,
       });
 
-      const data = await order.createPaymentIntent({});
+      const data = await order.createPaymentIntent({ giftToken });
+
+      setTotalAmount(data.amount);
+
+      if (data.freeOrder) {
+        refresh();
+        goToStep("confirm");
+        return;
+      }
 
       setClientSecret(data.clientSecret);
-      setTotalAmount(data.amount);
       goToStep("payment");
     } catch (err) {
       console.error("Failed to create payment intent", err);
@@ -442,9 +524,10 @@ export const Checkout = () => {
               className="px-4 py-2 rounded-md bg-indigo-600 text-white text-sm disabled:opacity-60"
               disabled={submittingShipping}
             >
-              {submittingShipping
-                ? "Loading options…"
-                : "Continue to shipping method"}
+              {getShippingSubmitButtonLabel({
+                submittingShipping,
+                amountOwedCents,
+              })}
             </button>
           </div>
         </form>
@@ -562,9 +645,13 @@ export const Checkout = () => {
               onBack={() => goToStep("method")}
               onSuccess={async () => {
                 try {
-                  // Mark the current pending order as paid
-                  // Submit the paid order to Lumaprints
-                  refresh();
+                  // stripe sends a webhook event when the payment is successful
+                  // we handle the order update there
+                  // it marks the current pending order as paid
+                  // and submits the paid order to Lumaprints
+                  await refresh().then((cart) => {
+                    console.log("Refreshed data:", cart);
+                  });
                 } catch (err) {
                   console.error("Post-payment processing failed", err);
                 }
@@ -600,7 +687,12 @@ export const Checkout = () => {
               </div>
             )}
             <div className="text-xs text-gray-500">
-              Placed at {new Date(latestOrder.createdAt).toLocaleString()}
+              {latestOrder.submittedAt
+                ? "Submitted at " +
+                  new Date(latestOrder.submittedAt).toLocaleString()
+                : latestOrder.paidAt
+                  ? "Paid at " + new Date(latestOrder.paidAt).toLocaleString()
+                  : "Not placed yet"}
             </div>
           </div>
         )}
@@ -662,12 +754,7 @@ export const Checkout = () => {
               (!cart || items.length === 0) && (
                 <p className="text-sm text-gray-500">Your cart is empty.</p>
               )}
-            {!loading &&
-              !error &&
-              !localError &&
-              cart &&
-              items.length > 0 &&
-              steps[step]}
+            {!loading && !error && !localError && cart && steps[step]}
           </div>
 
           <aside className="border rounded-lg p-4 bg-white shadow-sm h-fit space-y-3">
@@ -701,6 +788,9 @@ export const Checkout = () => {
                           {item.printType} · {item.width}&quot; × {item.height}
                           &quot; · Qty {item.quantity}
                         </div>
+                        <div className="text-[11px] text-gray-600 mt-0.5">
+                          {formatMoney(item.itemPrice)}
+                        </div>
                       </div>
                     </div>
                   );
@@ -713,7 +803,9 @@ export const Checkout = () => {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Items subtotal</span>
-              <span className="font-semibold">{formatMoney(orderTotal)}</span>
+              <div className="text-right">
+                <span className="font-semibold">{formatMoney(orderTotal)}</span>
+              </div>
             </div>
             {selectedShippingCostCents > 0 && (
               <div className="flex justify-between text-sm">
@@ -725,9 +817,22 @@ export const Checkout = () => {
             )}
             <div className="flex justify-between text-sm border-t pt-2 mt-1">
               <span className="text-gray-800 font-semibold">Total</span>
-              <span className="font-semibold">
-                {formatMoney(totalAmount || grandTotalCents)}
-              </span>
+              <div className="text-right">
+                {amountOwedCents !== null ? (
+                  <>
+                    <div className="line-through text-gray-400 text-xs">
+                      {formatMoney(grandTotalCents)}
+                    </div>
+                    <div className="font-semibold text-green-700">
+                      {formatMoney(amountOwedCents)}
+                    </div>
+                  </>
+                ) : (
+                  <span className="font-semibold">
+                    {formatMoney(totalAmount || grandTotalCents)}
+                  </span>
+                )}
+              </div>
             </div>
           </aside>
         </div>

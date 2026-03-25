@@ -1,8 +1,8 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router";
 import { useAuth } from "@clerk/clerk-react";
-import { Header } from "./components/Header";
-import { GIFT_TOKEN_KEY } from "./lib/giftToken";
+import { Header } from "../components/Header";
+import { GIFT_TOKEN_KEY } from "../lib/giftToken";
 
 type GiftInfo = {
   id: string;
