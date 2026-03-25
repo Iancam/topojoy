@@ -1,6 +1,14 @@
 import prisma from "../lib/prisma";
 import { getShippingPrice } from "../lib";
 
+type LumaprintsItem = {
+  subcategoryId: number;
+  width: number;
+  height: number;
+  options: number[];
+  quantity: number;
+};
+
 // A representative US address used to estimate shipping cost
 const REPRESENTATIVE_ADDRESS = {
   name: "Gift Recipient",
@@ -20,14 +28,11 @@ export const handler = async (event: any) => {
   }
 
   const body = JSON.parse(event.body || "{}");
-  const accessToken = body.accessToken;
-  const items: {
-    subcategoryId: string;
-    width: number;
-    height: number;
-    options: number[];
-    quantity: number;
-  }[] = body.items; // array of
+  const accessToken: string = body.accessToken;
+  // New items being evaluated (e.g. from PrintOptions — one item per print type)
+  const items: LumaprintsItem[] = body.items ?? [];
+  // Optional: ID of the user's pending order, used to include existing items in shipping calculation
+  const orderId: string | undefined = body.orderId;
 
   if (!accessToken) {
     return {
@@ -37,16 +42,33 @@ export const handler = async (event: any) => {
   }
 
   try {
-    const donation = await prisma.donation.findUnique({
-      where: { accessToken },
-      select: {
-        id: true,
-        amount: true,
-        status: true,
-        expiryDate: true,
-        allocations: { select: { amountDrawn: true } },
-      },
-    });
+    // Fetch donation and existing order items in parallel
+    const [donation, existingOrderItems] = await Promise.all([
+      prisma.donation.findUnique({
+        where: { accessToken },
+        select: {
+          id: true,
+          amount: true,
+          status: true,
+          expiryDate: true,
+          allocations: { select: { amountDrawn: true } },
+        },
+      }),
+      orderId
+        ? prisma.orderItem.findMany({
+            where: { orderId },
+            select: {
+              subcategoryId: true,
+              width: true,
+              height: true,
+              orderItemOptions: true,
+              quantity: true,
+              itemPrice: true,
+            },
+          })
+        : Promise.resolve([]),
+    ]);
+
     if (!donation) {
       return {
         statusCode: 404,
@@ -84,46 +106,84 @@ export const handler = async (event: any) => {
       };
     }
 
-    // Get cheapest shipping cost using a representative item + address
-    let shippingCostObject: Record<string, number> = {};
-    let adjustedAmountPerItemCents: Record<string, number> = {};
+    // Sum of existing items' prices (cents), excluding the candidate item
+    const existingItemsPriceCents = existingOrderItems.reduce(
+      (sum, i) => sum + (i.itemPrice ?? 0),
+      0,
+    );
+
+    // Existing items as Lumaprints shape for bundled shipping calculations
+    const existingLumaItems: LumaprintsItem[] = existingOrderItems.map((i) => ({
+      subcategoryId: i.subcategoryId,
+      width: i.width,
+      height: i.height,
+      options: (i.orderItemOptions as number[]) ?? [],
+      quantity: i.quantity,
+    }));
+
+    // Get cheapest shipping cost for the full order (existing + each candidate item)
+    let adjustedItems: (LumaprintsItem & {
+      minShippingCostCents: number;
+      minShippingMethod: string | null;
+      adjustedAmountAvailable: number;
+    })[] = [];
 
     try {
-      const shippingResults = await Promise.all(
-        items.map(
-          async (item) =>
-            [
-              item.subcategoryId,
-              await getShippingPrice({
-                address: REPRESENTATIVE_ADDRESS,
-                items: [item],
-              }),
-            ] as [string, { shippingMethods?: { cost: number }[] }],
-        ),
-      );
+      let shippingResults =
+        items.length > 0
+          ? await Promise.all(
+              items.map(async (item) => ({
+                ...item,
+                shipping: await getShippingPrice({
+                  address: REPRESENTATIVE_ADDRESS,
+                  // Include existing order items so shipping reflects the full bundle
+                  items: [
+                    ...existingLumaItems,
+                    {
+                      subcategoryId: item.subcategoryId,
+                      width: item.width,
+                      height: item.height,
+                      options: item.options,
+                      quantity: item.quantity ?? 1,
+                    },
+                  ],
+                }),
+              })),
+            )
+          : [
+              {
+                shipping: await getShippingPrice({
+                  address: REPRESENTATIVE_ADDRESS,
+                  items: [...existingLumaItems],
+                }),
+              },
+            ];
 
-      const findMinCost = (min: number, m: { cost: number }) =>
-        m.cost < min ? m.cost : min;
+      // if items is empty, return
 
-      const shippingCostEntries = shippingResults?.map(
-        ([id, shipping]: [
-          string,
-          { shippingMethods?: { cost: number }[] },
-        ]) => {
-          const minShippingCost = shipping.shippingMethods?.reduce(
-            findMinCost,
-            Infinity,
-          );
-          return [id, Math.round((minShippingCost ?? 0) * 100)];
-        },
-      );
-      shippingCostObject = Object.fromEntries(shippingCostEntries);
-      adjustedAmountPerItemCents = Object.fromEntries(
-        shippingCostEntries.map(([id, cost]) => [
-          id,
-          Math.max(0, availableAmountCents - (cost as number)),
-        ]),
-      );
+      adjustedItems = shippingResults.map((item) => {
+        const methods: { cost: number; method: string }[] =
+          item.shipping?.shippingMethods ?? [];
+        const cheapest = methods.reduce<{
+          cost: number;
+          method: string;
+        } | null>(
+          (best, m) => (best === null || m.cost < best.cost ? m : best),
+          null,
+        );
+        const minShippingCostCents = Math.round((cheapest?.cost ?? 0) * 100);
+        // Remaining donation balance after covering shipping + existing items.
+        // Negative means the user still owes that amount; positive means the donation covers everything and has leftover credit.
+        const adjustedAmountAvailable =
+          availableAmountCents - minShippingCostCents - existingItemsPriceCents;
+
+        return {
+          ...item,
+          minShippingCostCents,
+          minShippingMethod: cheapest?.method ?? null,
+          adjustedAmountAvailable,
+        };
+      });
     } catch (err) {
       console.warn("Could not fetch shipping estimate, defaulting to 0", err);
     }
@@ -135,8 +195,7 @@ export const handler = async (event: any) => {
         grossAmountCents: donation.amount,
         alreadyDrawnCents,
         availableAmountCents,
-        shippingCosts: shippingCostObject,
-        adjustedAmountPerItemCents,
+        items: adjustedItems,
       }),
     };
   } catch (error: any) {

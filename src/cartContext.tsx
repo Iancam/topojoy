@@ -6,7 +6,7 @@ export type CartContextValue = {
   cart: CartOrder | null | undefined;
   loading: boolean;
   error: string | null;
-  refresh: () => Promise<void>;
+  refresh: () => Promise<CartOrder | null | undefined>;
   itemCount: number;
   setCart: React.Dispatch<React.SetStateAction<CartOrder | null | undefined>>;
 };
@@ -26,9 +26,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       const data = await order.getCart();
       setCart(data);
+      return data;
     } catch (err) {
       setError("Failed to load cart");
       setCart(null);
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -40,7 +42,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const itemCount = (cart?.orderItems || []).reduce(
     (sum, item) => sum + (item.quantity ?? 0),
-    0
+    0,
   );
 
   return (

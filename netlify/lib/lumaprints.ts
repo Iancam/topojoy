@@ -144,6 +144,7 @@ export async function submitOrderToLumaprints(orderId: string) {
     where: { id: order.id },
     data: {
       status: "submitted",
+      submittedAt: new Date(),
     },
   });
 

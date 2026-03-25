@@ -71,7 +71,7 @@ export const handler = async (
         } else if (order.status !== "paid" && order.status !== "submitted") {
           await prisma.order.update({
             where: { id: orderId },
-            data: { status: "paid" },
+            data: { status: "paid", paidAt: new Date() },
           });
 
           await submitOrderToLumaprints(orderId);

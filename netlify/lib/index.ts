@@ -77,6 +77,7 @@ export const getShippingPrice = async ({
       orderItemOptions: item.options ?? [],
     })),
   };
+  // console.log(JSON.stringify(body, null, 2));
   const response = await fetch(
     `https://us.${process.env.NODE_ENV === "production" ? "api" : "api-sandbox"}.lumaprints.com/api/v1/pricing/shipping`,
     {

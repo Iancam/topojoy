@@ -219,10 +219,17 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
       ...r.recommended[r.recommended.length - 1],
       quantity: 1,
     }));
+    const orderId = form["cart.orderId"] || undefined;
     donation
-      .getGiftValue({ accessToken: token, items: biggestItemPerType })
+      .getGiftValue({ accessToken: token, items: biggestItemPerType, orderId })
       .then((data: any) => {
-        setNetGiftAmountCents(data.adjustedAmountPerItemCents);
+        const giftMap = Object.fromEntries(
+          data.items.map(({ subcategoryId, adjustedAmountAvailable }: any) => [
+            subcategoryId,
+            adjustedAmountAvailable,
+          ]),
+        );
+        setNetGiftAmountCents(giftMap);
         setAvailableAmountCents(data.availableAmountCents);
         setLoadingSizes(false);
       })

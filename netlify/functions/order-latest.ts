@@ -26,7 +26,7 @@ export const handler = async (event: HandlerEvent) => {
     }
 
     const order = await prisma.order.findFirst({
-      where: { userId: authUserId },
+      where: { userId: authUserId, status: { not: "pending" } },
       orderBy: { createdAt: "desc" },
       include: {
         orderItems: true,
