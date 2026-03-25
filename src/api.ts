@@ -325,7 +325,14 @@ const orderAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
   //   "POST",
   //   "Failed to submit order to Lumaprints",
   // ],
-  getLatest: ["order-latest", "GET", "Failed to get latest order"],
+  get: ["order-get", "GET", "Failed to get order"],
+  list: ["order-list", "GET", "Failed to list orders"],
+  retrySubmission: [
+    "order-retry-submission",
+    "POST",
+    "Failed to retry order submission",
+  ],
+  // getLatest: ["order-latest", "GET", "Failed to get latest order"],
 });
 
 const adminAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({

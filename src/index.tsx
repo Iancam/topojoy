@@ -1,24 +1,25 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { App } from "./app";
+import { App } from "./pages/app";
 import { createBrowserRouter, useRouteError } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { SignIn } from "@clerk/clerk-react";
 import { Layout } from "./Layout";
 import AuthLayout from "./AuthLayout";
-import { FrontPage } from "./FrontPage";
-import MyMaps from "./MyMaps";
-import AdminPage from "./AdminPage";
-import DonationPage from "./DonationPage";
-import GiftPage from "./GiftPage";
-import { Cart } from "./Cart";
-import { Checkout } from "./Checkout";
-import { SignInPage } from "./SignInPage";
+import { FrontPage } from "./pages/FrontPage";
+import MyMaps from "./pages/MyMaps";
+import MyOrders from "./pages/MyOrders";
+import AdminPage from "./pages/AdminPage";
+import DonationPage from "./pages/DonationPage";
+import GiftPage from "./pages/GiftPage";
+import { Cart } from "./pages/Cart";
+import { Checkout } from "./pages/Checkout";
+import { SignInPage } from "./pages/SignInPage";
 import { CartProvider } from "./cartContext";
 import { Terms } from "./Terms";
 import { Privacy } from "./Privacy";
 const AppError = () => {
-  const error = useRouteError();
+  const error = useRouteError() as Error | string | null | undefined;
   console.log(error);
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
@@ -61,6 +62,10 @@ const router = createBrowserRouter([
           {
             path: "/my-maps",
             element: <MyMaps />,
+          },
+          {
+            path: "/my-orders",
+            element: <MyOrders />,
           },
           {
             path: "/cart",

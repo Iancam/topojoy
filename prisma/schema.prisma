@@ -134,6 +134,10 @@ model Order {
   paymentIntentId String?
 
   giftedMap GiftedMap?
+  donationAllocations DonationAllocation[]
+
+  submittedAt DateTime?
+  paidAt DateTime?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -196,16 +200,15 @@ model GiftedMap {
   mapConfigId  String
   mapConfig    MapConfig            @relation(fields: [mapConfigId], references: [id])
   totalCost    Int                  // in cents
-  allocations  DonationAllocation[]
   createdAt    DateTime             @default(now())
 }
 
 model DonationAllocation {
-  id           String    @id @default(cuid())
-  donationId   String
-  donation     Donation  @relation(fields: [donationId], references: [id])
-  giftedMapId  String
-  giftedMap    GiftedMap @relation(fields: [giftedMapId], references: [id])
-  amountDrawn  Int       // in cents
-  createdAt    DateTime  @default(now())
+  id          String   @id @default(cuid())
+  donationId  String
+  donation    Donation @relation(fields: [donationId], references: [id])
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id])
+  amountDrawn Int      // in cents
+  createdAt   DateTime @default(now())
 }

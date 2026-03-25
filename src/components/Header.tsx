@@ -1,10 +1,11 @@
 import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/clerk-react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useCartContext } from "../cartContext";
 
 export const Header = () => {
   const { itemCount: cartItemCount } = useCartContext();
   const { user } = useUser();
+  const navigate = useNavigate();
   const isAdmin = (user?.publicMetadata as any)?.role === "admin";
 
   return (
@@ -47,24 +48,9 @@ export const Header = () => {
             </Link>
           </div>
 
-          {/* only show if in dev */}
-
           <div>
             <SignedIn>
               <div className="flex items-center ml-auto">
-                {isAdmin && (
-                  <Link to="/admin">
-                    <span className="text-yellow-400 text-xs font-bold py-1 px-4 rounded transition-all duration-200">
-                      Admin
-                    </span>
-                  </Link>
-                )}
-                <Link to="/my-maps">
-                  {/* make it look good */}
-                  <span className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
-                    My Maps
-                  </span>
-                </Link>
                 <Link to="/cart">
                   <span className="relative inline-flex items-center gap-1 text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
                     <span>Cart</span>
@@ -75,7 +61,27 @@ export const Header = () => {
                     )}
                   </span>
                 </Link>
-                <UserButton afterSignOutUrl="/sign-in" />
+                <UserButton afterSignOutUrl="/sign-in">
+                  <UserButton.MenuItems>
+                    <UserButton.Action
+                      label="My Maps"
+                      labelIcon={<span>🗺️</span>}
+                      onClick={() => navigate("/my-maps")}
+                    />
+                    <UserButton.Action
+                      label="My Orders"
+                      labelIcon={<span>📦</span>}
+                      onClick={() => navigate("/my-orders")}
+                    />
+                    {isAdmin && (
+                      <UserButton.Action
+                        label="Admin"
+                        labelIcon={<span>⚙️</span>}
+                        onClick={() => navigate("/admin")}
+                      />
+                    )}
+                  </UserButton.MenuItems>
+                </UserButton>
               </div>
             </SignedIn>
             <SignedOut>
