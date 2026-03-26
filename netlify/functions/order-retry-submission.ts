@@ -48,7 +48,9 @@ export const handler = async (event: HandlerEvent) => {
     if (order.status !== "paid") {
       return {
         statusCode: 400,
-        body: JSON.stringify({ message: "Order is not in a retryable state" }),
+        body: JSON.stringify({
+          message: `Order is not in a retryable state: ${order.status}`,
+        }),
       };
     }
 
@@ -67,7 +69,9 @@ export const handler = async (event: HandlerEvent) => {
     console.error("order-retry-submission error", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: error.message ?? "Internal server error" }),
+      body: JSON.stringify({
+        message: error.message ?? "Internal server error",
+      }),
     };
   }
 };

@@ -9,7 +9,7 @@ export const Header = () => {
   const isAdmin = (user?.publicMetadata as any)?.role === "admin";
 
   return (
-    <div className="text-[#d5f7ff] bg-[#071e25] font-sans px-4 flex justify-between h-15 fixed top-0 left-0 right-0 border-b border-[#0e3942]/80 shadow-md shadow-black/40">
+    <div className="text-[#d5f7ff] bg-[#071e25] font-sans px-4 flex justify-between h-15 fixed top-0 left-0 right-0 z-40 border-b border-[#0e3942]/80 shadow-md shadow-black/40">
       <div className="font-extrabold flex items-center tracking-wide text-base">
         <Link
           to="/"

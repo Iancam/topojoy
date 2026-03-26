@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "types": ["jest", "node", "vite/client"],
+    "noEmit": true
+  },
+  "include": ["src/**/*", "netlify/**/*", "jest.setup.ts"],
+  "exclude": ["node_modules"]
+}

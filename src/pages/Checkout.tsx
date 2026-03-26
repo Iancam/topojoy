@@ -10,13 +10,17 @@ import { useSearchParams } from "react-router";
 import { order, getImageUrlFromAws, donation } from "../api";
 import { Header } from "../components/Header";
 import { formatMoney } from "../lib/utils";
+import { getStripePublishableKey } from "../lib/env";
 import { StripePaymentForm } from "../components/StripePaymentForm";
 import { useCartContext } from "../cartContext";
 import { MapThumbnail } from "../components/MapThumbnail";
 import { getStoredGiftToken } from "../lib/giftToken";
 import {
   getAmountOwedCents,
+  getStepAfterGiftPaymentIntent,
+  resolvePresetShippingIndex,
   getShippingSubmitButtonLabel,
+  shouldUseGiftAutoFlow,
 } from "./checkoutLogic";
 
 const CHECKOUT_STEPS = ["shipping", "method", "payment", "confirm"] as const;
@@ -123,9 +127,7 @@ export const Checkout = () => {
     return raw;
   }, [searchParams]);
 
-  const stripePromise = loadStripe(
-    import.meta.env.VITE_SBX_STRIPE_PUBLISHABLE_KEY,
-  );
+  const stripePromise = loadStripe(getStripePublishableKey());
   const [giftToken, setGiftToken] = useState<string | null>(null);
   const [giftCreditCents, setGiftCreditCents] = useState<number | null>(null);
   const [giftAdjustedTotal, setGiftAdjustedTotal] = useState<number | null>(
@@ -307,23 +309,25 @@ export const Checkout = () => {
       setShippingOptions(methods);
 
       // If the user has a gift token, auto-select the preset cheapest method and skip the method step
-      if (giftToken && giftShippingMethod) {
-        // if the preset method is not in the list of methods, use the first method
-        const presetIndex = methods.findIndex(
-          (m) => m.method === giftShippingMethod,
+      if (shouldUseGiftAutoFlow({ giftToken, giftShippingMethod })) {
+        const resolvedIndex = resolvePresetShippingIndex(
+          methods,
+          giftShippingMethod,
         );
-        const resolvedIndex = presetIndex >= 0 ? presetIndex : 0;
+        if (resolvedIndex === null || !methods[resolvedIndex]) {
+          setShippingError(
+            "No shipping methods are available for this address.",
+          );
+          return;
+        }
+
         setSelectedShippingIndex(resolvedIndex);
         await order.update({ shippingMethod: methods[resolvedIndex].method });
 
         const data = await order.createPaymentIntent({ giftToken });
 
         setTotalAmount(data.amount);
-        if (data.freeOrder) {
-          goToStep("confirm");
-        } else {
-          goToStep("payment");
-        }
+        goToStep(getStepAfterGiftPaymentIntent(Boolean(data.freeOrder)));
       } else {
         goToStep("method");
       }

@@ -217,7 +217,7 @@ export const handler = async (event: any) => {
       statusCode: 200,
       body: JSON.stringify({
         clientSecret: paymentIntent.client_secret,
-        amount,
+        amount: finalAmount,
         currency: order.currency || "usd",
       }),
     };

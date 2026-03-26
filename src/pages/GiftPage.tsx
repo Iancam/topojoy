@@ -59,7 +59,7 @@ export default function GiftPage() {
       return;
     }
     // accessToken is already in localStorage; navigate to the external editor
-    window.location.href = "geojson.io/index.html";
+    window.location.href = `${window.location.origin}/geojson.io/index.html`;
   };
 
   return (

@@ -1,14 +1,15 @@
 module.exports = {
   preset: "ts-jest",
   testEnvironment: "node",
-  roots: ["<rootDir>/src"],
+  setupFiles: ["<rootDir>/jest.setup.ts"],
+  roots: ["<rootDir>/src", "<rootDir>/netlify"],
   testMatch: ["**/*.test.ts", "**/*.test.tsx"],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
   globals: {
     "ts-jest": {
-      tsconfig: "<rootDir>/tsconfig.app.json",
+      tsconfig: "<rootDir>/tsconfig.test.json",
     },
   },
 };
