@@ -337,6 +337,20 @@ const orderAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
 
 const adminAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
   mapsAll: ["admin-maps-all", "GET", "Failed to get all maps"],
+  featureFlagsList: [
+    "admin-feature-flags-list",
+    "GET",
+    "Failed to list feature flags",
+  ],
+  featureFlagsUpdate: [
+    "admin-feature-flags-update",
+    "POST",
+    "Failed to update feature flag",
+  ],
+});
+
+const featureFlagsAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
+  get: ["feature-flags-get", "GET", "Failed to get feature flags"],
 });
 
 const donationAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
@@ -368,6 +382,12 @@ export const admin = Object.fromEntries(
 );
 export const donation = Object.fromEntries(
   Object.entries(donationAPIData).map(([key, value]) => [
+    key,
+    APIDataToAPIFN(value),
+  ]),
+);
+export const featureFlags = Object.fromEntries(
+  Object.entries(featureFlagsAPIData).map(([key, value]) => [
     key,
     APIDataToAPIFN(value),
   ]),

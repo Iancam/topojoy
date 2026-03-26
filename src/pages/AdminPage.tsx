@@ -16,10 +16,18 @@ type AdminMapItem = {
   userId: string;
 };
 
-type Section = "maps";
+type AdminFeatureFlag = {
+  id: string;
+  key: string;
+  enabled: boolean;
+  updatedAt: string;
+};
+
+type Section = "maps" | "flags";
 
 const NAV_ITEMS: { id: Section; label: string; icon: string }[] = [
   { id: "maps", label: "All Maps", icon: "🗺️" },
+  { id: "flags", label: "Feature Flags", icon: "🚩" },
 ];
 
 function MapsSection({
@@ -115,10 +123,138 @@ function MapsSection({
   );
 }
 
+function FeatureFlagsSection({
+  flags,
+  error,
+  updatingKey,
+  creating,
+  createKey,
+  createEnabled,
+  onCreateKeyChange,
+  onCreateEnabledChange,
+  onCreate,
+  onToggle,
+}: {
+  flags: AdminFeatureFlag[] | null;
+  error: string | null;
+  updatingKey: string | null;
+  creating: boolean;
+  createKey: string;
+  createEnabled: boolean;
+  onCreateKeyChange: (value: string) => void;
+  onCreateEnabledChange: (value: boolean) => void;
+  onCreate: () => Promise<void>;
+  onToggle: (key: string, enabled: boolean) => Promise<void>;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900">Feature Flags</h2>
+        <p className="text-xs text-gray-400 mt-0.5">
+          Control app behavior without deploys.
+        </p>
+      </div>
+
+      <div className="rounded-lg border border-gray-200 bg-white p-4">
+        <div className="text-sm font-medium text-gray-900 mb-3">
+          Create feature flag
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            type="text"
+            value={createKey}
+            onChange={(e) => onCreateKeyChange(e.target.value)}
+            placeholder="example_flag_key"
+            className="w-72 text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          <label className="inline-flex items-center gap-2 text-xs text-gray-700">
+            <input
+              type="checkbox"
+              checked={createEnabled}
+              onChange={(e) => onCreateEnabledChange(e.target.checked)}
+            />
+            Enabled
+          </label>
+          <button
+            type="button"
+            disabled={creating}
+            onClick={onCreate}
+            className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
+              creating
+                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+            }`}
+          >
+            {creating ? "Creating…" : "Create"}
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div className="p-3 rounded border border-red-200 bg-red-50 text-red-700 text-sm">
+          {error}
+        </div>
+      )}
+
+      {!flags ? (
+        <div className="text-gray-400 text-sm">Loading…</div>
+      ) : flags.length === 0 ? (
+        <div className="text-gray-400 text-sm">No flags yet.</div>
+      ) : (
+        <div className="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100">
+          {flags.map((flag) => {
+            const isUpdating = updatingKey === flag.key;
+            return (
+              <div
+                key={flag.id}
+                className="flex items-center justify-between gap-4 px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-gray-900 font-mono truncate">
+                    {flag.key}
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Updated {new Date(flag.updatedAt).toLocaleString()}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={isUpdating}
+                  onClick={() => onToggle(flag.key, !flag.enabled)}
+                  className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
+                    flag.enabled
+                      ? "bg-green-100 text-green-700 hover:bg-green-200"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  } ${isUpdating ? "opacity-60 cursor-not-allowed" : ""}`}
+                >
+                  {isUpdating
+                    ? "Saving…"
+                    : flag.enabled
+                      ? "Enabled"
+                      : "Disabled"}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const { user, isLoaded } = useUser();
   const [maps, setMaps] = React.useState<AdminMapItem[] | null>(null);
+  const [flags, setFlags] = React.useState<AdminFeatureFlag[] | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [flagsError, setFlagsError] = React.useState<string | null>(null);
+  const [updatingFlagKey, setUpdatingFlagKey] = React.useState<string | null>(
+    null,
+  );
+  const [creatingFlag, setCreatingFlag] = React.useState(false);
+  const [createFlagKey, setCreateFlagKey] = React.useState("");
+  const [createFlagEnabled, setCreateFlagEnabled] = React.useState(false);
   const [activeSection, setActiveSection] = React.useState<Section>("maps");
 
   const isAdmin = isLoaded && (user?.publicMetadata as any)?.role === "admin";
@@ -128,8 +264,80 @@ export default function AdminPage() {
     admin
       .mapsAll()
       .then(setMaps)
-      .catch((e) => setError(e.message));
+      .catch((e: any) => setError(e.message));
+
+    admin
+      .featureFlagsList()
+      .then(setFlags)
+      .catch((e: any) => setFlagsError(e.message));
   }, [isLoaded, isAdmin]);
+
+  const handleToggleFlag = async (key: string, enabled: boolean) => {
+    setFlagsError(null);
+    setUpdatingFlagKey(key);
+
+    const prev = flags;
+    if (prev) {
+      setFlags(
+        prev.map((f) =>
+          f.key === key
+            ? { ...f, enabled, updatedAt: new Date().toISOString() }
+            : f,
+        ),
+      );
+    }
+
+    try {
+      const updated = await admin.featureFlagsUpdate({ key, enabled });
+      setFlags((curr) =>
+        (curr ?? []).map((f) => (f.key === key ? updated : f)),
+      );
+    } catch (e: any) {
+      if (prev) setFlags(prev);
+      setFlagsError(e?.message || "Failed to update flag");
+    } finally {
+      setUpdatingFlagKey(null);
+    }
+  };
+
+  const handleCreateFlag = async () => {
+    setFlagsError(null);
+
+    const key = createFlagKey.trim().toLowerCase();
+    if (!key) {
+      setFlagsError("Flag key is required");
+      return;
+    }
+
+    if (!/^[a-z0-9_\-.]{1,128}$/.test(key)) {
+      setFlagsError(
+        "Flag key may contain lowercase letters, numbers, underscore, dash, and dot",
+      );
+      return;
+    }
+
+    setCreatingFlag(true);
+    try {
+      const updated = await admin.featureFlagsUpdate({
+        key,
+        enabled: createFlagEnabled,
+      });
+
+      setFlags((curr) => {
+        const next = [
+          ...(curr ?? []).filter((f) => f.key !== updated.key),
+          updated,
+        ];
+        return next.sort((a, b) => a.key.localeCompare(b.key));
+      });
+      setCreateFlagKey("");
+      setCreateFlagEnabled(false);
+    } catch (e: any) {
+      setFlagsError(e?.message || "Failed to create flag");
+    } finally {
+      setCreatingFlag(false);
+    }
+  };
 
   if (!isLoaded) {
     return <div className="p-6 text-sm text-gray-500">Loading…</div>;
@@ -185,6 +393,11 @@ export default function AdminPage() {
                     {maps.length}
                   </span>
                 )}
+                {item.id === "flags" && flags && (
+                  <span className="ml-auto text-[10px] bg-teal-800 text-teal-200 rounded-full px-1.5 py-0.5 font-mono">
+                    {flags.length}
+                  </span>
+                )}
               </button>
             ))}
           </nav>
@@ -194,6 +407,20 @@ export default function AdminPage() {
         <main className="flex-1 overflow-y-auto p-8">
           {activeSection === "maps" && (
             <MapsSection maps={maps} error={error} />
+          )}
+          {activeSection === "flags" && (
+            <FeatureFlagsSection
+              flags={flags}
+              error={flagsError}
+              updatingKey={updatingFlagKey}
+              creating={creatingFlag}
+              createKey={createFlagKey}
+              createEnabled={createFlagEnabled}
+              onCreateKeyChange={setCreateFlagKey}
+              onCreateEnabledChange={setCreateFlagEnabled}
+              onCreate={handleCreateFlag}
+              onToggle={handleToggleFlag}
+            />
           )}
         </main>
       </div>

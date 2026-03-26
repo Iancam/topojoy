@@ -98,7 +98,7 @@ export function createWebGLFlowField(p5, canvas, options = {}) {
   const flowFieldTexture = p5.createGraphics(
     canvas.width,
     canvas.height,
-    p5.WEBGL
+    p5.WEBGL,
   );
 
   // Render gradient field to texture
@@ -131,6 +131,10 @@ export function createWebGLFlowField(p5, canvas, options = {}) {
       magnitudes[y][x] = resultTexture.pixels[idx + 2] / 255;
     }
   }
+
+  // Explicitly release the temporary WEBGL renderer to avoid leaking
+  // contexts across repeated renders.
+  flowFieldTexture.remove();
 
   return {
     width: canvas.width,
