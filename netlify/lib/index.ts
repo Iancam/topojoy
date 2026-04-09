@@ -51,7 +51,7 @@ export const getShippingPrice = async ({
   }[];
 }) => {
   const authHeader = () => {
-    return process.env.NODE_ENV === "production"
+    return process.env.CONTEXT === "production"
       ? `Basic ${Buffer.from(`${process.env.LUMAPRINTS_API_KEY}:${process.env.LUMAPRINTS_API_SECRET}`).toString("base64")}`
       : `Basic ${Buffer.from(`${process.env.sbx_lumaprints_key}:${process.env.sbx_lumaprints_secret}`).toString("base64")}`;
   };
@@ -79,7 +79,7 @@ export const getShippingPrice = async ({
   };
   // console.log(JSON.stringify(body, null, 2));
   const response = await fetch(
-    `https://us.${process.env.NODE_ENV === "production" ? "api" : "api-sandbox"}.lumaprints.com/api/v1/pricing/shipping`,
+    `https://us.${process.env.CONTEXT === "production" ? "api" : "api-sandbox"}.lumaprints.com/api/v1/pricing/shipping`,
     {
       method: "POST",
       headers: {

@@ -20,7 +20,11 @@ const getImageUrlFromKey = async (key: string) => {
 };
 
 const getLumaprintsAuthHeader = () => {
-  return process.env.NODE_ENV === "production"
+  const isProduction =
+    process.env.CONTEXT === "production" ||
+    process.env.NODE_ENV === "production";
+
+  return isProduction
     ? `Basic ${Buffer.from(
         `${process.env.LUMAPRINTS_API_KEY}:${process.env.LUMAPRINTS_API_SECRET}`,
       ).toString("base64")}`
@@ -110,8 +114,12 @@ export async function submitOrderToLumaprints(orderId: string) {
     orderItems,
   };
 
+  const isProduction =
+    process.env.CONTEXT === "production" ||
+    process.env.NODE_ENV === "production";
+
   const response = await fetch(
-    `https://us.${process.env.NODE_ENV === "production" ? "api" : "api-sandbox"}.lumaprints.com/api/v1/orders`,
+    `https://us.${isProduction ? "api" : "api-sandbox"}.lumaprints.com/api/v1/orders`,
     {
       method: "POST",
       headers: {
