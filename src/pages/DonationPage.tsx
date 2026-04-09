@@ -10,10 +10,9 @@ import {
   donationJourney,
   DonationForm,
 } from "../components/donationFormData";
+import { getStripePublishableKey } from "../lib/env";
 
-const stripePromise = loadStripe(
-  import.meta.env.VITE_SBX_STRIPE_PUBLISHABLE_KEY,
-);
+const stripePromise = loadStripe(getStripePublishableKey());
 
 type Phase = "form" | "payment" | "confirmation";
 

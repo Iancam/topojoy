@@ -4,16 +4,9 @@ import { createClerkClient } from "@clerk/backend";
 import { auth, getShippingPrice } from "../lib";
 import prisma from "../lib/prisma";
 import { submitOrderToLumaprints } from "../lib/lumaprints";
+import { initStripe } from "../lib/stripe";
 
-const stripeSecretKey = process.env.SBX_STRIPE_SECRET_KEY;
-
-if (!stripeSecretKey) {
-  throw new Error("SBX_STRIPE_SECRET_KEY is not set");
-}
-
-const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: "2024-04-10",
-});
+const stripe = initStripe();
 
 const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
@@ -27,6 +20,10 @@ export const handler = async (event: any) => {
       body: JSON.stringify({ message: "Method not allowed" }),
     };
   }
+
+  // get gift token from body
+  const body = JSON.parse(event.body || "{}");
+  const giftToken: string | undefined = body.giftToken;
 
   try {
     const authUserId = await auth(event, clerkClient);
@@ -67,121 +64,48 @@ export const handler = async (event: any) => {
         }),
       };
     }
-    const { message, shippingMethods } = await getShippingPrice({
-      address: {
-        ...address,
-      },
-      items: items.map((item) => {
-        return {
-          subcategoryId: item.subcategoryId,
-          width: item.width,
-          height: item.height,
-          options: item.orderItemOptions as number[],
-          quantity: item.quantity,
-        };
-      }),
-    });
+    const shippingResult = await getShippingAmount(
+      shippingMethod,
+      address,
+      items,
+    );
 
-    if (!shippingMethods) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ message: "No shipping prices found" }),
-      };
+    if (shippingResult.statusCode && shippingResult.statusCode >= 400) {
+      return shippingResult;
     }
 
-    const selectedShippingOption = shippingMethods.filter(
-      (method: any) => method.method === shippingMethod,
-    )[0];
-
-    if (!selectedShippingOption) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({
-          message: `No shipping option associated with ${shippingMethod} found`,
-        }),
-      };
-    }
-
-    const shippingCostCents = selectedShippingOption.cost * 100;
-    if (selectedShippingOption.cost == null) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({
-          message: `No shipping cost associated with ${shippingMethod} found`,
-        }),
-      };
-    }
     const baseAmount = order.totalPrice || 0; // in cents
-    const shippingAmount =
-      typeof shippingCostCents === "number" ? shippingCostCents : 0;
-    const amount = baseAmount + shippingAmount;
+    const amntToPay = baseAmount + (shippingResult.shippingAmount || 0);
 
-    if (amount < 0) {
+    if (amntToPay < 0) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ message: "Invalid amount for payment" }),
+        body: JSON.stringify({ message: "Invalid amntToPay for payment" }),
       };
     }
 
-    // get gift token from body
-    const body = JSON.parse(event.body || "{}");
-    const giftToken: string | undefined = body.giftToken;
-
-    let finalAmount = amount;
+    let finalAmntToPay = amntToPay;
 
     // process gift token if it exists
-    if (giftToken) {
-      const donation = await prisma.donation.findUnique({
-        where: { accessToken: giftToken },
-        select: {
-          id: true,
-          amount: true,
-          expiryDate: true,
-          status: true,
-          allocations: { select: { amountDrawn: true } },
-        },
+    const giftTokenResult = await processGiftToken(giftToken, amntToPay);
+    if (giftTokenResult.message) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: giftTokenResult.message }),
+      };
+    }
+
+    finalAmntToPay = giftTokenResult.finalAmntToPay;
+    const donation = giftTokenResult.donation;
+    const amountDrawn = giftTokenResult.amountDrawn;
+
+    if (finalAmntToPay === 0 && donation) {
+      prisma.order.update({
+        where: { id: order.id },
+        data: { status: "paid", paidAt: new Date() },
       });
 
-      if (!donation) {
-        return {
-          statusCode: 400,
-          body: JSON.stringify({ message: "Invalid gift token" }),
-        };
-      }
-      if (donation.expiryDate <= new Date()) {
-        return {
-          statusCode: 400,
-          body: JSON.stringify({ message: "Gift token has expired" }),
-        };
-      }
-      if (donation.status !== "paid") {
-        return {
-          statusCode: 400,
-          body: JSON.stringify({
-            message: `Gift token status is invalid. Status: ${donation.status}`,
-          }),
-        };
-      }
-
-      const alreadyDrawnCents = donation.allocations.reduce(
-        (sum, a) => sum + a.amountDrawn,
-        0,
-      );
-      const availableAmountCents = donation.amount - alreadyDrawnCents;
-
-      if (availableAmountCents <= 0) {
-        return {
-          statusCode: 400,
-          body: JSON.stringify({
-            message: "Gift has already been fully redeemed",
-          }),
-        };
-      }
-
-      const amountDrawn = Math.min(availableAmountCents, amount);
-      finalAmount = Math.max(0, amount - amountDrawn);
-
-      await prisma.donationAllocation.create({
+      prisma.donationAllocation.create({
         data: {
           donationId: donation.id,
           orderId: order.id,
@@ -189,21 +113,16 @@ export const handler = async (event: any) => {
         },
       });
 
-      if (finalAmount === 0) {
-        await prisma.order.update({
-          where: { id: order.id },
-          data: { status: "paid", paidAt: new Date() },
-        });
-        await submitOrderToLumaprints(order.id);
-        return {
-          statusCode: 200,
-          body: JSON.stringify({ freeOrder: true, amount: 0 }),
-        };
-      }
+      await submitOrderToLumaprints(order.id);
+
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ freeOrder: true, amount: 0 }),
+      };
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: finalAmount,
+      amount: finalAmntToPay,
       currency: order.currency || "usd",
       metadata: {
         orderId: order.id,
@@ -217,7 +136,7 @@ export const handler = async (event: any) => {
       statusCode: 200,
       body: JSON.stringify({
         clientSecret: paymentIntent.client_secret,
-        amount: finalAmount,
+        amount: finalAmntToPay,
         currency: order.currency || "usd",
       }),
     };
@@ -229,3 +148,121 @@ export const handler = async (event: any) => {
     };
   }
 };
+
+async function processGiftToken(
+  giftToken: string | undefined,
+  amntToPay: number,
+) {
+  const errorVal = {
+    finalAmntToPay: amntToPay,
+    donation: null,
+    amountDrawn: 0,
+  };
+  if (!giftToken) {
+    return errorVal;
+  }
+
+  const donation = await prisma.donation.findUnique({
+    where: { accessToken: giftToken },
+    select: {
+      id: true,
+      amount: true,
+      expiryDate: true,
+      status: true,
+      allocations: { select: { amountDrawn: true } },
+    },
+  });
+
+  if (!donation) {
+    return { ...errorVal, message: "Invalid gift token" };
+  }
+  if (donation.expiryDate <= new Date()) {
+    return { ...errorVal, message: "Gift token has expired" };
+  }
+  if (donation.status !== "paid") {
+    return {
+      ...errorVal,
+      message: `Gift token status is invalid. Status: ${donation.status}`,
+    };
+  }
+
+  const alreadyDrawnCents = donation.allocations.reduce(
+    (sum, a) => sum + a.amountDrawn,
+    0,
+  );
+  const availableAmountCents = donation.amount - alreadyDrawnCents;
+  // you should have an error if the user thinks they're redeeming a gift but
+  // actually there's no more left to redeem
+  if (availableAmountCents <= 0) {
+    return {
+      ...errorVal,
+      message: "Gift has already been fully redeemed",
+    };
+  }
+
+  const amountDrawn = Math.min(availableAmountCents, amntToPay);
+  const finalAmntToPay = Math.max(0, amntToPay - amountDrawn);
+
+  return {
+    finalAmntToPay,
+    donation,
+    amountDrawn,
+  };
+}
+
+async function getShippingAmount(
+  shippingMethod: string,
+  address: any,
+  items: any[],
+) {
+  const { message, shippingMethods } = await getShippingPrice({
+    address: {
+      ...address,
+    },
+    items: items.map((item) => {
+      return {
+        subcategoryId: item.subcategoryId,
+        width: item.width,
+        height: item.height,
+        options: item.orderItemOptions as number[],
+        quantity: item.quantity,
+      };
+    }),
+  });
+
+  if (!shippingMethods) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        message: `No shipping prices found, lumaprints: ${message}`,
+      }),
+    };
+  }
+
+  const selectedShippingOption = shippingMethods.filter(
+    (method: any) => method.method === shippingMethod,
+  )[0];
+
+  if (!selectedShippingOption) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({
+        message: `No shipping option associated with ${shippingMethod} found`,
+      }),
+    };
+  }
+
+  const shippingCostCents = selectedShippingOption.cost * 100;
+  if (selectedShippingOption.cost == null) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        message: `No shipping cost associated with ${shippingMethod} found`,
+      }),
+    };
+  }
+  const shippingAmount =
+    typeof shippingCostCents === "number" ? shippingCostCents : 0;
+
+  return { shippingAmount };
+}

@@ -1,4 +1,4 @@
-import Stripe from "stripe";
+import { initStripe } from "../lib/stripe";
 import { createClerkClient } from "@clerk/backend";
 import { auth } from "../lib";
 import prisma from "../lib/prisma";
@@ -8,13 +8,7 @@ const clerkClient = createClerkClient({
   publishableKey: process.env.VITE_CLERK_PUBLISHABLE_KEY,
 });
 
-const stripeSecretKey = process.env.SBX_STRIPE_SECRET_KEY;
-
-if (!stripeSecretKey) {
-  throw new Error("SBX_STRIPE_SECRET_KEY is not set");
-}
-
-const stripe = new Stripe(stripeSecretKey);
+const stripe = initStripe();
 
 function generateSecureRandomString(length: number, charSet: string) {
   let result = "";

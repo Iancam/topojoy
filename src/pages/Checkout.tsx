@@ -322,11 +322,13 @@ export const Checkout = () => {
         }
 
         setSelectedShippingIndex(resolvedIndex);
+        setCreatingPaymentIntent(true);
         await order.update({ shippingMethod: methods[resolvedIndex].method });
 
         const data = await order.createPaymentIntent({ giftToken });
 
         setTotalAmount(data.amount);
+        setClientSecret(data.clientSecret);
         goToStep(getStepAfterGiftPaymentIntent(Boolean(data.freeOrder)));
       } else {
         goToStep("method");

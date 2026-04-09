@@ -27,6 +27,12 @@ export const handler = async (event: any) => {
         expiryDate: true,
         status: true,
         donor: { select: { name: true } },
+        allocations: {
+          select: {
+            orderId: true,
+            amountDrawn: true,
+          },
+        },
       },
     });
 

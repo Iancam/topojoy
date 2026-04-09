@@ -1,7 +1,21 @@
 import type { HandlerEvent, HandlerContext } from "@netlify/functions";
 import { PrismaClient } from "@prisma/client";
+import { z } from "zod";
 
 const prisma = new PrismaClient();
+
+export const input = z.object({
+  userId: z.string(),
+  configId: z.string(),
+});
+
+export const output = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  features: z.array(z.any()),
+  annotations: z.array(z.any()),
+});
 
 export const handler = async (
   event: HandlerEvent,

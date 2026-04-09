@@ -38,3 +38,6 @@ dist
 
 /.react-router/
 /build/
+
+# Generated API client
+/src/_generatedAPI.ts

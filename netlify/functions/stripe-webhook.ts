@@ -1,21 +1,9 @@
-import Stripe from "stripe";
 import type { HandlerEvent, HandlerContext } from "@netlify/functions";
 import prisma from "../lib/prisma";
 import { submitOrderToLumaprints } from "../lib/lumaprints";
+import { initStripe, webhookSecret } from "../lib/stripe";
 
-const stripeSecretKey = process.env.SBX_STRIPE_SECRET_KEY;
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-if (!stripeSecretKey) {
-  throw new Error("SBX_STRIPE_SECRET_KEY is not set");
-}
-
-if (!webhookSecret) {
-  throw new Error("STRIPE_WEBHOOK_SECRET is not set");
-}
-
-const stripe = new Stripe(stripeSecretKey);
-
+const stripe = initStripe();
 export const handler = async (
   event: HandlerEvent,
   _context: HandlerContext,
@@ -54,99 +42,21 @@ export const handler = async (
 
   console.log("stripeEvent.type", stripeEvent.type);
   try {
+    const paymentIntent = stripeEvent.data.object as Stripe.PaymentIntent;
+    const orderId = paymentIntent.metadata?.orderId;
+    const donationId = paymentIntent.metadata?.donationId;
+
     if (stripeEvent.type === "payment_intent.succeeded") {
-      const paymentIntent = stripeEvent.data.object as Stripe.PaymentIntent;
-      const orderId = paymentIntent.metadata?.orderId;
-      const donationId = paymentIntent.metadata?.donationId;
-      if (orderId) {
-        const order = await prisma.order.findUnique({ where: { id: orderId } });
-
-        console.log("order", order);
-
-        if (!order) {
-          console.warn("Order not found for payment_intent", {
-            orderId,
-            paymentIntentId: paymentIntent.id,
-          });
-        } else if (order.status !== "paid" && order.status !== "submitted") {
-          await prisma.order.update({
-            where: { id: orderId },
-            data: { status: "paid", paidAt: new Date() },
-          });
-
-          await submitOrderToLumaprints(orderId);
-        }
-      }
-      if (donationId) {
-        const donation = await prisma.donation.findUnique({
-          where: { id: donationId },
-        });
-        if (!donation) {
-          console.warn("Donation not found for payment_intent", {
-            donationId,
-            paymentIntentId: paymentIntent.id,
-          });
-        } else if (donation.status !== "paid") {
-          await prisma.donation.update({
-            where: { id: donationId },
-            data: { status: "paid" },
-          });
-        }
-      }
+      await handleOrder(orderId, paymentIntent);
+      await handleDonation(donationId, paymentIntent);
     } else if (stripeEvent.type === "payment_intent.payment_failed") {
-      const paymentIntent = stripeEvent.data.object as Stripe.PaymentIntent;
-      const orderId = paymentIntent.metadata?.orderId;
-      const donationId = paymentIntent.metadata?.donationId;
-      if (orderId) {
-        const order = await prisma.order.findUnique({ where: { id: orderId } });
-        if (!order) {
-          console.warn("Order not found for failed payment_intent", {
-            orderId,
-            paymentIntentId: paymentIntent.id,
-          });
-        } else if (order.status === "pending") {
-          await prisma.order.update({
-            where: { id: orderId },
-            data: { status: "failed" },
-          });
-        }
-      }
-      if (donationId) {
-        const donation = await prisma.donation.findUnique({
-          where: { id: donationId },
-        });
-        if (!donation) {
-          console.warn("Donation not found for failed payment_intent", {
-            donationId,
-            paymentIntentId: paymentIntent.id,
-          });
-        } else if (donation.status === "pending") {
-          await prisma.donation.update({
-            where: { id: donationId },
-            data: { status: "failed" },
-          });
-        }
-      }
+      await handleOrderFailed(orderId, paymentIntent);
+      await handleDonationFailed(donationId, paymentIntent);
     } else if (stripeEvent.type === "charge.refunded") {
       const charge = stripeEvent.data.object as Stripe.Charge;
-      const orderId = charge.metadata?.orderId;
 
-      if (!orderId) {
-        console.warn("charge.refunded missing orderId metadata", charge.id);
-      } else {
-        const order = await prisma.order.findUnique({ where: { id: orderId } });
-        if (!order) {
-          console.warn("Order not found for charge.refunded", {
-            orderId,
-            chargeId: charge.id,
-          });
-        } else {
-          await prisma.order.update({
-            where: { id: orderId },
-            data: { status: "refunded" },
-          });
-        }
-      }
+      await handleOrderRefunded(orderId, charge);
+      // await handleDonationRefunded(donationId, charge);
     }
 
     return {
@@ -161,3 +71,124 @@ export const handler = async (
     };
   }
 };
+
+async function handleOrder(
+  orderId: string | undefined,
+  paymentIntent: Stripe.PaymentIntent,
+) {
+  if (!orderId) {
+    return;
+  }
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) {
+    console.warn("Order not found for payment_intent", {
+      orderId,
+      paymentIntentId: paymentIntent.id,
+    });
+    return;
+  }
+  if (order.status !== "paid" && order.status !== "submitted") {
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { status: "paid", paidAt: new Date() },
+    });
+
+    await submitOrderToLumaprints(orderId);
+  }
+}
+
+async function handleDonation(
+  donationId: string | undefined,
+  paymentIntent: Stripe.PaymentIntent,
+) {
+  if (!donationId) {
+    return;
+  }
+  const donation = await prisma.donation.findUnique({
+    where: { id: donationId },
+  });
+  if (!donation) {
+    console.warn("Donation not found for payment_intent", {
+      donationId,
+      paymentIntentId: paymentIntent.id,
+    });
+    return;
+  }
+  if (donation.status !== "paid") {
+    await prisma.donation.update({
+      where: { id: donationId },
+      data: { status: "paid" },
+    });
+  }
+}
+
+async function handleOrderFailed(
+  orderId: string | undefined,
+  paymentIntent: Stripe.PaymentIntent,
+) {
+  if (!orderId) {
+    return;
+  }
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) {
+    console.warn("Order not found for payment_intent", {
+      orderId,
+      paymentIntentId: paymentIntent.id,
+    });
+    return;
+  }
+  if (order.status === "pending") {
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { status: "failed" },
+    });
+  }
+}
+
+async function handleDonationFailed(
+  donationId: string | undefined,
+  paymentIntent: Stripe.PaymentIntent,
+) {
+  if (!donationId) {
+    return;
+  }
+  const donation = await prisma.donation.findUnique({
+    where: { id: donationId },
+  });
+  if (!donation) {
+    console.warn("Donation not found for payment_intent", {
+      donationId,
+      paymentIntentId: paymentIntent.id,
+    });
+    return;
+  }
+  if (donation.status === "pending") {
+    await prisma.donation.update({
+      where: { id: donationId },
+      data: { status: "failed" },
+    });
+  }
+}
+
+async function handleOrderRefunded(
+  orderId: string | undefined,
+  charge: Stripe.Charge,
+) {
+  if (!orderId) {
+    return;
+  }
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) {
+    console.warn("Order not found for charge.refunded", {
+      orderId,
+      chargeId: charge.id,
+    });
+    return;
+  }
+  if (order.status === "paid") {
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { status: "refunded" },
+    });
+  }
+}

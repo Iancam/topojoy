@@ -6,7 +6,9 @@
     "test": "jest",
     "lint": "eslint .",
     "preview": "vite preview",
-    "postinstall": "cd geojson.io && npm install"
+    "postinstall": "cd geojson.io && npm install",
+    "api:generate": "node scripts/apiGenerator.ts",
+    "api:watch": "node scripts/watchAPI.ts"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"
