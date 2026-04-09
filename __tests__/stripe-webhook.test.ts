@@ -48,7 +48,7 @@ const stripeMock = jest.requireMock("stripe") as {
 };
 
 const loadHandler = async () => {
-  const mod = await import("./stripe-webhook");
+  const mod = await import("../functions/stripe-webhook");
   return mod.handler;
 };
 
@@ -73,7 +73,9 @@ describe("stripe-webhook handler", () => {
     );
 
     expect(res.statusCode).toBe(400);
-    expect(JSON.parse(res.body).message).toMatch(/signature verification failed/i);
+    expect(JSON.parse(res.body).message).toMatch(
+      /signature verification failed/i,
+    );
   });
 
   it("marks pending order as paid and submits to lumaprints on payment_intent.succeeded", async () => {
@@ -87,7 +89,10 @@ describe("stripe-webhook handler", () => {
       },
     });
 
-    prismaMock.order.findUnique.mockResolvedValue({ id: "order_1", status: "pending" });
+    prismaMock.order.findUnique.mockResolvedValue({
+      id: "order_1",
+      status: "pending",
+    });
 
     const handler = await loadHandler();
     const res = await handler(
@@ -106,7 +111,9 @@ describe("stripe-webhook handler", () => {
         data: expect.objectContaining({ status: "paid" }),
       }),
     );
-    expect(lumaprintsMock.submitOrderToLumaprints).toHaveBeenCalledWith("order_1");
+    expect(lumaprintsMock.submitOrderToLumaprints).toHaveBeenCalledWith(
+      "order_1",
+    );
   });
 
   it("marks pending donation as failed on payment_intent.payment_failed", async () => {
@@ -120,7 +127,10 @@ describe("stripe-webhook handler", () => {
       },
     });
 
-    prismaMock.donation.findUnique.mockResolvedValue({ id: "don_1", status: "pending" });
+    prismaMock.donation.findUnique.mockResolvedValue({
+      id: "don_1",
+      status: "pending",
+    });
 
     const handler = await loadHandler();
     const res = await handler(

@@ -26,7 +26,7 @@ const libMock = jest.requireMock("../lib") as {
 };
 
 const loadHandler = async () => {
-  const mod = await import("./donation-gift-value");
+  const mod = await import("../functions/donation-gift-value");
   return mod.handler;
 };
 

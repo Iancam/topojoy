@@ -68,7 +68,7 @@ const stripeMock = jest.requireMock("stripe") as {
 };
 
 const loadHandler = async () => {
-  const mod = await import("./stripe-create-payment-intent");
+  const mod = await import("../functions/stripe-create-payment-intent");
   return mod.handler;
 };
 
