@@ -98,7 +98,7 @@ export const featuresToScreenCoords = (zoom, box) => (feature) => {
   if (geometry.type === "Polygon") {
     if (coordinates.length !== 1) {
       console.log(
-        `Polygon named ${properties.name}, id ${properties.id} has more than one ring`
+        `Polygon named ${properties.name}, id ${properties.id} has more than one ring`,
       );
     }
     coords = coordinates.map(processCoords);
@@ -120,10 +120,10 @@ const screenCoordListToObj = (obj, { name, coords }) => {
 
 export function getUserSelectedTrailsLatLng() {
   const userSelectedTrails = JSON.parse(
-    localStorage.getItem(LS.GEOJSON_SELECTED_TRAIL_SEGMENTS) || "[]"
+    localStorage.getItem(LS.GEOJSON_SELECTED_TRAIL_SEGMENTS) || "[]",
   );
   const userDrawnTrails = JSON.parse(
-    localStorage.getItem(LS.GEOJSON_DRAWN_TRAILS)
+    localStorage.getItem(LS.GEOJSON_DRAWN_TRAILS),
   ).features;
   // merge userSelectedTrails and userDrawnTrails
   const merged = [...userSelectedTrails, ...userDrawnTrails];
@@ -185,7 +185,7 @@ export function getLakes({ box, zoom }, geoJSON) {
       if (geometry.type === "Polygon") {
         if (geometry.coordinates.length !== 1) {
           console.warn(
-            `Polygon named ${properties.name}, id ${properties.id} has more than one ring`
+            `Polygon named ${properties.name}, id ${properties.id} has more than one ring`,
           );
         }
         return true;
@@ -202,7 +202,7 @@ export function getLakes({ box, zoom }, geoJSON) {
 export function getMountainFeatures({ box, zoom }, geoJSON) {
   return geoJSON.features
     .filter(
-      ({ properties }) => properties.natural === "peak" && properties.name
+      ({ properties }) => properties.natural === "peak" && properties.name,
     )
     .map(featuresToScreenCoords(zoom, box))
     .reduce(screenCoordListToObj, {});
@@ -257,15 +257,43 @@ out skel qt;
     return cached;
   }
 
-  const osm = await fetch("https://overpass-api.de/api/interpreter", {
-    method: "POST",
-    // The body contains the query
-    // to understand the query language see "The Programmatic Query Language" on
-    // https://wiki.openstreetmap.org/wiki/Overpass_API#The_Programmatic_Query_Language_(OverpassQL)
-    body: "data=" + encodeURIComponent(query),
-  })
-    .then((data) => data.json())
-    .catch((err) => console.log(err));
+  let osm;
+  try {
+    const response = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      // The body contains the query
+      // to understand the query language see "The Programmatic Query Language" on
+      // https://wiki.openstreetmap.org/wiki/Overpass_API#The_Programmatic_Query_Language_(OverpassQL)
+      body: "data=" + encodeURIComponent(query),
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Overpass API service is currently unavailable (HTTP ${response.status}). Please try again later.`,
+      );
+    }
+
+    const contentType = response.headers.get("content-type");
+    const text = await response.text();
+
+    // Check if response is XML (error response) instead of JSON
+    if (contentType?.includes("xml") || text.trim().startsWith("<?xml")) {
+      throw new Error(
+        "Overpass API service is currently unavailable. Please try again in a few minutes.",
+      );
+    }
+
+    try {
+      osm = JSON.parse(text);
+    } catch (parseError) {
+      throw new Error(
+        "Overpass API returned invalid data. The service may be experiencing issues. Please try again later.",
+      );
+    }
+  } catch (err) {
+    console.error("Overpass API error:", err);
+    throw err;
+  }
 
   const geoJSON = osmtogeojson(osm);
 

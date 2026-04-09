@@ -158,29 +158,39 @@ export const App = () => {
       setForm(form);
 
       const { bounds } = tilesForFeatures(bbox, downstreamConfig.zoomLevel);
-      getGeoJSONFromOSM(bounds.latLngBox).then((geoJSON) => {
-        const rawFeats = getFeatures(
-          { box: bounds.box, zoom: downstreamConfig.zoomLevel },
-          geoJSON,
-        );
-        const feats = Object.entries(rawFeats).reduce(
-          (acc, [key, value]) => {
-            // key minus trailing s
-            const type = key.slice(0, -1);
-            acc[type] = Object.keys(value).map(normalizeFeatureName);
-            return acc;
-          },
-          {} as Record<string, string[]>,
-        );
-        setFeatures(feats);
-        renderSketch({
-          config: configName,
-          form,
-          bbox,
-          selectedTrails,
-          features: feats,
-        })();
-      });
+      getGeoJSONFromOSM(bounds.latLngBox)
+        .then((geoJSON) => {
+          const rawFeats = getFeatures(
+            { box: bounds.box, zoom: downstreamConfig.zoomLevel },
+            geoJSON,
+          );
+          const feats = Object.entries(rawFeats).reduce(
+            (acc, [key, value]) => {
+              // key minus trailing s
+              const type = key.slice(0, -1);
+              acc[type] = Object.keys(value).map(normalizeFeatureName);
+              return acc;
+            },
+            {} as Record<string, string[]>,
+          );
+          setFeatures(feats);
+          renderSketch({
+            config: configName,
+            form,
+            bbox,
+            selectedTrails,
+            features: feats,
+          })();
+        })
+        .catch((err) => {
+          console.error("Failed to load trail data:", err);
+          setToast({
+            message:
+              err.message ||
+              "Failed to load trail data. Please try again later.",
+            type: "error",
+          });
+        });
     }
   }, []);
 
