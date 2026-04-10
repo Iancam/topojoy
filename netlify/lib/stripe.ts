@@ -12,6 +12,15 @@ export function initStripe() {
     : process.env.SBX_STRIPE_SECRET_KEY;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
+  // Debug logging
+  console.log("Stripe initialization:", {
+    CONTEXT: process.env.CONTEXT,
+    NODE_ENV: process.env.NODE_ENV,
+    isProduction,
+    usingLiveKey: isProduction,
+    keyPrefix: stripeSecretKey?.substring(0, 7), // sk_live or sk_test
+  });
+
   if (!stripeSecretKey) {
     throw new Error("STRIPE_SECRET_KEY is not set");
   }
