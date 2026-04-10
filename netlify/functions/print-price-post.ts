@@ -1,8 +1,12 @@
 import { z } from "zod";
+import { isProduction } from "../lib/env";
+
 export const handler = async (event: any) => {
   const { products } = JSON.parse(event.body);
+  const isProd = isProduction();
+
   const authHeader = () => {
-    return process.env.CONTEXT === "production"
+    return isProd
       ? `Basic ${Buffer.from(`${process.env.LUMAPRINTS_API_KEY}:${process.env.LUMAPRINTS_API_SECRET}`).toString("base64")}`
       : `Basic ${Buffer.from(`${process.env.sbx_lumaprints_key}:${process.env.sbx_lumaprints_secret}`).toString("base64")}`;
   };
@@ -32,7 +36,7 @@ export const handler = async (event: any) => {
     validatedProducts.map(
       ({ subcategoryId, width, height, score, options }: any) =>
         fetch(
-          `https://us.${process.env.CONTEXT === "production" ? "api" : "api-sandbox"}.lumaprints.com/api/v1/pricing/product`,
+          `https://us.${isProd ? "api" : "api-sandbox"}.lumaprints.com/api/v1/pricing/product`,
           {
             method: "POST",
             headers: {

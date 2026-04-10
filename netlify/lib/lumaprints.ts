@@ -1,6 +1,7 @@
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import prisma from "./prisma";
+import { isProduction } from "./env";
 
 const s3 = new S3Client({
   region: process.env.MY_AWS_REGION,
@@ -20,11 +21,9 @@ const getImageUrlFromKey = async (key: string) => {
 };
 
 const getLumaprintsAuthHeader = () => {
-  const isProduction =
-    process.env.CONTEXT === "production" ||
-    process.env.NODE_ENV === "production";
+  const isProd = isProduction();
 
-  return isProduction
+  return isProd
     ? `Basic ${Buffer.from(
         `${process.env.LUMAPRINTS_API_KEY}:${process.env.LUMAPRINTS_API_SECRET}`,
       ).toString("base64")}`
@@ -114,12 +113,10 @@ export async function submitOrderToLumaprints(orderId: string) {
     orderItems,
   };
 
-  const isProduction =
-    process.env.CONTEXT === "production" ||
-    process.env.NODE_ENV === "production";
+  const isProd = isProduction();
 
   const response = await fetch(
-    `https://us.${isProduction ? "api" : "api-sandbox"}.lumaprints.com/api/v1/orders`,
+    `https://us.${isProd ? "api" : "api-sandbox"}.lumaprints.com/api/v1/orders`,
     {
       method: "POST",
       headers: {

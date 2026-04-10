@@ -1,13 +1,10 @@
 import Stripe from "stripe";
+import { isProduction } from "./env";
 
 export function initStripe() {
-  // Use Netlify's CONTEXT variable (production, deploy-preview, branch-deploy)
-  // or fallback to NODE_ENV
-  const isProduction =
-    process.env.CONTEXT === "production" ||
-    process.env.NODE_ENV === "production";
+  const isProd = isProduction();
 
-  const stripeSecretKey = isProduction
+  const stripeSecretKey = isProd
     ? process.env.STRIPE_SECRET_KEY
     : process.env.SBX_STRIPE_SECRET_KEY;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -16,8 +13,8 @@ export function initStripe() {
   console.log("Stripe initialization:", {
     CONTEXT: process.env.CONTEXT,
     NODE_ENV: process.env.NODE_ENV,
-    isProduction,
-    usingLiveKey: isProduction,
+    isProduction: isProd,
+    usingLiveKey: isProd,
     keyPrefix: stripeSecretKey?.substring(0, 7), // sk_live or sk_test
   });
 

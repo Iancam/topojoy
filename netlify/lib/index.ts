@@ -1,9 +1,11 @@
+import { isProduction } from "./env";
+
 export const auth = async (event: any, clerkClient: any) => {
-  const baseUrl = process.env.DEV
+  const baseUrl = !isProduction()
     ? "http://localhost:8888"
     : "https://topojoy.studio";
 
-  const authorizedParties = process.env.DEV
+  const authorizedParties = !isProduction()
     ? ["http://localhost:8888"]
     : ["https://topojoy.studio", "https://topojoy.netlify.app"];
 
@@ -50,8 +52,10 @@ export const getShippingPrice = async ({
     quantity: number;
   }[];
 }) => {
+  const isProd = isProduction();
+
   const authHeader = () => {
-    return process.env.CONTEXT === "production"
+    return isProd
       ? `Basic ${Buffer.from(`${process.env.LUMAPRINTS_API_KEY}:${process.env.LUMAPRINTS_API_SECRET}`).toString("base64")}`
       : `Basic ${Buffer.from(`${process.env.sbx_lumaprints_key}:${process.env.sbx_lumaprints_secret}`).toString("base64")}`;
   };
@@ -79,7 +83,7 @@ export const getShippingPrice = async ({
   };
   // console.log(JSON.stringify(body, null, 2));
   const response = await fetch(
-    `https://us.${process.env.CONTEXT === "production" ? "api" : "api-sandbox"}.lumaprints.com/api/v1/pricing/shipping`,
+    `https://us.${isProd ? "api" : "api-sandbox"}.lumaprints.com/api/v1/pricing/shipping`,
     {
       method: "POST",
       headers: {
