@@ -6,68 +6,17 @@ export const FrontPage = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-8 pt-20">
       <Header />
-      {/* <nav className="flex justify-between px-3 py-2 fixed top-0 left-0 right-0 shadow-lg bg-white z-10 backdrop-blur-lg">
-        <a href="#hero" className="text-gray-800 font-semibold hover:underline">
-          TopoJoy
-        </a>
-        <a
-          href="#about"
-          className="px-4 text-gray-800 font-semibold hover:underline"
-        >
-          About
-        </a>
-        <div className="flex ml-auto">
-          <a
-            className="text-black text-xs font-bold py-1 px-4"
-            href="/geojson.io/index.html"
-          >
-            Open Map Editor
-          </a>
-        </div>
-
-        <div className="flex">
-          <Link
-            to="/app"
-            className="px-4 text-gray-800 font-semibold hover:underline"
-          >
-            Open App
-          </Link>
-        </div>
-
-        <div className="px-4">
-          {import.meta.env.DEV && (
-            <div>
-              <SignedIn>
-                <UserButton afterSignOutUrl="/sign-in" />
-                <Link
-                  to="/my-maps"
-                  className="text-gray-800 font-semibold hover:underline"
-                >
-                  My Maps
-                </Link>
-              </SignedIn>
-              <SignedOut>
-                <Link
-                  to="/sign-in"
-                  className="text-gray-800 font-semibold hover:underline"
-                >
-                  Sign In
-                </Link>
-              </SignedOut>
-            </div>
-          )}
-        </div>
-      </nav> */}
       <div className="w-full max-w-[600px] text-center min-h-[calc(100vh-60px)] flex flex-col items-center justify-center py-8 px-4 mt-4">
         <h1 className="text-4xl font-bold text-gray-800 mb-4">
           Welcome to TopoJoy
         </h1>
         <p className="text-lg leading-7 text-gray-600 mb-8">
           These maps tell stories of wilderness. The time we built an aspen
-          bridge across a raging creek ; the time it snowed on us in June. Tell
-          your story. Zoom to a place that has meaning to a friend, select the
-          area you want to remember, then customize the color scheme, features,
-          and background text. Send a gift that'll mean something.
+          bridge across a raging creek; the time it snowed on us in June; The
+          time we climbed Arrow, Handies, Jones,Crown, Niagra. Tell your story.
+          Zoom to a place that has meaning to a friend, select the area you want
+          to remember, then customize the details. Send a gift that'll mean
+          something.
         </p>
         <a
           href="geojson.io/index.html"
