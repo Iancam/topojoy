@@ -63,12 +63,11 @@ export const FrontPage = () => {
           Welcome to TopoJoy
         </h1>
         <p className="text-lg leading-7 text-gray-600 mb-8">
-          These maps tell stories. The time Kyle accidentally drank gasoline;
-          the time Albert and I hitchhiked in the back of a speeding flatbed.
-          Create stylized, topography-inspired maps that tell a story. Zoom to a
-          place that has meaning to a friend, select the area you want to
-          remember, then customize the color scheme, features, and background
-          text. Send a gift that'll mean something.
+          These maps tell stories of wilderness. The time we built an aspen
+          bridge across a raging creek ; the time it snowed on us in June. Tell
+          your story. Zoom to a place that has meaning to a friend, select the
+          area you want to remember, then customize the color scheme, features,
+          and background text. Send a gift that'll mean something.
         </p>
         <a
           href="geojson.io/index.html"
