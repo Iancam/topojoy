@@ -275,6 +275,7 @@ const DTOToForm = (mapConfig: MapConfigDTO & { AWSPutURL?: string }) => {
     id: data.id,
     filename: data.filename,
     annotations: data.annotations ?? [],
+    canEdit: data.canEdit,
   };
 
   return { ...ret, AWSPutURL: mapConfig.AWSPutURL };

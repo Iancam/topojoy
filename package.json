@@ -8,7 +8,8 @@
     "preview": "vite preview",
     "postinstall": "cd geojson.io && npm install",
     "api:generate": "node scripts/apiGenerator.ts",
-    "api:watch": "node scripts/watchAPI.ts"
+    "api:watch": "node scripts/watchAPI.ts",
+    "migrate:filenames": "npx tsx scripts/migrate-filenames-to-slugs.ts"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"

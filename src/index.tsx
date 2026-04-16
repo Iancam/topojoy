@@ -97,6 +97,11 @@ const router = createBrowserRouter([
         path: "/privacy",
         element: <Privacy />,
       },
+      {
+        path: "/:username/:filename",
+        element: <App />,
+        errorElement: <AppError />,
+      },
     ],
   },
 ]);

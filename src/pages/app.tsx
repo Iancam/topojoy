@@ -22,7 +22,7 @@ import {
   normalizeFeatureName,
 } from "../lib/utils.ts";
 import { useUser } from "@clerk/clerk-react";
-import { useSearchParams } from "react-router";
+import { useSearchParams, useParams } from "react-router";
 import { addHeightsToForm, convertToNestedObject } from "../lib/utils.ts";
 import _ from "lodash";
 import { Header } from "../components/Header.tsx";
@@ -45,9 +45,11 @@ const configs: Configs = {
 };
 
 export const App = () => {
-  // get config id from url
+  // get config id from url query params or route params
   const [searchParams, setSearchParams] = useSearchParams();
+  const routeParams = useParams<{ username?: string; filename?: string }>();
   const configId = searchParams.get("configId");
+  const { username, filename } = routeParams;
 
   const [config, setConfig] = useState("Original");
 
@@ -89,6 +91,7 @@ export const App = () => {
   });
 
   const [toast, setToast] = useState<ToastState>(null);
+  const [mapNotFoundError, setMapNotFoundError] = useState<string | null>(null);
 
   const [isRendering, setIsRendering] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
@@ -96,6 +99,9 @@ export const App = () => {
 
   // const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [annotationsMode, setAnnotationsMode] = useState(false);
+
+  // Track if the current user can edit this map
+  const [canEdit, setCanEdit] = useState(true);
 
   const cartContext = useCartContext();
 
@@ -115,34 +121,67 @@ export const App = () => {
   }, [toast]);
   // load config from db, or from local storage
   useEffect(() => {
-    if (configId) {
-      // get config from db
-      maps.get({ userId: user?.id!, configId }).then((config) => {
-        console.log("retrieved config from database");
-        setConfig(config.config);
-        setForm({ ...preForm, ...config });
-        setSelectedTrails(config.selectedTrails);
-        setBbox(config.bbox);
-        // set fealures
-        const feats = config.features.reduce(
-          (acc, feat) => {
-            if (!acc[feat.type]) {
-              acc[feat.type] = [];
-            }
-            acc[feat.type].push(normalizeFeatureName(feat.name));
-            return acc;
-          },
-          {} as Record<string, string[]>,
-        );
-        setFeatures(feats);
-        renderSketch({
-          config: config.config,
-          form: { ...preForm, ...config },
-          bbox: config.bbox,
-          selectedTrails: config.selectedTrails,
-          features: feats,
-        })();
-      });
+    if (configId || (username && filename)) {
+      // get config from db - support both lookup methods
+      const queryParams = configId
+        ? { userId: user?.id!, configId }
+        : { userId: user?.id!, username, filename };
+
+      maps
+        .get(queryParams)
+        .then((config) => {
+          console.log("retrieved config from database");
+          // Clear any previous error
+          setMapNotFoundError(null);
+
+          // Set edit permissions based on API response
+          setCanEdit(config.canEdit ?? true);
+
+          // Show notification if user cannot edit
+          if (config.canEdit === false) {
+            setToast({
+              message:
+                "You are viewing this map in read-only mode. Only the owner can make changes.",
+              type: "info",
+            });
+          }
+
+          setConfig(config.config);
+          setForm({ ...preForm, ...config });
+          setSelectedTrails(config.selectedTrails);
+          setBbox(config.bbox);
+          // set fealures
+          const feats = config.features.reduce(
+            (acc, feat) => {
+              if (!acc[feat.type]) {
+                acc[feat.type] = [];
+              }
+              acc[feat.type].push(normalizeFeatureName(feat.name));
+              return acc;
+            },
+            {} as Record<string, string[]>,
+          );
+          setFeatures(feats);
+          renderSketch({
+            config: config.config,
+            form: { ...preForm, ...config },
+            bbox: config.bbox,
+            selectedTrails: config.selectedTrails,
+            features: feats,
+          })();
+        })
+        .catch((error) => {
+          console.error("Failed to load map:", error);
+
+          // Set persistent error message
+          const errorMessage =
+            username && filename
+              ? `Map not found: /${username}/${filename}`
+              : `Map not found (ID: ${configId})`;
+
+          setMapNotFoundError(errorMessage);
+          setIsRendering(false);
+        });
     } else {
       console.log("loading data from localStorage");
       const bbox = JSON.parse(localStorage.getItem(LS.GEOJSON_BBOX) || "{}");
@@ -158,6 +197,10 @@ export const App = () => {
       setForm(form);
 
       const { bounds } = tilesForFeatures(bbox, downstreamConfig.zoomLevel);
+
+      // Show loading state while fetching trail data
+      setIsRendering(true);
+
       getGeoJSONFromOSM(bounds.latLngBox)
         .then((geoJSON) => {
           const rawFeats = getFeatures(
@@ -184,6 +227,10 @@ export const App = () => {
         })
         .catch((err) => {
           console.error("Failed to load trail data:", err);
+
+          // Stop showing loader when API fails
+          setIsRendering(false);
+
           setToast({
             message:
               err.message ||
@@ -525,9 +572,46 @@ export const App = () => {
       );
 
       setToast({ message: "Map saved to server", type: "success" });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to upload map", error);
-      setToast({ message: "Failed to save map to server", type: "error" });
+
+      // Handle unauthorized access
+      if (
+        error.message?.includes("UNAUTHORIZED") ||
+        error.message?.includes("permission")
+      ) {
+        setToast({
+          message:
+            "You don't have permission to edit this map. Only the owner and collaborators can make changes.",
+          type: "error",
+        });
+      }
+      // Handle filename conflict
+      else if (
+        error.message?.includes("FILENAME_CONFLICT") ||
+        error.message?.includes("filename already exists")
+      ) {
+        const newFilename = prompt(
+          `A map with filename "${form.filename}" already exists.\n\nPlease enter a different filename:`,
+          `${form.filename}-v2`,
+        );
+
+        if (newFilename && newFilename !== form.filename) {
+          setForm({ ...form, filename: newFilename });
+          setToast({
+            message: "Filename updated. Please try saving again.",
+            type: "info",
+          });
+        } else {
+          setToast({
+            message:
+              "Filename conflict - map not saved. Please change the filename and try again.",
+            type: "error",
+          });
+        }
+      } else {
+        setToast({ message: "Failed to save map to server", type: "error" });
+      }
     } finally {
       setIsUploading(false);
     }
@@ -612,9 +696,22 @@ export const App = () => {
       });
       cartContext.refresh();
       setToast({ message: "Map added to cart", type: "success" });
-    } catch (error) {
-      setToast({ message: "Failed to add to cart map", type: "error" });
+    } catch (error: any) {
       console.error("Failed to add to cart map", error);
+
+      // Handle unauthorized access
+      if (
+        error.message?.includes("UNAUTHORIZED") ||
+        error.message?.includes("permission")
+      ) {
+        setToast({
+          message:
+            "You don't have permission to edit this map. Only the owner and collaborators can make changes.",
+          type: "error",
+        });
+      } else {
+        setToast({ message: "Failed to add to cart map", type: "error" });
+      }
     } finally {
       setIsPurchasing(false);
     }
@@ -693,6 +790,31 @@ export const App = () => {
     <div>
       {/* Header */}
       <Header />
+
+      {/* Persistent Error Banner */}
+      {mapNotFoundError && (
+        <div className="fixed top-15 left-0 right-0 z-40 bg-red-600 text-white px-6 py-4 shadow-lg">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⚠️</span>
+              <div>
+                <p className="font-semibold text-lg">Map Not Found</p>
+                <p className="text-sm text-red-100">{mapNotFoundError}</p>
+                <p className="text-xs text-red-200 mt-1">
+                  This map may have been deleted or the URL is incorrect.
+                </p>
+              </div>
+            </div>
+            <a
+              href="/app"
+              className="px-4 py-2 bg-white text-red-600 rounded-md hover:bg-red-50 transition-colors font-medium text-sm"
+            >
+              Create New Map
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* Toast */}
       {toast && (
         <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-md px-4 py-3 shadow-lg text-white text-sm max-w-sm bg-opacity-90">
@@ -743,6 +865,7 @@ export const App = () => {
             onSubmitSave={saveImage}
             annotationsMode={annotationsMode}
             onAnnotationsModeToggle={() => setAnnotationsMode((m) => !m)}
+            canEdit={canEdit}
           />
         </div>
         {/* Main Content */}

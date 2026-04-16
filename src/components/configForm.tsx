@@ -39,6 +39,7 @@ interface ConfigFormProps {
 
   annotationsMode?: boolean;
   onAnnotationsModeToggle?: () => void;
+  canEdit?: boolean;
 }
 
 const RenderFormElement = ({
@@ -217,6 +218,7 @@ export const ConfigForm = ({
   onSubmitSave,
   annotationsMode = false,
   onAnnotationsModeToggle,
+  canEdit = true,
 }: ConfigFormProps) => {
   const steps = formJourney.map((step) => ({
     title: step.title,
@@ -265,12 +267,13 @@ export const ConfigForm = ({
         }}
         submitLabel="Save Image"
         onRender={renderSketch}
-        onSave={onSubmitSave}
-        onUpload={onUpload}
+        onSave={canEdit ? onSubmitSave : undefined}
+        onUpload={canEdit ? onUpload : undefined}
         // onPurchase={onPurchase}
-        onAddToOrder={onAddToOrder}
+        onAddToOrder={canEdit ? onAddToOrder : undefined}
         isPurchasing={isPurchasing}
         isUploading={isUploading}
+        canEdit={canEdit}
       />
     </ConfigFormContext.Provider>
   );

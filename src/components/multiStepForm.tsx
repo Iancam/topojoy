@@ -24,6 +24,7 @@ export type MultiStepFormProps = {
   onAddToOrder?: () => void;
   isPurchasing?: boolean;
   isUploading?: boolean;
+  canEdit?: boolean;
 };
 
 export const MultiStepForm: React.FC<MultiStepFormProps> = ({
@@ -40,6 +41,7 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
   onAddToOrder,
   isPurchasing,
   isUploading,
+  canEdit = true,
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -103,7 +105,7 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
                 key={idx}
                 className={cn(
                   "flex items-center gap-2 shrink-0",
-                  idx < total - 1 && "pr-2"
+                  idx < total - 1 && "pr-2",
                 )}
               >
                 <button
@@ -114,7 +116,7 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
                     reached
                       ? "bg-blue-600 text-white border-blue-600"
                       : "bg-white text-gray-600 border-gray-300",
-                    active && "ring-2 ring-blue-300"
+                    active && "ring-2 ring-blue-300",
                   )}
                   aria-current={active ? "step" : undefined}
                   aria-label={`Go to step ${idx + 1}: ${s.title}`}
@@ -124,7 +126,7 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
                 <span
                   className={cn(
                     "text-xs",
-                    reached ? "text-gray-900" : "text-gray-500"
+                    reached ? "text-gray-900" : "text-gray-500",
                   )}
                 >
                   {s.title}
@@ -196,7 +198,7 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
                     "px-3 py-1.5 rounded-md text-xs font-medium",
                     isPurchasing
                       ? "bg-green-300 text-white cursor-not-allowed"
-                      : "bg-green-600 text-white hover:bg-green-700"
+                      : "bg-green-600 text-white hover:bg-green-700",
                   )}
                 >
                   {isPurchasing ? "Processing..." : "Add to Order"}
@@ -215,7 +217,7 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
               "px-4 py-2 rounded-md border text-sm font-medium transition-colors inline-flex items-center justify-center gap-1",
               isFirst
                 ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50",
             )}
             aria-label={prevLabel}
           >
@@ -230,7 +232,7 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
               "px-4 py-2 rounded-md text-white text-sm font-medium transition-colors inline-flex items-center justify-center gap-1",
               isLast
                 ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
+                : "bg-blue-600 hover:bg-blue-700",
             )}
             aria-label={nextLabel}
           >

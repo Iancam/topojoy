@@ -28,7 +28,6 @@ export const AnnotationLayer: React.FC<Props> = ({
   scale = 1,
   onChange,
 }) => {
-  console.log(annotationsMode);
   const [editingId, setEditingId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 

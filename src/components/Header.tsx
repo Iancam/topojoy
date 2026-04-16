@@ -1,12 +1,15 @@
 import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/clerk-react";
 import { Link, useNavigate } from "react-router";
 import { useCartContext } from "../cartContext";
+import { UsernameModal } from "./UsernameModal";
+import { useState } from "react";
 
 export const Header = () => {
   const { itemCount: cartItemCount } = useCartContext();
   const { user } = useUser();
   const navigate = useNavigate();
   const isAdmin = (user?.publicMetadata as any)?.role === "admin";
+  const [isUsernameModalOpen, setIsUsernameModalOpen] = useState(false);
 
   return (
     <div className="text-[#d5f7ff] bg-[#071e25] font-sans px-4 flex justify-between h-15 fixed top-0 left-0 right-0 z-40 border-b border-[#0e3942]/80 shadow-md shadow-black/40">
@@ -64,6 +67,11 @@ export const Header = () => {
                 <UserButton afterSignOutUrl="/sign-in">
                   <UserButton.MenuItems>
                     <UserButton.Action
+                      label="Set Username"
+                      labelIcon={<span>👤</span>}
+                      onClick={() => setIsUsernameModalOpen(true)}
+                    />
+                    <UserButton.Action
                       label="My Maps"
                       labelIcon={<span>🗺️</span>}
                       onClick={() => navigate("/my-maps")}
@@ -90,6 +98,11 @@ export const Header = () => {
           </div>
         </div>
       </div>
+
+      <UsernameModal
+        isOpen={isUsernameModalOpen}
+        onClose={() => setIsUsernameModalOpen(false)}
+      />
     </div>
   );
 };
