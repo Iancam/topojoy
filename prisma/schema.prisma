@@ -70,7 +70,7 @@ model Annotation {
 
 model MapConfig {
   id    String @id @default(cuid())
-  user  User @relation(fields: [userId], references: [clerkId])
+  user  User @relation(fields: [userId], references: [id])
   userId String
   
   filename String @db.VarChar(255) @default(dbgenerated("gen_random_uuid()"))
@@ -138,7 +138,7 @@ model Order {
   orderItems OrderItem[]
 
   userId String?
-  user User? @relation(fields: [userId], references: [clerkId])
+  user User? @relation(fields: [userId], references: [id])
 
   submissionErrorMessage String?
   submissionErrorAt DateTime?

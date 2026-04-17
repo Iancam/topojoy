@@ -6,10 +6,10 @@ const prisma = new PrismaClient();
 async function main() {
   // Upsert to keep seeding idempotent
   await prisma.user.upsert({
-    where: { email: "kleptocrat@gmail.com" },
+    where: { clerkId: "undefined1" },
     update: {
       name: "anonymous",
-      clerkId: "undefined1",
+      email: "kleptocrat@gmail.com",
     },
     create: {
       name: "anonymous",
@@ -19,7 +19,7 @@ async function main() {
   });
 
   console.log(
-    "Seeded user: anonymous <kleptocrat@gmail.com> (clerkId: undefined1)"
+    "Seeded user: anonymous <kleptocrat@gmail.com> (clerkId: undefined1)",
   );
 }
 
