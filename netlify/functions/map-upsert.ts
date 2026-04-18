@@ -153,7 +153,12 @@ export const handler = async (event: any) => {
       body: JSON.stringify({ ...config, AWSPutURL: url }),
     };
   } catch (error: any) {
-    console.log(error);
+    console.error("Map upsert error:", {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      stack: error.stack,
+    });
 
     // Check for unauthorized access
     if (error.message?.includes("UNAUTHORIZED")) {

@@ -5,7 +5,7 @@ import { PrintOptions } from "./PrintOptions";
 import type { MapConfig } from "@/configs/schema";
 import { AnnotationsControl } from "./AnnotationsControl";
 import { CollisionMultiSelect } from "./CollisionMultiSelect";
-
+import { filenameSchema } from "../../netlify/lib/validation";
 // Props passed to advanced form components (e.g., ColorPlan)
 export interface AdvancedFormElementProps {
   config: string;
@@ -94,7 +94,18 @@ export const basicFormElements: FormElements = {
     false,
     "Force Collision Detection",
   ],
-  filename: ["text", "the unique 'filename' of the map", "", "Filename"],
+  filename: [
+    "text",
+    "the unique 'filename' of the map",
+    "",
+    "Filename",
+    {
+      required: true,
+      validation: (input: string) => {
+        return filenameSchema.safeParse(input);
+      },
+    },
+  ],
   "legend.enabled": ["boolean", "show/hide legend", false, "Show Legend"],
   "backgroundText.text": ["textarea", "the text in the background", "", "Text"],
   "backgroundText.elevationRange": [

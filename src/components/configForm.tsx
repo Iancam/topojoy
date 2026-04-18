@@ -44,7 +44,7 @@ interface ConfigFormProps {
 
 const RenderFormElement = ({
   form,
-  onFormChange,
+  onFormChange: originalOnFormChange,
   props,
   id,
   elementType,
@@ -60,6 +60,28 @@ const RenderFormElement = ({
   props?: { [key: string]: any };
 }): React.ReactElement | null => {
   const value = form[id];
+  const [validationError, setValidationError] = React.useState<string | null>(
+    null,
+  );
+
+  const onFormChange = (key: string, value: any) => {
+    // Run validation if provided
+    if (props?.validation) {
+      const result = props.validation(value);
+
+      if (result.success) {
+        // Validation passed
+        setValidationError(null);
+      } else {
+        // Validation failed - extract error messages
+        const errorMessages = result.error.errors
+          .map((err: any) => err.message)
+          .join(", ");
+        setValidationError(errorMessages);
+      }
+    }
+    originalOnFormChange(key, value);
+  };
 
   const cases: Record<FormElementType, React.ReactElement> = {
     text: (
@@ -160,6 +182,9 @@ const RenderFormElement = ({
           <Info className={"h-4 w-4 tooltip-" + id.replace(".", "-")} />
         </TooltipWrapper>
       </div>
+      {validationError && (
+        <p className="text-red-500 text-xs">{validationError}</p>
+      )}
     </div>
   );
 };
