@@ -21,6 +21,8 @@ export const handler = async (event: any) => {
     };
   }
 
+  console.log("here I am");
+
   // get event body
   const body = JSON.parse(event.body);
 
@@ -71,6 +73,24 @@ export const handler = async (event: any) => {
     if (mapConfigData.filename) {
       mapConfigData.filename = slugify(mapConfigData.filename);
     }
+    console.log(mapConfigData.userId);
+    // Convert userId from Clerk ID to internal database ID
+    const user = await prisma.user.findUnique({
+      where: { clerkId: mapConfigData.userId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({
+          message: "User not found",
+        }),
+      };
+    }
+
+    // Replace Clerk ID with internal database ID
+    mapConfigData.userId = user.id;
 
     const uuid = mapConfigData.id || crypto.randomUUID();
     const s3Key = getAWSKey(uuid);
@@ -187,7 +207,7 @@ export const handler = async (event: any) => {
     return {
       statusCode: 400,
       body: JSON.stringify({
-        error: error.message || "Failed to save map",
+        message: error.message || "Failed to save map",
       }),
     };
   }
