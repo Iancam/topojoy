@@ -3,6 +3,7 @@ import prisma from "../lib/prisma";
 import { getAWSKey, putAWSImage } from "../lib/aws";
 import { S3Client } from "@aws-sdk/client-s3";
 import { filenameSchema, slugify } from "../lib/validation";
+import { success, error } from "../lib";
 
 const s3 = new S3Client({
   region: process.env.MY_AWS_REGION,
@@ -15,13 +16,8 @@ const s3 = new S3Client({
 export const handler = async (event: any) => {
   // respond to post request
   if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ error: "Method not allowed" }),
-    };
+    return error("Method not allowed", 405);
   }
-
-  console.log("here I am");
 
   // get event body
   const body = JSON.parse(event.body);
@@ -73,7 +69,7 @@ export const handler = async (event: any) => {
     if (mapConfigData.filename) {
       mapConfigData.filename = slugify(mapConfigData.filename);
     }
-    console.log(mapConfigData.userId);
+
     // Convert userId from Clerk ID to internal database ID
     const user = await prisma.user.findUnique({
       where: { clerkId: mapConfigData.userId },
@@ -81,12 +77,7 @@ export const handler = async (event: any) => {
     });
 
     if (!user) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({
-          message: "User not found",
-        }),
-      };
+      return error("User not found", 404);
     }
 
     // Replace Clerk ID with internal database ID
@@ -168,47 +159,31 @@ export const handler = async (event: any) => {
       }),
     ]);
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ ...config, AWSPutURL: url }),
-    };
-  } catch (error: any) {
+    return success({ ...config, AWSPutURL: url });
+  } catch (err: any) {
     console.error("Map upsert error:", {
-      message: error.message,
-      code: error.code,
-      meta: error.meta,
-      stack: error.stack,
+      message: err.message,
+      code: err.code,
+      meta: err.meta,
+      stack: err.stack,
     });
 
     // Check for unauthorized access
-    if (error.message?.includes("UNAUTHORIZED")) {
-      return {
-        statusCode: 403,
-        body: JSON.stringify({
-          error: "UNAUTHORIZED",
-          message:
-            "You do not have permission to edit this map. Only the owner and collaborators can make changes.",
-        }),
-      };
+    if (err.message?.includes("UNAUTHORIZED")) {
+      return error(
+        "You do not have permission to edit this map. Only the owner and collaborators can make changes.",
+        403,
+      );
     }
 
     // Check for unique constraint violation on filename
-    if (error.code === "P2002" && error.meta?.target?.includes("filename")) {
-      return {
-        statusCode: 409,
-        body: JSON.stringify({
-          error: "FILENAME_CONFLICT",
-          message:
-            "A map with this filename already exists. Please choose a different filename.",
-        }),
-      };
+    if (err.code === "P2002" && err.meta?.target?.includes("filename")) {
+      return error(
+        "A map with this filename already exists. Please choose a different filename.",
+        409,
+      );
     }
 
-    return {
-      statusCode: 400,
-      body: JSON.stringify({
-        message: error.message || "Failed to save map",
-      }),
-    };
+    return error(err.message || "Failed to save map", 400);
   }
 };

@@ -1,12 +1,9 @@
 import prisma from "../lib/prisma";
+import { success, error } from "../lib";
 
 export const handler = async (event: any) => {
   if (event.httpMethod !== "GET") {
-    return {
-      statusCode: 405,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: "Method not allowed" }),
-    };
+    return error("Method not allowed", 405);
   }
 
   try {
@@ -17,19 +14,11 @@ export const handler = async (event: any) => {
       },
     });
 
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        flags: Object.fromEntries(flags.map((f) => [f.key, f.enabled])),
-      }),
-    };
-  } catch (error: any) {
-    console.error("feature-flags-get error", error);
-    return {
-      statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: error?.message || "Server error" }),
-    };
+    return success({
+      flags: Object.fromEntries(flags.map((f) => [f.key, f.enabled])),
+    });
+  } catch (err: any) {
+    console.error("feature-flags-get error", err);
+    return error(err?.message || "Server error", 500);
   }
 };

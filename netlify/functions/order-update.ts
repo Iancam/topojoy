@@ -1,5 +1,5 @@
 import { createClerkClient } from "@clerk/backend";
-import { auth } from "../lib";
+import { auth, success, error } from "../lib";
 import prisma from "../lib/prisma";
 
 const clerkClient = createClerkClient({
@@ -11,10 +11,7 @@ export const handler = async (event: any) => {
   try {
     const authUserId = await auth(event, clerkClient);
     if (!authUserId) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ error: "Unauthorized" }),
-      };
+      return error("Unauthorized", 401);
     }
 
     const rawBody = JSON.parse(event.body || "{}");
@@ -43,10 +40,7 @@ export const handler = async (event: any) => {
     });
 
     if (!existingOrder) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ message: "No pending order found" }),
-      };
+      return error("No pending order found", 404);
     }
 
     let recipientId = existingOrder.recipientId || undefined;
@@ -83,10 +77,7 @@ export const handler = async (event: any) => {
 
     if (Object.keys(updateData).length === 0) {
       // Nothing to update; return current order
-      return {
-        statusCode: 200,
-        body: JSON.stringify(existingOrder),
-      };
+      return success(existingOrder);
     }
 
     const updatedOrder = await prisma.order.update({
@@ -94,15 +85,9 @@ export const handler = async (event: any) => {
       data: updateData,
     });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(updatedOrder),
-    };
-  } catch (error) {
-    console.error("order-update error", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: "Internal server error" }),
-    };
+    return success(updatedOrder);
+  } catch (err: any) {
+    console.error("order-update error", err);
+    return error("Internal server error", 500);
   }
 };

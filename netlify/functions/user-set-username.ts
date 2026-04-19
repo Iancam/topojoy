@@ -1,6 +1,6 @@
 import type { HandlerEvent, HandlerContext } from "@netlify/functions";
 import { createClerkClient } from "@clerk/backend";
-import { auth } from "../lib";
+import { auth, success, error } from "../lib";
 import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { usernameSchema, slugify } from "../lib/validation";
@@ -21,11 +21,7 @@ export const handler = async (
   _context: HandlerContext,
 ) => {
   if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: "Method not allowed" }),
-    };
+    return error("Method not allowed", 405);
   }
 
   try {
@@ -33,14 +29,7 @@ export const handler = async (
     const clerkUserId = await auth(event, clerkClient);
 
     if (!clerkUserId) {
-      return {
-        statusCode: 401,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          success: false,
-          message: "Unauthorized - please sign in",
-        }),
-      };
+      return error("Unauthorized - please sign in", 401);
     }
 
     const body = JSON.parse(event.body || "{}");
@@ -55,14 +44,10 @@ export const handler = async (
     });
 
     if (existingUser && existingUser.clerkId !== clerkUserId) {
-      return {
-        statusCode: 409,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          success: false,
-          message: "Username is already taken. Please choose a different one.",
-        }),
-      };
+      return error(
+        "Username is already taken. Please choose a different one.",
+        409,
+      );
     }
 
     // Update or create user with username
@@ -76,36 +61,15 @@ export const handler = async (
       },
     });
 
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        success: true,
-        username: user.username,
-      }),
-    };
+    return success({ username: user.username });
   } catch (error: any) {
     console.error("Error setting username:", error);
 
     // Handle validation errors
     if (error.name === "ZodError") {
-      return {
-        statusCode: 400,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          success: false,
-          message: error.errors[0]?.message || "Invalid username",
-        }),
-      };
+      return error(error.errors[0]?.message || "Invalid username", 400);
     }
 
-    return {
-      statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        success: false,
-        message: error.message || "Failed to update username",
-      }),
-    };
+    return error(error.message || "Failed to update username", 500);
   }
 };

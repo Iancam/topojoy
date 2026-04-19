@@ -1,5 +1,5 @@
 import { createClerkClient } from "@clerk/backend";
-import { auth } from "../lib";
+import { auth, success, error } from "../lib";
 import prisma from "../lib/prisma";
 
 const clerkClient = createClerkClient({
@@ -13,10 +13,7 @@ export async function handler(event: any, context: any) {
     : "https://topojoy.studio";
   const userId = await auth(event, clerkClient);
   if (!userId) {
-    return {
-      statusCode: 401,
-      body: JSON.stringify({ error: "Unauthorized" }),
-    };
+    return error("Unauthorized", 401);
   }
   const {
     // orderId,
@@ -38,30 +35,15 @@ export async function handler(event: any, context: any) {
   } = JSON.parse(event.body);
 
   if (quantity <= 0) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({
-        message: "Quantity must be greater than 0",
-      }),
-    };
+    return error("Quantity must be greater than 0", 400);
   }
 
   if (userContribution < 0) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({
-        message: "User contribution must be greater than or equal to 0",
-      }),
-    };
+    return error("User contribution must be greater than or equal to 0", 400);
   }
 
   if (userContribution > 500000) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({
-        message: "User contribution must be less than $5000",
-      }),
-    };
+    return error("User contribution must be less than $5000", 400);
   }
 
   // get official price
@@ -95,12 +77,7 @@ export async function handler(event: any, context: any) {
       userPrice,
       officialPrice,
     });
-    return {
-      statusCode: 400,
-      body: JSON.stringify({
-        message: "User price does not match official price",
-      }),
-    };
+    return error("User price does not match official price", 400);
   }
 
   const orderItem = {
@@ -136,7 +113,7 @@ export async function handler(event: any, context: any) {
           },
         },
       });
-      return { statusCode: 200, body: JSON.stringify(newOrder) };
+      return success(newOrder);
     }
     const sum = await prisma.orderItem.aggregate({
       where: { orderId: order?.id },
@@ -155,9 +132,9 @@ export async function handler(event: any, context: any) {
         },
       },
     });
-    return { statusCode: 200, body: JSON.stringify(updatedOrder) };
-  } catch (error) {
-    console.log(error);
-    return { statusCode: 500, body: JSON.stringify({ error }) };
+    return success(updatedOrder);
+  } catch (err: any) {
+    console.log(err);
+    return error(err.message || "Internal server error", 500);
   }
 }

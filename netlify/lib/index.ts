@@ -1,5 +1,31 @@
 import { isProduction } from "./env";
 
+export const error = (message: string, status: number = 400) => {
+  return {
+    body: JSON.stringify({
+      success: false,
+      message,
+    }),
+    status,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+};
+
+export const success = (data: any, status: number = 200) => {
+  return {
+    body: JSON.stringify({
+      success: true,
+      data,
+    }),
+    status,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+};
+
 export const auth = async (event: any, clerkClient: any) => {
   const baseUrl = !isProduction()
     ? "http://localhost:8888"

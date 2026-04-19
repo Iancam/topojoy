@@ -1,6 +1,7 @@
 import type { HandlerEvent, HandlerContext } from "@netlify/functions";
 import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
+import { success, error } from "../lib";
 
 const prisma = new PrismaClient();
 
@@ -39,14 +40,7 @@ export const handler = async (
       });
 
       if (!user) {
-        return {
-          statusCode: 404,
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            success: false,
-            message: "User not found",
-          }),
-        };
+        return error("User not found", 404);
       }
 
       map = await prisma.mapConfig.findUnique({
@@ -71,26 +65,14 @@ export const handler = async (
         },
       });
     } else {
-      return {
-        statusCode: 400,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          success: false,
-          message:
-            "Missing required parameters. Provide either configId or (username + filename)",
-        }),
-      };
+      return error(
+        "Missing required parameters. Provide either configId or (username + filename)",
+        400,
+      );
     }
 
     if (!map) {
-      return {
-        statusCode: 404,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          success: false,
-          message: "Map not found",
-        }),
-      };
+      return error("Map not found", 404);
     }
 
     // Check if the user can edit this map
@@ -101,23 +83,12 @@ export const handler = async (
       ? userId === map.userId || map.collaborators.includes(userId)
       : false;
 
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...map,
-        canEdit,
-      }),
-    };
+    return success({
+      ...map,
+      canEdit,
+    });
   } catch (err: any) {
     console.error(err);
-    return {
-      statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        success: false,
-        message: err.message || "Server error",
-      }),
-    };
+    return error(err.message || "Server error", 500);
   }
 };

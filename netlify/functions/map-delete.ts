@@ -1,18 +1,15 @@
 import type { HandlerEvent, HandlerContext } from "@netlify/functions";
 import { PrismaClient } from "@prisma/client";
+import { success, error } from "../lib";
 
 const prisma = new PrismaClient();
 
 export const handler = async (
   event: HandlerEvent,
-  _context: HandlerContext
+  _context: HandlerContext,
 ) => {
   if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ success: false, message: "Method Not Allowed" }),
-    };
+    return error("Method Not Allowed", 405);
   }
 
   try {
@@ -21,14 +18,7 @@ export const handler = async (
     const userId = body.userId as string | undefined;
 
     if (!id || !userId) {
-      return {
-        statusCode: 400,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          success: false,
-          message: "Missing id or userId",
-        }),
-      };
+      return error("Missing id or userId", 400);
     }
 
     await prisma.$transaction(async (tx) => {
@@ -42,20 +32,9 @@ export const handler = async (
       await tx.mapConfig.delete({ where: { id } });
     });
 
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ success: true }),
-    };
+    return success({ deleted: true });
   } catch (err: any) {
     console.error(err);
-    return {
-      statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        success: false,
-        message: err.message || "Server error",
-      }),
-    };
+    return error(err.message || "Server error", 500);
   }
 };

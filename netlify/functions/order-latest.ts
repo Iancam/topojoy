@@ -1,6 +1,6 @@
 import { createClerkClient } from "@clerk/backend";
 import type { HandlerEvent } from "@netlify/functions";
-import { auth } from "../lib";
+import { auth, success, error } from "../lib";
 import prisma from "../lib/prisma";
 
 const clerkClient = createClerkClient({
@@ -10,19 +10,13 @@ const clerkClient = createClerkClient({
 
 export const handler = async (event: HandlerEvent) => {
   if (event.httpMethod !== "GET") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ message: "Method not allowed" }),
-    };
+    return error("Method not allowed", 405);
   }
 
   try {
     const authUserId = await auth(event, clerkClient);
     if (!authUserId) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ error: "Unauthorized" }),
-      };
+      return error("Unauthorized", 401);
     }
 
     const order = await prisma.order.findFirst({
@@ -34,21 +28,12 @@ export const handler = async (event: HandlerEvent) => {
     });
 
     if (!order) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ message: "No orders found" }),
-      };
+      return error("No orders found", 404);
     }
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(order),
-    };
-  } catch (error) {
-    console.error("order-latest error", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: "Internal server error" }),
-    };
+    return success(order);
+  } catch (err: any) {
+    console.error("order-latest error", err);
+    return error("Internal server error", 500);
   }
 };

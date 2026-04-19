@@ -1,6 +1,6 @@
 import { createClerkClient } from "@clerk/backend";
 import type { HandlerEvent } from "@netlify/functions";
-import { auth } from "../lib";
+import { auth, success, error } from "../lib";
 import prisma from "../lib/prisma";
 
 const clerkClient = createClerkClient({
@@ -10,19 +10,13 @@ const clerkClient = createClerkClient({
 
 export const handler = async (event: HandlerEvent) => {
   if (event.httpMethod !== "GET") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ message: "Method not allowed" }),
-    };
+    return error("Method not allowed", 405);
   }
 
   try {
     const authUserId = await auth(event, clerkClient);
     if (!authUserId) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ error: "Unauthorized" }),
-      };
+      return error("Unauthorized", 401);
     }
 
     const orders = await prisma.order.findMany({
@@ -39,15 +33,9 @@ export const handler = async (event: HandlerEvent) => {
       },
     });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(orders),
-    };
-  } catch (error) {
-    console.error("order-list error", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: "Internal server error" }),
-    };
+    return success(orders);
+  } catch (err: any) {
+    console.error("order-list error", err);
+    return error("Internal server error", 500);
   }
 };

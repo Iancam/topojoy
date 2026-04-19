@@ -1,15 +1,12 @@
 import { createClerkClient } from "@clerk/backend";
-import { auth } from "../lib";
+import { auth, success, error } from "../lib";
 import prisma from "../lib/prisma";
 
 const KEY_REGEX = /^[a-z0-9_\-.]{1,128}$/;
 
 export const handler = async (event: any) => {
   if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ message: "Method not allowed" }),
-    };
+    return error("Method not allowed", 405);
   }
 
   try {
@@ -20,18 +17,12 @@ export const handler = async (event: any) => {
 
     const userId = await auth(event, clerkClient);
     if (!userId) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ message: "Unauthorized" }),
-      };
+      return error("Unauthorized", 401);
     }
 
     const clerkUser = await clerkClient.users.getUser(userId);
     if ((clerkUser.publicMetadata as any)?.role !== "admin") {
-      return {
-        statusCode: 403,
-        body: JSON.stringify({ message: "Forbidden, user is not admin" }),
-      };
+      return error("Forbidden, user is not admin", 403);
     }
 
     const body = JSON.parse(event.body || "{}");
@@ -39,17 +30,11 @@ export const handler = async (event: any) => {
     const enabled = body.enabled;
 
     if (typeof key !== "string" || !KEY_REGEX.test(key)) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "Invalid flag key" }),
-      };
+      return error("Invalid flag key", 400);
     }
 
     if (typeof enabled !== "boolean") {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "Invalid enabled value" }),
-      };
+      return error("Invalid enabled value", 400);
     }
 
     const flag = await prisma.featureFlag.upsert({
@@ -64,15 +49,9 @@ export const handler = async (event: any) => {
       },
     });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(flag),
-    };
-  } catch (error: any) {
-    console.error("admin-feature-flags-update error", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: error?.message || "Server error" }),
-    };
+    return success(flag);
+  } catch (err: any) {
+    console.error("admin-feature-flags-update error", err);
+    return error(err?.message || "Server error", 500);
   }
 };

@@ -1,24 +1,18 @@
 import type { HandlerEvent, HandlerContext } from "@netlify/functions";
 import { PrismaClient } from "@prisma/client";
+import { success, error } from "../lib";
 
 const prisma = new PrismaClient();
 
 export const handler = async (
   event: HandlerEvent,
-  _context: HandlerContext
+  _context: HandlerContext,
 ) => {
   try {
     const userId = event.queryStringParameters?.userId || null;
 
     if (!userId) {
-      return {
-        statusCode: 400,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          success: false,
-          message: "Missing required userId",
-        }),
-      };
+      return error("Missing required userId", 400);
     }
 
     // TODO: Add auth verification (e.g., Clerk) to ensure the caller is authorized for this userId
@@ -38,20 +32,9 @@ export const handler = async (
       },
     });
 
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(maps),
-    };
+    return success(maps);
   } catch (err: any) {
     console.error(err);
-    return {
-      statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        success: false,
-        message: err.message || "Server error",
-      }),
-    };
+    return error(err.message || "Server error", 500);
   }
 };

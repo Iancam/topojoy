@@ -1,5 +1,5 @@
 import { createClerkClient } from "@clerk/backend";
-import { auth } from "../lib";
+import { auth, success, error } from "../lib";
 import prisma from "../lib/prisma";
 
 const clerkClient = createClerkClient({
@@ -10,19 +10,13 @@ const clerkClient = createClerkClient({
 export const handler = async (event: any) => {
   const userId = await auth(event, clerkClient);
   if (!userId) {
-    return {
-      statusCode: 401,
-      body: JSON.stringify({ error: "Unauthorized" }),
-    };
+    return error("Unauthorized", 401);
   }
 
   try {
     const { itemId, quantity } = JSON.parse(event.body || "{}");
     if (!itemId || typeof quantity !== "number" || quantity < 1) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Invalid item or quantity" }),
-      };
+      return error("Invalid item or quantity", 400);
     }
 
     const item = await prisma.orderItem.findUnique({
@@ -31,17 +25,11 @@ export const handler = async (event: any) => {
     });
 
     if (!item || !item.order || item.order.userId !== userId) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ error: "Item not found" }),
-      };
+      return error("Item not found", 404);
     }
 
     if (item.order.status !== "pending") {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Cannot modify a non-pending order" }),
-      };
+      return error("Cannot modify a non-pending order", 400);
     }
 
     const oldTotal = item.totalPrice || 0;
@@ -75,15 +63,9 @@ export const handler = async (event: any) => {
       return updatedOrder;
     });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(updated),
-    };
-  } catch (error) {
-    console.error(error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Failed to update item" }),
-    };
+    return success(updated);
+  } catch (err: any) {
+    console.error(err);
+    return error("Failed to update item", 500);
   }
 };

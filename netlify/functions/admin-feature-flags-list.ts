@@ -1,13 +1,10 @@
 import { createClerkClient } from "@clerk/backend";
-import { auth } from "../lib";
+import { auth, success, error } from "../lib";
 import prisma from "../lib/prisma";
 
 export const handler = async (event: any) => {
   if (event.httpMethod !== "GET") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ message: "Method not allowed" }),
-    };
+    return error("Method not allowed", 405);
   }
 
   try {
@@ -18,18 +15,12 @@ export const handler = async (event: any) => {
 
     const userId = await auth(event, clerkClient);
     if (!userId) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ message: "Unauthorized" }),
-      };
+      return error("Unauthorized", 401);
     }
 
     const clerkUser = await clerkClient.users.getUser(userId);
     if ((clerkUser.publicMetadata as any)?.role !== "admin") {
-      return {
-        statusCode: 403,
-        body: JSON.stringify({ message: "Forbidden, user is not admin" }),
-      };
+      return error("Forbidden, user is not admin", 403);
     }
 
     const flags = await prisma.featureFlag.findMany({
@@ -42,15 +33,9 @@ export const handler = async (event: any) => {
       },
     });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(flags),
-    };
-  } catch (error: any) {
-    console.error("admin-feature-flags-list error", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: error?.message || "Server error" }),
-    };
+    return success(flags);
+  } catch (err: any) {
+    console.error("admin-feature-flags-list error", err);
+    return error(err?.message || "Server error", 500);
   }
 };
