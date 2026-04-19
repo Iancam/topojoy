@@ -2,7 +2,7 @@
   "source": "index.html",
   "scripts": {
     "dev": "vite",
-    "build": "cd geojson.io && npm run build && cd .. && vite build",
+    "build": "npx prisma generate && cd geojson.io && npm run build && cd .. && vite build",
     "test": "jest",
     "lint": "eslint .",
     "preview": "vite preview",
