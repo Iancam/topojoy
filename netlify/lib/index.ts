@@ -32,11 +32,11 @@ export const error = (message: string, status: number = 400) => {
   console.error(`[${functionName}] Error ${status}:`, message);
 
   return {
+    statusCode: status,
     body: JSON.stringify({
       success: false,
       message,
     }),
-    status,
     headers: {
       "Content-Type": "application/json",
     },
@@ -45,8 +45,8 @@ export const error = (message: string, status: number = 400) => {
 
 export const success = (data: any, status: number = 200) => {
   return {
+    statusCode: status,
     body: JSON.stringify(data),
-    status,
     headers: {
       "Content-Type": "application/json",
     },
