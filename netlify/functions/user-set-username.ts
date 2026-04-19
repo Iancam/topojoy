@@ -38,8 +38,13 @@ export const handler = async (
     // Normalize username to URL-friendly slug
     const normalizedUsername = slugify(username);
 
+    // Ensure normalized username is not empty
+    if (!normalizedUsername || normalizedUsername.trim() === "") {
+      return error("Username cannot be empty after normalization", 400);
+    }
+
     // Check if username is already taken
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findFirst({
       where: { username: normalizedUsername },
     });
 
@@ -51,14 +56,9 @@ export const handler = async (
     }
 
     // Update or create user with username
-    const user = await prisma.user.upsert({
+    const user = await prisma.user.update({
       where: { clerkId: clerkUserId },
-      update: { username: normalizedUsername },
-      create: {
-        clerkId: clerkUserId,
-        username: normalizedUsername,
-        name: "User", // Default name, should be updated from Clerk data
-      },
+      data: { username: normalizedUsername },
     });
 
     return success({ username: user.username });
