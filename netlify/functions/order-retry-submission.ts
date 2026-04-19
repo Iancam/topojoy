@@ -1,6 +1,6 @@
 import { createClerkClient } from "@clerk/backend";
 import type { HandlerEvent } from "@netlify/functions";
-import { auth } from "../lib";
+import { auth, error, success } from "../lib";
 import prisma from "../lib/prisma";
 import { submitOrderToLumaprints } from "../lib/lumaprints";
 
@@ -11,27 +11,18 @@ const clerkClient = createClerkClient({
 
 export const handler = async (event: HandlerEvent) => {
   if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ message: "Method not allowed" }),
-    };
+    return error("Method not allowed", 405);
   }
 
   try {
     const authUserId = await auth(event, clerkClient);
     if (!authUserId) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ error: "Unauthorized" }),
-      };
+      return error("Unauthorized", 401);
     }
 
     const { orderId } = JSON.parse(event.body ?? "{}");
     if (!orderId) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "Missing orderId" }),
-      };
+      return error("Missing orderId", 400);
     }
 
     const order = await prisma.order.findFirst({
@@ -39,19 +30,11 @@ export const handler = async (event: HandlerEvent) => {
     });
 
     if (!order) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ message: "Order not found" }),
-      };
+      return error("Order not found", 404);
     }
 
     if (order.status !== "paid") {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({
-          message: `Order is not in a retryable state: ${order.status}`,
-        }),
-      };
+      return error(`Order is not in a retryable state: ${order.status}`, 400);
     }
 
     await prisma.order.update({
@@ -61,17 +44,8 @@ export const handler = async (event: HandlerEvent) => {
 
     await submitOrderToLumaprints(orderId);
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ message: "Order submitted successfully" }),
-    };
-  } catch (error: any) {
-    console.error("order-retry-submission error", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        message: error.message ?? "Internal server error",
-      }),
-    };
+    return success({ message: "Order submitted successfully" });
+  } catch (err: any) {
+    return error(err.message ?? "Internal server error", 500);
   }
 };

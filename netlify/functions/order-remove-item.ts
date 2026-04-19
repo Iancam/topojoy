@@ -62,7 +62,6 @@ export const handler = async (event: any) => {
 
     return success(updated);
   } catch (err: any) {
-    console.error(err);
-    return error("Failed to remove item", 500);
+    return error(err.message ?? "Failed to remove item", 500);
   }
 };

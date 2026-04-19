@@ -1,6 +1,7 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getAWSKey, putAWSImage } from "../lib/aws";
+import { error, success } from "../lib";
 
 const s3 = new S3Client({
   region: process.env.MY_AWS_REGION,
@@ -21,16 +22,10 @@ export const handler = async (event: any) => {
   const { filename, mapConfigId } = JSON.parse(event.body || "{}");
 
   if (!mapConfigId) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: "mapConfigId is required" }),
-    };
+    return error("mapConfigId is required", 400);
   }
 
   const url = await putAWSImage(mapConfigId, s3);
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ url, key: getAWSKey(mapConfigId) }),
-  };
+  return success({ url, key: getAWSKey(mapConfigId) });
 };

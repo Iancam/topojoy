@@ -1,6 +1,6 @@
 import { initStripe } from "../lib/stripe";
 import { createClerkClient } from "@clerk/backend";
-import { auth } from "../lib";
+import { auth, error, success } from "../lib";
 import prisma from "../lib/prisma";
 import crypto from "crypto";
 const clerkClient = createClerkClient({
@@ -21,10 +21,7 @@ function generateSecureRandomString(length: number, charSet: string) {
 
 export const handler = async (event: any) => {
   if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ message: "Method not allowed" }),
-    };
+    return error("Method not allowed", 405);
   }
 
   try {
@@ -42,10 +39,7 @@ export const handler = async (event: any) => {
       });
 
       if (!donor) {
-        return {
-          statusCode: 404,
-          body: JSON.stringify({ message: "User not found" }),
-        };
+        return error("User not found", 404);
       }
     }
 
@@ -102,22 +96,13 @@ export const handler = async (event: any) => {
       },
     });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        clientSecret: paymentIntent.client_secret,
-        donationId: donation.id,
-        amount: amountCents,
-        accessToken: accessToken ?? null,
-      }),
-    };
-  } catch (error: any) {
-    console.error("donation-create-payment-intent error", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        message: error.message || "Internal server error",
-      }),
-    };
+    return success({
+      clientSecret: paymentIntent.client_secret,
+      donationId: donation.id,
+      amount: amountCents,
+      accessToken: accessToken ?? null,
+    });
+  } catch (err: any) {
+    return error(err.message || "Internal server error", 500);
   }
 };

@@ -1,6 +1,7 @@
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "node:crypto";
+import { error, success } from "../lib";
 const s3 = new S3Client({
   region: process.env.MY_AWS_REGION,
   credentials: {
@@ -18,11 +19,11 @@ export const handler = async (event: any) => {
   });
 
   const fiveDays = 60 * 60 * 24 * 5;
+  try {
+    const url = await getSignedUrl(s3, command, { expiresIn: fiveDays });
 
-  const url = await getSignedUrl(s3, command, { expiresIn: fiveDays });
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ url }),
-  };
+    return success({ url });
+  } catch (err: any) {
+    return error(err.message ?? "Internal server error", 500);
+  }
 };

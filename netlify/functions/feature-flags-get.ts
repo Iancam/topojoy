@@ -18,7 +18,6 @@ export const handler = async (event: any) => {
       flags: Object.fromEntries(flags.map((f) => [f.key, f.enabled])),
     });
   } catch (err: any) {
-    console.error("feature-flags-get error", err);
     return error(err?.message || "Server error", 500);
   }
 };

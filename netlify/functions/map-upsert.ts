@@ -161,13 +161,6 @@ export const handler = async (event: any) => {
 
     return success({ ...config, AWSPutURL: url });
   } catch (err: any) {
-    console.error("Map upsert error:", {
-      message: err.message,
-      code: err.code,
-      meta: err.meta,
-      stack: err.stack,
-    });
-
     // Check for unauthorized access
     if (err.message?.includes("UNAUTHORIZED")) {
       return error(

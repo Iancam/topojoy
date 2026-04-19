@@ -134,7 +134,6 @@ export async function handler(event: any, context: any) {
     });
     return success(updatedOrder);
   } catch (err: any) {
-    console.log(err);
     return error(err.message || "Internal server error", 500);
   }
 }

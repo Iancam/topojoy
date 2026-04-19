@@ -2,6 +2,7 @@ import type { HandlerEvent, HandlerContext } from "@netlify/functions";
 
 import { Webhook } from "svix";
 import prisma from "../lib/prisma";
+import { error, success } from "../lib";
 
 export const handler = async (event: HandlerEvent, context: HandlerContext) => {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
@@ -14,15 +15,11 @@ export const handler = async (event: HandlerEvent, context: HandlerContext) => {
 
   // If there are missing Svix headers, error out
   if (!svix_id || !svix_timestamp || !svix_signature) {
-    return new Response("Error occurred -- no svix headers", {
-      status: 400,
-    });
+    return error("Error occurred -- no svix headers", 400);
   }
 
   if (!event.body) {
-    return new Response("Error occurred -- no body", {
-      status: 400,
-    });
+    return error("Error occurred -- no body", 400);
   }
   // Initiate Svix
   const wh = new Webhook(WEBHOOK_SECRET);
@@ -39,23 +36,10 @@ export const handler = async (event: HandlerEvent, context: HandlerContext) => {
   } catch (err) {
     // Console log and return error
     console.log("Webhook failed to verify. Error:", err.message);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        message: err.message,
-      }),
-      {
-        status: 400,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    return error(err.message, 400);
   }
 
   const body = JSON.parse(event.body);
-
-  console.log(body);
 
   if (body.type === "user.created") {
     try {
@@ -68,29 +52,13 @@ export const handler = async (event: HandlerEvent, context: HandlerContext) => {
         },
       });
 
-      return new Response(
-        JSON.stringify({
-          success: true,
-          data: {
-            user,
-          },
-        }),
-        {
-          status: 200,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    } catch (err) {
-      console.log(err);
-      return new Response(err.message, {
-        status: 500,
+      return success({
+        message: "User created successfully",
       });
+    } catch (err: any) {
+      return error(err.message, 500);
     }
-
-    return new Response("Error occurred -- not a user.created event", {
-      status: 400,
-    });
   }
+
+  return error("Error occurred -- not a user.created event", 400);
 };

@@ -87,7 +87,6 @@ export const handler = async (event: any) => {
 
     return success(updatedOrder);
   } catch (err: any) {
-    console.error("order-update error", err);
-    return error("Internal server error", 500);
+    return error(err.message ?? "Internal server error", 500);
   }
 };

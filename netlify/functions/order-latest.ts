@@ -33,7 +33,6 @@ export const handler = async (event: HandlerEvent) => {
 
     return success(order);
   } catch (err: any) {
-    console.error("order-latest error", err);
-    return error("Internal server error", 500);
+    return error(err.message ?? "Internal server error", 500);
   }
 };

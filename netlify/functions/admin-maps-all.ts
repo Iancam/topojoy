@@ -1,6 +1,6 @@
 import { createClerkClient } from "@clerk/backend";
 import { PrismaClient } from "@prisma/client";
-import { auth } from "../lib/index";
+import { auth, error, success } from "../lib/index";
 
 const prisma = new PrismaClient();
 
@@ -22,11 +22,7 @@ export const handler = async (event: any) => {
 
     const clerkUser = await clerkClient.users.getUser(userId);
     if ((clerkUser.publicMetadata as any)?.role !== "admin") {
-      return {
-        statusCode: 403,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ success: false, message: "Forbidden" }),
-      };
+      return error("Forbidden", 403);
     }
 
     const maps = await prisma.mapConfig.findMany({
@@ -43,20 +39,8 @@ export const handler = async (event: any) => {
       },
     });
 
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(maps),
-    };
+    return success(maps);
   } catch (err: any) {
-    console.error(err);
-    return {
-      statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        success: false,
-        message: err.message || "Server error",
-      }),
-    };
+    return error(err.message || "Server error", 500);
   }
 };

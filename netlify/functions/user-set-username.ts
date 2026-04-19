@@ -62,14 +62,17 @@ export const handler = async (
     });
 
     return success({ username: user.username });
-  } catch (error: any) {
-    console.error("Error setting username:", error);
+  } catch (err: any) {
+    console.error("Error setting username:", err);
 
     // Handle validation errors
-    if (error.name === "ZodError") {
-      return error(error.errors[0]?.message || "Invalid username", 400);
+    if (err.name === "ZodError") {
+      return error(
+        err.errors?.map((e: any) => e.message).join(", ") || "Invalid username",
+        400,
+      );
     }
 
-    return error(error.message || "Failed to update username", 500);
+    return error(err.message || "Failed to update username", 500);
   }
 };

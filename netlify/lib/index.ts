@@ -1,6 +1,36 @@
 import { isProduction } from "./env";
 
 export const error = (message: string, status: number = 400) => {
+  // Extract the calling function name from the stack trace
+  const stack = new Error().stack;
+  let functionName = "unknown";
+
+  if (stack) {
+    // Parse stack to find the calling function
+    // Stack format: "Error\n    at error (...)\n    at handler (...)\n    at ..."
+    const lines = stack.split("\n");
+    // Skip first 2 lines (Error and this function), get the caller
+    if (lines.length > 2) {
+      const callerLine = lines[2];
+      // Extract function name from patterns like:
+      // "at handler (/path/to/file.ts:123:45)"
+      // "at Object.handler (/path/to/file.ts:123:45)"
+      const match = callerLine.match(/at (?:Object\.)?(\w+)/);
+      if (match) {
+        functionName = match[1];
+      }
+
+      // Also try to extract the filename for better context
+      const fileMatch = callerLine.match(/\/([^/]+\.ts):/);
+      if (fileMatch) {
+        functionName = `${fileMatch[1].replace(".ts", "")}:${functionName}`;
+      }
+    }
+  }
+
+  // Log the error with context
+  console.error(`[${functionName}] Error ${status}:`, message);
+
   return {
     body: JSON.stringify({
       success: false,
@@ -15,10 +45,7 @@ export const error = (message: string, status: number = 400) => {
 
 export const success = (data: any, status: number = 200) => {
   return {
-    body: JSON.stringify({
-      success: true,
-      data,
-    }),
+    body: JSON.stringify(data),
     status,
     headers: {
       "Content-Type": "application/json",

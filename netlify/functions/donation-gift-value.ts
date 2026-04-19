@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma";
-import { getShippingPrice } from "../lib";
+import { error, getShippingPrice, success } from "../lib";
 
 type LumaprintsItem = {
   subcategoryId: number;
@@ -21,10 +21,7 @@ const REPRESENTATIVE_ADDRESS = {
 
 export const handler = async (event: any) => {
   if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ message: "Method not allowed" }),
-    };
+    return error("Method not allowed", 405);
   }
 
   const body = JSON.parse(event.body || "{}");
@@ -35,10 +32,7 @@ export const handler = async (event: any) => {
   const orderId: string | undefined = body.orderId;
 
   if (!accessToken) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ message: "Missing accessToken" }),
-    };
+    return error("Missing accessToken", 400);
   }
 
   try {
@@ -70,24 +64,15 @@ export const handler = async (event: any) => {
     ]);
 
     if (!donation) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ message: "Gift not found" }),
-      };
+      return error("Gift not found", 404);
     }
 
     if (donation.status !== "paid") {
-      return {
-        statusCode: 402,
-        body: JSON.stringify({ message: "Gift payment not completed" }),
-      };
+      return error("Gift payment not completed", 402);
     }
 
     if (donation.expiryDate && new Date(donation.expiryDate) < new Date()) {
-      return {
-        statusCode: 410,
-        body: JSON.stringify({ message: "Gift has expired" }),
-      };
+      return error("Gift has expired", 410);
     }
 
     // How much of the donation is still available (not yet drawn by prior allocations)
@@ -98,12 +83,7 @@ export const handler = async (event: any) => {
     const availableAmountCents = donation.amount - alreadyDrawnCents;
 
     if (availableAmountCents <= 0) {
-      return {
-        statusCode: 409,
-        body: JSON.stringify({
-          message: "Gift has already been fully redeemed",
-        }),
-      };
+      return error("Gift has already been fully redeemed", 409);
     }
 
     // Sum of existing items' prices (cents), excluding the candidate item
@@ -188,23 +168,14 @@ export const handler = async (event: any) => {
       console.warn("Could not fetch shipping estimate, defaulting to 0", err);
     }
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        donationId: donation.id,
-        grossAmountCents: donation.amount,
-        alreadyDrawnCents,
-        availableAmountCents,
-        items: adjustedItems,
-      }),
-    };
-  } catch (error: any) {
-    console.error("donation-gift-value error", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        message: error.message || "Internal server error",
-      }),
-    };
+    return success({
+      donationId: donation.id,
+      grossAmountCents: donation.amount,
+      alreadyDrawnCents,
+      availableAmountCents,
+      items: adjustedItems,
+    });
+  } catch (err: any) {
+    return error(err.message || "Internal server error", 500);
   }
 };

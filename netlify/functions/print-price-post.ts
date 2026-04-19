@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isProduction } from "../lib/env";
+import { error, success } from "../lib";
 
 export const handler = async (event: any) => {
   const { products } = JSON.parse(event.body);
@@ -26,45 +27,41 @@ export const handler = async (event: any) => {
   const validatedProducts = productsSchema.parse(products);
 
   if (!validatedProducts) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: "Invalid products" }),
-    };
+    return error("Invalid products", 400);
   }
-
-  const prices = await Promise.all(
-    validatedProducts.map(
-      ({ subcategoryId, width, height, score, options }: any) =>
-        fetch(
-          `https://us.${isProd ? "api" : "api-sandbox"}.lumaprints.com/api/v1/pricing/product`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: authHeader(),
+  try {
+    const prices = await Promise.all(
+      validatedProducts.map(
+        ({ subcategoryId, width, height, score, options }: any) =>
+          fetch(
+            `https://us.${isProd ? "api" : "api-sandbox"}.lumaprints.com/api/v1/pricing/product`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: authHeader(),
+              },
+              body: JSON.stringify({
+                size: { width, height },
+                options,
+                subcategoryId,
+              }),
             },
-            body: JSON.stringify({
-              size: { width, height },
-              options,
+          ).then((res) => {
+            return res.json().then((json) => ({
               subcategoryId,
-            }),
-          },
-        ).then((res) => {
-          return res.json().then((json) => ({
-            subcategoryId,
-            width,
-            height,
-            score,
-            options,
-            ...json,
-            price: Number(json.price) * 100, // convert to cents
-          }));
-        }),
-    ),
-  );
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify(prices),
-  };
+              width,
+              height,
+              score,
+              options,
+              ...json,
+              price: Number(json.price) * 100, // convert to cents
+            }));
+          }),
+      ),
+    );
+    return success(prices);
+  } catch (err: any) {
+    return error(err.message ?? "Internal server error", 500);
+  }
 };

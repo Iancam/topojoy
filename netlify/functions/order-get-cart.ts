@@ -49,10 +49,6 @@ export const handler = async (event: any) => {
     }
     return success(order);
   } catch (err: any) {
-    console.error("Error in order-get-cart:", err);
-    return error(
-      err instanceof Error ? err.message : "Internal server error",
-      500,
-    );
+    return error(err.message ?? "Internal server error", 500);
   }
 };

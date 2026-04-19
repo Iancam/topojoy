@@ -1,11 +1,9 @@
 import { getShippingPrice } from "../lib";
+import { error, success } from "../lib";
 
 export const handler = async (event: any) => {
   if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ message: "Method not allowed" }),
-    };
+    return error("Method not allowed", 405);
   }
 
   try {
@@ -30,22 +28,12 @@ export const handler = async (event: any) => {
     };
 
     if (!address || !items || !Array.isArray(items) || items.length === 0) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "Missing address or items" }),
-      };
+      return error("Missing address or items", 400);
     }
 
     const shippingPrices = await getShippingPrice({ address, items });
-    return {
-      statusCode: 200,
-      body: JSON.stringify(shippingPrices),
-    };
-  } catch (error) {
-    console.error("print-shipping-post error", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: "Internal server error" }),
-    };
+    return success(shippingPrices);
+  } catch (err: any) {
+    return error(err.message ?? "Internal server error", 500);
   }
 };

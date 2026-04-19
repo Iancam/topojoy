@@ -88,7 +88,6 @@ export const handler = async (
       canEdit,
     });
   } catch (err: any) {
-    console.error(err);
     return error(err.message || "Server error", 500);
   }
 };

@@ -1,20 +1,15 @@
 import prisma from "../lib/prisma";
+import { error, success } from "../lib";
 
 export const handler = async (event: any) => {
   if (event.httpMethod !== "GET") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ message: "Method not allowed" }),
-    };
+    return error("Method not allowed", 405);
   }
 
   const accessToken = event.queryStringParameters?.accessToken;
 
   if (!accessToken) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ message: "Missing accessToken" }),
-    };
+    return error("Missing accessToken", 400);
   }
 
   try {
@@ -37,23 +32,11 @@ export const handler = async (event: any) => {
     });
 
     if (!donation) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ message: "Gift not found" }),
-      };
+      return error("Gift not found", 404);
     }
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(donation),
-    };
-  } catch (error: any) {
-    console.error("donation-get-gift error", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        message: error.message || "Internal server error",
-      }),
-    };
+    return success(donation);
+  } catch (err: any) {
+    return error(err.message || "Internal server error", 500);
   }
 };

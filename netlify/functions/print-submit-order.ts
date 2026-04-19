@@ -1,5 +1,5 @@
 import { createClerkClient } from "@clerk/backend";
-import { auth } from "../lib";
+import { auth, error, success } from "../lib";
 import prisma from "../lib/prisma";
 import { submitOrderToLumaprints } from "../lib/lumaprints";
 
@@ -9,27 +9,16 @@ const clerkClient = createClerkClient({
 });
 
 export const handler = async (event: any) => {
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      message: "endpoint blocked, use stripe payment webhook instead",
-    }),
-  };
+  return error("endpoint blocked, use stripe payment webhook instead", 400);
 
   if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ message: "Method not allowed" }),
-    };
+    return error("Method not allowed", 405);
   }
 
   try {
     const authUserId = await auth(event, clerkClient);
     if (!authUserId) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ error: "Unauthorized" }),
-      };
+      return error("Unauthorized", 401);
     }
 
     // Find the latest paid order for this user
@@ -42,23 +31,14 @@ export const handler = async (event: any) => {
     });
 
     if (!order) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ message: "No paid order found" }),
-      };
+      return error("No paid order found", 404);
     }
 
     const result = await submitOrderToLumaprints(order.id);
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(result),
-    };
-  } catch (error) {
-    console.error("print-submit-order error", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: "Internal server error" }),
-    };
+    return success(result);
+  } catch (err: any) {
+    console.error("print-submit-order error", err);
+    return error(err.message ?? "Internal server error", 500);
   }
 };

@@ -2,6 +2,7 @@ import type { HandlerEvent, HandlerContext } from "@netlify/functions";
 import prisma from "../lib/prisma";
 import { submitOrderToLumaprints } from "../lib/lumaprints";
 import { initStripe, webhookSecret } from "../lib/stripe";
+import { error, success } from "../lib";
 
 const stripe = initStripe();
 export const handler = async (
@@ -9,10 +10,7 @@ export const handler = async (
   _context: HandlerContext,
 ) => {
   if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ message: "Method not allowed" }),
-    };
+    return error("Method not allowed", 405);
   }
 
   const sig =
@@ -28,19 +26,8 @@ export const handler = async (
       webhookSecret,
     );
   } catch (err: any) {
-    console.error(
-      "stripe-webhook signature verification failed",
-      err?.message || err,
-    );
-    return {
-      statusCode: 400,
-      body: JSON.stringify({
-        message: "Webhook signature verification failed",
-      }),
-    };
+    return error("stripe-webhook signature verification failed", 400);
   }
-
-  console.log("stripeEvent.type", stripeEvent.type);
   try {
     const paymentIntent = stripeEvent.data.object as Stripe.PaymentIntent;
     const orderId = paymentIntent.metadata?.orderId;
@@ -59,16 +46,9 @@ export const handler = async (
       // await handleDonationRefunded(donationId, charge);
     }
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ received: true }),
-    };
-  } catch (error) {
-    console.error("stripe-webhook handler error", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: "Internal server error" }),
-    };
+    return success({ received: true });
+  } catch (err) {
+    return error("Internal server error", 500);
   }
 };
 

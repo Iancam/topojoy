@@ -34,7 +34,6 @@ export const handler = async (
 
     return success({ deleted: true });
   } catch (err: any) {
-    console.error(err);
     return error(err.message || "Server error", 500);
   }
 };

@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 // import { PrismaClient } from "@prisma/client";
 import { createClerkClient } from "@clerk/backend";
-import { auth, getShippingPrice } from "../lib";
+import { auth, error, getShippingPrice, success } from "../lib";
 import prisma from "../lib/prisma";
 import { submitOrderToLumaprints } from "../lib/lumaprints";
 import { initStripe } from "../lib/stripe";
@@ -15,10 +15,7 @@ const clerkClient = createClerkClient({
 
 export const handler = async (event: any) => {
   if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ message: "Method not allowed" }),
-    };
+    return error("Method not allowed", 405);
   }
 
   // get gift token from body
@@ -28,10 +25,7 @@ export const handler = async (event: any) => {
   try {
     const authUserId = await auth(event, clerkClient);
     if (!authUserId) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ error: "Unauthorized" }),
-      };
+      return error("Unauthorized", 401);
     }
 
     const order = await prisma.order.findFirst({
@@ -46,23 +40,14 @@ export const handler = async (event: any) => {
     });
 
     if (!order) {
-      console.error("No pending order found for user", authUserId);
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "No pending order found" }),
-      };
+      return error("No pending order found", 400);
     }
     const address = order?.recipient;
     const items = order?.orderItems;
     const shippingMethod = order?.shippingMethod;
 
     if (!address || !items || !shippingMethod) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({
-          message: "No address, shippingMethod, or items found",
-        }),
-      };
+      return error("No address, shippingMethod, or items found", 400);
     }
     const shippingResult = await getShippingAmount(
       shippingMethod,
@@ -78,10 +63,7 @@ export const handler = async (event: any) => {
     const amntToPay = baseAmount + (shippingResult.shippingAmount || 0);
 
     if (amntToPay < 0) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "Invalid amntToPay for payment" }),
-      };
+      return error("Invalid amntToPay for payment", 400);
     }
 
     let finalAmntToPay = amntToPay;
@@ -89,10 +71,7 @@ export const handler = async (event: any) => {
     // process gift token if it exists
     const giftTokenResult = await processGiftToken(giftToken, amntToPay);
     if (giftTokenResult.message) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: giftTokenResult.message }),
-      };
+      return error(giftTokenResult.message, 400);
     }
 
     finalAmntToPay = giftTokenResult.finalAmntToPay;
@@ -132,20 +111,13 @@ export const handler = async (event: any) => {
       },
     });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        clientSecret: paymentIntent.client_secret,
-        amount: finalAmntToPay,
-        currency: order.currency || "usd",
-      }),
-    };
+    return success({
+      clientSecret: paymentIntent.client_secret,
+      amount: finalAmntToPay,
+      currency: order.currency || "usd",
+    });
   } catch (error: any) {
-    console.error("stripe-create-payment-intent error", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: "Internal server error" }),
-    };
+    return error("Internal server error", 500);
   }
 };
 

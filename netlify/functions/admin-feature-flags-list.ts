@@ -35,7 +35,6 @@ export const handler = async (event: any) => {
 
     return success(flags);
   } catch (err: any) {
-    console.error("admin-feature-flags-list error", err);
     return error(err?.message || "Server error", 500);
   }
 };
