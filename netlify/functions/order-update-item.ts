@@ -8,7 +8,7 @@ const clerkClient = createClerkClient({
 });
 
 export const handler = async (event: any) => {
-  const userId = await auth(event, clerkClient);
+  const { userId } = await auth(event, clerkClient);
   if (!userId) {
     return error("Unauthorized", 401);
   }

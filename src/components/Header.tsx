@@ -2,6 +2,7 @@ import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/clerk-react";
 import { Link, useNavigate } from "react-router";
 import { useCartContext } from "../cartContext";
 import { UsernameModal } from "./UsernameModal";
+import { GiftsReceived } from "./GiftsReceived";
 import { useState } from "react";
 
 export const Header = () => {
@@ -77,7 +78,7 @@ export const Header = () => {
                       onClick={() => navigate("/my-maps")}
                     />
                     <UserButton.Action
-                      label="My Orders"
+                      label="Gifts Sent"
                       labelIcon={<span>📦</span>}
                       onClick={() => navigate("/my-orders")}
                     />
@@ -89,6 +90,75 @@ export const Header = () => {
                       />
                     )}
                   </UserButton.MenuItems>
+
+                  {/* Custom pages in the account modal */}
+                  <UserButton.UserProfilePage
+                    label="My Maps"
+                    labelIcon={<span>🗺️</span>}
+                    url="my-maps"
+                  >
+                    <div className="p-6">
+                      <h2 className="text-xl font-bold mb-4">My Maps</h2>
+                      <p className="text-sm text-gray-600 mb-4">
+                        View and manage your saved maps
+                      </p>
+                      <button
+                        onClick={() => navigate("/my-maps")}
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      >
+                        Go to My Maps
+                      </button>
+                    </div>
+                  </UserButton.UserProfilePage>
+
+                  <UserButton.UserProfilePage
+                    label="Gifts Sent"
+                    labelIcon={<span>📦</span>}
+                    url="gifts-sent"
+                  >
+                    <div className="p-6">
+                      <h2 className="text-xl font-bold mb-4">Gifts Sent</h2>
+                      <p className="text-sm text-gray-600 mb-4">
+                        View your order history and gifts you've sent
+                      </p>
+                      <button
+                        onClick={() => navigate("/my-orders")}
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      >
+                        View All Gifts Sent
+                      </button>
+                    </div>
+                  </UserButton.UserProfilePage>
+
+                  <UserButton.UserProfilePage
+                    label="Gifts Received"
+                    labelIcon={<span>🎁</span>}
+                    url="gifts-received"
+                  >
+                    <div className="p-6">
+                      <GiftsReceived />
+                    </div>
+                  </UserButton.UserProfilePage>
+
+                  <UserButton.UserProfilePage
+                    label="Username"
+                    labelIcon={<span>👤</span>}
+                    url="username"
+                  >
+                    <div className="p-6">
+                      <h2 className="text-xl font-bold mb-4">Set Username</h2>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Your username:{" "}
+                        <strong>{user?.username || "Not set"}</strong>
+                      </p>
+                      <button
+                        onClick={() => setIsUsernameModalOpen(true)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      >
+                        Change Username
+                      </button>
+                    </div>
+                  </UserButton.UserProfilePage>
                 </UserButton>
               </div>
             </SignedIn>

@@ -9,14 +9,18 @@ const clerkClient = createClerkClient({
 
 export const handler = async (event: any) => {
   try {
-    const authUserId = await auth(event, clerkClient);
-    if (!authUserId) {
+    const { clerkUserId, user } = await auth(event, clerkClient);
+    if (!clerkUserId) {
       return error("Unauthorized", 401);
     }
-    // const { userId } = JSON.parse(event.body);
+
+    if (!user) {
+      return error("User not found", 404);
+    }
+
     let order = await prisma.order.findFirst({
       where: {
-        userId: authUserId,
+        userId: user.id,
         status: "pending",
       },
       include: {
@@ -33,7 +37,7 @@ export const handler = async (event: any) => {
     if (!order) {
       order = await prisma.order.create({
         data: {
-          userId: authUserId,
+          userId: user.id,
           status: "pending",
         },
         include: {

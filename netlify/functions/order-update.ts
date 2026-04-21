@@ -9,8 +9,8 @@ const clerkClient = createClerkClient({
 
 export const handler = async (event: any) => {
   try {
-    const authUserId = await auth(event, clerkClient);
-    if (!authUserId) {
+    const { userId } = await auth(event, clerkClient);
+    if (!userId) {
       return error("Unauthorized", 401);
     }
 
@@ -34,7 +34,7 @@ export const handler = async (event: any) => {
     // Find the user's pending order; don't trust arbitrary order IDs from client
     const existingOrder = await prisma.order.findFirst({
       where: {
-        userId: authUserId,
+        userId: userId,
         status: "pending",
       },
     });

@@ -11,7 +11,7 @@ export async function handler(event: any, context: any) {
   const baseUrl = process.env.DEV
     ? "http://localhost:8888"
     : "https://topojoy.studio";
-  const userId = await auth(event, clerkClient);
+  const { userId } = await auth(event, clerkClient);
   if (!userId) {
     return error("Unauthorized", 401);
   }

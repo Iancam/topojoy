@@ -25,22 +25,10 @@ export const handler = async (event: any) => {
   }
 
   try {
-    const clerkUserId = await auth(event, clerkClient);
-    // if (!clerkUserId) {
-    //   return {
-    //     statusCode: 401,
-    //     body: JSON.stringify({ message: "Unauthorized" }),
-    //   };
-    // }
-    let donor;
-    if (clerkUserId) {
-      donor = await prisma.user.findUnique({
-        where: { clerkId: clerkUserId },
-      });
+    const { clerkUserId, user: donor } = await auth(event, clerkClient);
 
-      if (!donor) {
-        return error("User not found", 404);
-      }
+    if (!donor) {
+      return error("User not found", 404);
     }
 
     const body = JSON.parse(event.body || "{}");

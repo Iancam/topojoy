@@ -11,16 +11,12 @@ export const handler = async (event: any) => {
       publishableKey: process.env.VITE_CLERK_PUBLISHABLE_KEY,
     });
 
-    const userId = await auth(event, clerkClient);
+    const { userId, clerkUserId } = await auth(event, clerkClient);
     if (!userId) {
-      return {
-        statusCode: 401,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ success: false, message: "Unauthorized" }),
-      };
+      return error("Unauthorized", 401);
     }
 
-    const clerkUser = await clerkClient.users.getUser(userId);
+    const clerkUser = await clerkClient.users.getUser(clerkUserId);
     if ((clerkUser.publicMetadata as any)?.role !== "admin") {
       return error("Forbidden", 403);
     }

@@ -23,14 +23,14 @@ export const handler = async (event: any) => {
   const giftToken: string | undefined = body.giftToken;
 
   try {
-    const authUserId = await auth(event, clerkClient);
-    if (!authUserId) {
+    const { userId } = await auth(event, clerkClient);
+    if (!userId) {
       return error("Unauthorized", 401);
     }
 
     const order = await prisma.order.findFirst({
       where: {
-        userId: authUserId,
+        userId: userId,
         status: "pending",
       },
       include: {

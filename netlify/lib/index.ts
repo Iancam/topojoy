@@ -1,3 +1,4 @@
+import prisma from "../lib/prisma";
 import { isProduction } from "./env";
 
 export const error = (message: string, status: number = 400) => {
@@ -75,21 +76,29 @@ export const auth = async (event: any, clerkClient: any) => {
     clerkRequest.body = event.body;
   }
 
-  // try {
-  const auth = await clerkClient.authenticateRequest(clerkRequest, {
-    authorizedParties,
-  });
+  try {
+    const auth = await clerkClient.authenticateRequest(clerkRequest, {
+      authorizedParties,
+    });
 
-  if (!auth.isAuthenticated) {
-    return null;
+    if (!auth.isAuthenticated) {
+      return { clerkUserId: null, userId: null };
+    }
+
+    const { userId: clerkUserId } = auth.toAuth();
+
+    const user = await prisma.user.findUnique({
+      where: {
+        clerkId: clerkUserId,
+      },
+    });
+
+    return { userId: user?.id, clerkUserId, user };
+  } catch (err) {
+    console.error("Clerk authenticateRequest failed", err);
+    // On any Clerk error, treat as unauthenticated instead of crashing the function.
+    return { userId: null, clerkUserId: null };
   }
-
-  const { userId } = auth.toAuth();
-  return userId;
-  // } catch (err) {
-  console.error("Clerk authenticateRequest failed", err);
-  // On any Clerk error, treat as unauthenticated instead of crashing the function.
-  return null;
 };
 
 export const getShippingPrice = async ({

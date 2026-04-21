@@ -90,6 +90,7 @@ const apiCall = (urlPath: string, method: string, errorMessage: string) => {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Include cookies for Clerk authentication
         body:
           method === "GET" || method === "HEAD"
             ? undefined

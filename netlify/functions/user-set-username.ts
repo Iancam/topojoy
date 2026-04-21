@@ -26,7 +26,7 @@ export const handler = async (
 
   try {
     // Authenticate user with Clerk
-    const clerkUserId = await auth(event, clerkClient);
+    const { clerkUserId } = await auth(event, clerkClient);
 
     if (!clerkUserId) {
       return error("Unauthorized - please sign in", 401);

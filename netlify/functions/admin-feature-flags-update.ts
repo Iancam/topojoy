@@ -15,12 +15,12 @@ export const handler = async (event: any) => {
       publishableKey: process.env.VITE_CLERK_PUBLISHABLE_KEY,
     });
 
-    const userId = await auth(event, clerkClient);
+    const { userId, clerkUserId } = await auth(event, clerkClient);
     if (!userId) {
       return error("Unauthorized", 401);
     }
 
-    const clerkUser = await clerkClient.users.getUser(userId);
+    const clerkUser = await clerkClient.users.getUser(clerkUserId);
     if ((clerkUser.publicMetadata as any)?.role !== "admin") {
       return error("Forbidden, user is not admin", 403);
     }
@@ -51,7 +51,6 @@ export const handler = async (event: any) => {
 
     return success(flag);
   } catch (err: any) {
-    console.error("admin-feature-flags-update error", err);
     return error(err?.message || "Server error", 500);
   }
 };

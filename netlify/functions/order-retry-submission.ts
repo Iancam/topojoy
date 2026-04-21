@@ -15,8 +15,8 @@ export const handler = async (event: HandlerEvent) => {
   }
 
   try {
-    const authUserId = await auth(event, clerkClient);
-    if (!authUserId) {
+    const { userId } = await auth(event, clerkClient);
+    if (!userId) {
       return error("Unauthorized", 401);
     }
 
@@ -26,7 +26,7 @@ export const handler = async (event: HandlerEvent) => {
     }
 
     const order = await prisma.order.findFirst({
-      where: { id: orderId, userId: authUserId },
+      where: { id: orderId, userId: userId },
     });
 
     if (!order) {
