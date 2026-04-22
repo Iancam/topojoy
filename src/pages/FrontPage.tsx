@@ -13,7 +13,7 @@ export const FrontPage = () => {
         <p className="text-lg leading-7 text-gray-600 mb-8">
           These maps tell stories of wilderness. The time we built an aspen
           bridge across a raging creek; the time it snowed on us in June; The
-          time we climbed Arrow, Handies, Jones,Crown, Niagra. Tell your story.
+          time we climbed Arrow, Handies, Jones, Crown, Niagra. Tell your story.
           Zoom to a place that has meaning to a friend, select the area you want
           to remember, then customize the details. Send a gift that'll mean
           something.
