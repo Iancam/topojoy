@@ -2,6 +2,7 @@ import { featureFlags } from "../api";
 
 export const FEATURE_FLAGS = {
   mapEditorEnabled: "map_editor_enabled",
+  optionalDonationEnabled: "optional_donation_enabled",
 } as const;
 
 export type FeatureFlagKey = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS];
@@ -12,6 +13,7 @@ type FeatureFlagsResponse = {
 
 const DEFAULT_FLAGS: Record<FeatureFlagKey, boolean> = {
   [FEATURE_FLAGS.mapEditorEnabled]: true,
+  [FEATURE_FLAGS.optionalDonationEnabled]: false,
 };
 
 let cachedFlags: Record<string, boolean> | null = null;

@@ -6,6 +6,7 @@ import { donation, getPrices } from "@/api";
 import { Input } from "./ui/input";
 import { formatMoney } from "@/lib/utils";
 import { getStoredGiftToken, clearStoredGiftToken } from "@/lib/giftToken";
+import { getFeatureFlags, FEATURE_FLAGS } from "@/lib/featureFlags";
 
 export const printTypes = {
   poster: {
@@ -189,6 +190,7 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
   );
   const [showTokenInput, setShowTokenInput] = useState(false);
   const [newTokenInput, setNewTokenInput] = useState("");
+  const [isDonationEnabled, setIsDonationEnabled] = useState(false);
   // const [giftBannerMsg, setGiftBannerMsg] = React.useState<string | null>(null);
   const printTypeKey = (form["print.type"] ||
     "poster") as keyof typeof printTypes;
@@ -205,6 +207,15 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
   const recommendedPrices = allRecommendedPrices.filter((p) => {
     return p.subcategoryId === printTypes[printTypeKey].subcategoryId;
   });
+
+  // Load feature flag
+  useEffect(() => {
+    getFeatureFlags().then((flags) => {
+      setIsDonationEnabled(
+        flags[FEATURE_FLAGS.optionalDonationEnabled] ?? false,
+      );
+    });
+  }, []);
 
   useEffect(() => {
     setLoadingSizes(true);
@@ -455,7 +466,7 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
           }
         />
       </div>
-      {!getStoredGiftToken() && (
+      {isDonationEnabled && !getStoredGiftToken() && (
         <div className="mt-6 space-y-2">
           <h3 className="text-sm font-medium text-gray-900">
             Chip in, if you&apos;d like
