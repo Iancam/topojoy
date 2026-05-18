@@ -1,75 +1,28 @@
 import { useState, useRef, useEffect } from "react";
-import { TourMap } from "../walkthrough.js";
 import p5 from "p5";
 import { sketchFactory } from "../map/sketch.js";
 
-import { formElements } from "../components/configFormData.ts";
-
-import { useAuth } from "@clerk/clerk-react";
-// Import configs with correct paths
-import { snowMesaConfig, emeraldLakesConfig } from "../configs/index.ts";
-import { MapConfig } from "../configs/schema.ts";
 import { ConfigForm } from "../components/configForm.tsx";
 import { P5Canvas } from "../components/p5Canvas.tsx";
-import { getGeoJSONFromOSM, getFeatures } from "../map/trails.js";
-import { tilesForFeatures } from "../map/processImage.js";
-import { getImageUrlFromAws, maps, order, saveImageToAws } from "../api.ts";
-import {
-  fitToParent,
-  getFormFromLocalStorage,
-  LS,
-  needsFilenamePrompt,
-  normalizeFeatureName,
-} from "../lib/utils.ts";
+
+import { maps, order, saveImageToAws } from "../api.ts";
+import { fitToParent, LS, needsFilenamePrompt } from "../lib/utils.ts";
 import { useUser } from "@clerk/clerk-react";
-import { useSearchParams, useParams } from "react-router";
 import { addHeightsToForm, convertToNestedObject } from "../lib/utils.ts";
 import _ from "lodash";
 import { Header } from "../components/Header.tsx";
 import { printTypes } from "../components/PrintOptions.tsx";
 import { useCartContext } from "../cartContext.tsx";
-import type { Annotation } from "../components/AnnotationLayer.tsx";
-
-type ToastState = {
-  message: string;
-  type: "success" | "error" | "info";
-} | null;
-
-interface Configs {
-  [key: string]: MapConfig;
-}
-
-const configs: Configs = {
-  Original: snowMesaConfig,
-  "Juniper Bark": emeraldLakesConfig,
-};
+import { useLoadMap } from "@/hooks/useMaploader.ts";
+import { useToast } from "@/hooks/useToast.ts";
+import { configs } from "@/mapConfigs.ts";
+import { Toast } from "@/components/Toast.tsx";
 
 export const App = () => {
-  // get config id from url query params or route params
-  const [searchParams, setSearchParams] = useSearchParams();
-  const routeParams = useParams<{ username?: string; filename?: string }>();
-  const configId = searchParams.get("configId");
-  const { username, filename } = routeParams;
-
-  const [config, setConfig] = useState("Original");
-
   // Always use Clerk's useUser hook so auth works in both development and production.
   const { isSignedIn, user } = useUser();
 
-  const preForm = Object.entries(formElements).reduce(
-    (obj, [key, [_, __, value]]) => {
-      obj[key] = value;
-      return obj;
-    },
-    {},
-  );
   const [sketchDims, setSketchDims] = useState({ width: 0, height: 0 });
-  const [form, setForm] = useState<Record<string, any>>(preForm);
-
-  const [features, setFeatures] = useState<{ [key: string]: string[] }>({});
-  const [bbox, setBbox] = useState<any>(null);
-  const [selectedTrails, setSelectedTrails] = useState<string[]>([]);
-
   const [mapImageIsExpanded, setMapImageIsExpanded] = useState(false);
 
   const p5Ref = useRef<HTMLDivElement>(null);
@@ -82,16 +35,6 @@ export const App = () => {
     );
     return isInitialRun;
   });
-  const [collisions, setCollisions] = useState<Record<string, string[]>>(() => {
-    if (configId) {
-      return {};
-    }
-    const saved = localStorage.getItem(LS.COLLISIONS);
-    return saved ? JSON.parse(saved) : {};
-  });
-
-  const [toast, setToast] = useState<ToastState>(null);
-  const [mapNotFoundError, setMapNotFoundError] = useState<string | null>(null);
 
   const [isRendering, setIsRendering] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
@@ -101,166 +44,10 @@ export const App = () => {
   const [annotationsMode, setAnnotationsMode] = useState(false);
 
   // Track if the current user can edit this map
-  const [canEdit, setCanEdit] = useState(true);
 
   const cartContext = useCartContext();
 
-  useEffect(() => {
-    setForm((prev: any) => ({
-      ...prev,
-      "cart.orderId": cartContext.cart?.id ?? null,
-    }));
-  }, [cartContext.cart?.id]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => {
-      setToast(null);
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, [toast]);
-  // load config from db, or from local storage
-  useEffect(() => {
-    if (configId || (username && filename)) {
-      // get config from db - support both lookup methods
-      const queryParams = configId
-        ? { userId: user?.id!, configId }
-        : { userId: user?.id!, username, filename };
-
-      maps
-        .get(queryParams)
-        .then((config) => {
-          console.log("retrieved config from database");
-          // Clear any previous error
-          setMapNotFoundError(null);
-
-          // Set edit permissions based on API response
-          setCanEdit(config.canEdit ?? true);
-
-          // Show notification if user cannot edit
-          if (config.canEdit === false) {
-            setToast({
-              message:
-                "You are viewing this map in read-only mode. Only the owner can make changes.",
-              type: "info",
-            });
-          }
-
-          setConfig(config.config);
-          setForm({ ...preForm, ...config });
-          setSelectedTrails(config.selectedTrails);
-          setBbox(config.bbox);
-          // set fealures
-          const feats = config.features.reduce(
-            (acc, feat) => {
-              if (!acc[feat.type]) {
-                acc[feat.type] = [];
-              }
-              acc[feat.type].push(normalizeFeatureName(feat.name));
-              return acc;
-            },
-            {} as Record<string, string[]>,
-          );
-          setFeatures(feats);
-          renderSketch({
-            config: config.config,
-            form: { ...preForm, ...config },
-            bbox: config.bbox,
-            selectedTrails: config.selectedTrails,
-            features: feats,
-          })();
-        })
-        .catch((error) => {
-          console.error("Failed to load map:", error);
-
-          // Set persistent error message
-          const errorMessage =
-            username && filename
-              ? `Map not found: /${username}/${filename}`
-              : `Map not found (ID: ${configId})`;
-
-          setMapNotFoundError(errorMessage);
-          setIsRendering(false);
-        });
-    } else {
-      console.log("loading data from localStorage");
-      const bbox = JSON.parse(localStorage.getItem(LS.GEOJSON_BBOX) || "{}");
-      const selectedTrails = JSON.parse(
-        localStorage.getItem(LS.GEOJSON_SELECTED_TRAIL_SEGMENTS) || "[]",
-      );
-      const configName = localStorage.getItem(LS.CONFIG) || "Original";
-      const form = getFormFromLocalStorage(preForm, configName, configs);
-      const downstreamConfig = convertToNestedObject(form, configs[configName]);
-      setBbox(bbox);
-      setSelectedTrails(selectedTrails);
-      setConfig(configName);
-      setForm(form);
-
-      const { bounds } = tilesForFeatures(bbox, downstreamConfig.zoomLevel);
-
-      // Show loading state while fetching trail data
-      setIsRendering(true);
-
-      getGeoJSONFromOSM(bounds.latLngBox)
-        .then((geoJSON) => {
-          const rawFeats = getFeatures(
-            { box: bounds.box, zoom: downstreamConfig.zoomLevel },
-            geoJSON,
-          );
-          const feats = Object.entries(rawFeats).reduce(
-            (acc, [key, value]) => {
-              // key minus trailing s
-              const type = key.slice(0, -1);
-              acc[type] = Object.keys(value).map(normalizeFeatureName);
-              return acc;
-            },
-            {} as Record<string, string[]>,
-          );
-          setFeatures(feats);
-          renderSketch({
-            config: configName,
-            form,
-            bbox,
-            selectedTrails,
-            features: feats,
-          })();
-        })
-        .catch((err) => {
-          console.error("Failed to load trail data:", err);
-
-          // Stop showing loader when API fails
-          setIsRendering(false);
-
-          setToast({
-            message:
-              err.message ||
-              "Failed to load trail data. Please try again later.",
-            type: "error",
-          });
-        });
-    }
-  }, []);
-
-  useEffect(() => {
-    // Ensure the ref is attached to a current DOM node
-    if (!p5Ref.current) return;
-
-    const resizeObserver = new ResizeObserver((entries) => {
-      // Access the dimensions from the first entry
-      const { width, height } = entries[0].contentRect;
-      setDimensions({ width: Math.round(width), height: Math.round(height) });
-    });
-
-    // Start observing the parent div
-    resizeObserver.observe(p5Ref.current);
-
-    // Cleanup function to stop observing when the component unmounts
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, []);
-
-  const tour = TourMap();
+  const { toast, setToast } = useToast();
 
   const renderSketch =
     ({
@@ -382,6 +169,53 @@ export const App = () => {
 
       return myp5;
     };
+
+  const {
+    canEdit,
+    mapNotFoundError,
+    bbox,
+    selectedTrails,
+    features,
+    setFeatures,
+    configId,
+    form,
+    setForm,
+    config,
+    setConfig,
+    collisions,
+    setCollisions,
+  } = useLoadMap({
+    user,
+    setIsRendering,
+    setToast,
+    renderSketch,
+  });
+
+  useEffect(() => {
+    setForm((prev: any) => ({
+      ...prev,
+      "cart.orderId": cartContext.cart?.id ?? null,
+    }));
+  }, [cartContext.cart?.id]);
+
+  useEffect(() => {
+    // Ensure the ref is attached to a current DOM node
+    if (!p5Ref.current) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      // Access the dimensions from the first entry
+      const { width, height } = entries[0].contentRect;
+      setDimensions({ width: Math.round(width), height: Math.round(height) });
+    });
+
+    // Start observing the parent div
+    resizeObserver.observe(p5Ref.current);
+
+    // Cleanup function to stop observing when the component unmounts
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   const compositeAnnotations = (
     canvas: HTMLCanvasElement,
@@ -560,10 +394,10 @@ export const App = () => {
 
       const newMapConfig = await upsertMap(
         {
-          form,
+          form: form,
           givenFeatures: features,
-          bbox,
-          selectedTrails,
+          bbox: bbox,
+          selectedTrails: selectedTrails,
           user,
           configName: config,
           defaultConfig: configs[config],
@@ -661,10 +495,10 @@ export const App = () => {
 
       const newMapConfig = await upsertMap(
         {
-          form,
+          form: form,
           givenFeatures: features,
-          bbox,
-          selectedTrails,
+          bbox: bbox,
+          selectedTrails: selectedTrails,
           user,
           configName: config,
           defaultConfig: configs[config],
@@ -816,29 +650,7 @@ export const App = () => {
       )}
 
       {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-md px-4 py-3 shadow-lg text-white text-sm max-w-sm bg-opacity-90">
-          <div
-            className={
-              "absolute inset-0 -z-10 rounded-md " +
-              (toast.type === "error"
-                ? "bg-red-600"
-                : toast.type === "success"
-                  ? "bg-green-600"
-                  : "bg-gray-800")
-            }
-          />
-          <span>{toast.message}</span>
-          <button
-            type="button"
-            onClick={() => setToast(null)}
-            className="ml-auto text-white/80 hover:text-white text-lg leading-none"
-            aria-label="Close notification"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      {toast && <Toast toast={toast} setToast={setToast} />}
       <div className="flex h-screen">
         {/* Sidebar */}
         <div className="w-80"></div>
