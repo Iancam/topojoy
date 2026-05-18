@@ -1,8 +1,7 @@
 import prisma from "../lib/prisma";
 import { isProduction } from "./env";
 
-export const error = (message: string, status: number = 400) => {
-  // Extract the calling function name from the stack trace
+function getFunctionName() {
   const stack = new Error().stack;
   let functionName = "unknown";
 
@@ -28,6 +27,12 @@ export const error = (message: string, status: number = 400) => {
       }
     }
   }
+  return functionName;
+}
+
+export const error = (message: string, status: number = 400) => {
+  // Extract the calling function name from the stack trace
+  const functionName = getFunctionName();
 
   // Log the error with context
   console.error(`[${functionName}] Error ${status}:`, message);
