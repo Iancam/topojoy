@@ -34,7 +34,7 @@ interface ConfigFormProps {
   onUpload?: () => void;
   onConfigChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onFormChange: (key: string, value: any) => void;
-  renderSketch: () => p5;
+  renderSketch: () => any;
   onSubmitSave?: () => void;
 
   annotationsMode?: boolean;

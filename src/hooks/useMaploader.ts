@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router";
 import { ToastState } from "./useToast";
 import { configs } from "@/mapConfigs";
+import { RenderSketchParams } from "./useRenderSketch";
 
 export function useLoadMap({
   user,
@@ -22,13 +23,7 @@ export function useLoadMap({
   user?: any;
   setIsRendering: (value: boolean) => void;
   setToast: (toast: ToastState) => void;
-  renderSketch: (params: {
-    config: string;
-    form: Record<string, any>;
-    bbox: any;
-    selectedTrails: string[];
-    features: { [key: string]: string[] };
-  }) => () => void;
+  renderSketch: (params: RenderSketchParams) => () => void;
 }) {
   const [canEdit, setCanEdit] = useState(true);
   const [mapNotFoundError, setMapNotFoundError] = useState<string | null>(null);
@@ -95,9 +90,12 @@ export function useLoadMap({
         renderSketch({
           config: configName,
           form,
+          setForm,
           bbox,
           selectedTrails,
           features: feats,
+          setFeatures,
+          setCollisions,
         })();
       })
       .catch((err) => {
@@ -164,6 +162,9 @@ export function useLoadMap({
           bbox: config.bbox,
           selectedTrails: config.selectedTrails,
           features: feats,
+          setForm,
+          setFeatures,
+          setCollisions,
         })();
       })
       .catch((error: Error) => {

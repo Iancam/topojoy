@@ -21,8 +21,8 @@ export const P5Canvas = ({
   // onAnnotationsChange,
 }: {
   mapImageIsExpanded: boolean;
-  p5Ref: React.RefObject<HTMLDivElement> | null;
-  p5MountRef: React.RefObject<HTMLDivElement> | null;
+  p5Ref: React.RefObject<HTMLDivElement | null>;
+  p5MountRef: React.RefObject<HTMLDivElement | null>;
   toggleMapImageIsExpanded: (e: React.MouseEvent) => void;
   isLoading: boolean;
   sketchDims: { width: number; height: number };
