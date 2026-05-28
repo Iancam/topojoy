@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { getStoredGiftToken, clearStoredGiftToken } from "../lib/giftToken";
+import {
+  getStoredGiftToken,
+  clearStoredGiftToken,
+  GIFT_TOKEN_KEY,
+} from "../lib/giftToken";
 import { donation } from "../api";
 import { formatMoney } from "../lib/utils";
 import { Input } from "./ui/input";
@@ -35,7 +39,7 @@ export const GiftsReceived: React.FC = () => {
 
   const handleApplyToken = () => {
     if (newTokenInput.trim()) {
-      localStorage.setItem("topojoy_gift_token", newTokenInput.trim());
+      localStorage.setItem(GIFT_TOKEN_KEY, newTokenInput.trim());
       setCurrentToken(newTokenInput.trim());
       setNewTokenInput("");
     }

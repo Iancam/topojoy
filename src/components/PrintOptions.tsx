@@ -5,7 +5,11 @@ import { estimatePriceForPrintType } from "@/lib/lumaprintPrices";
 import { donation, getPrices } from "@/api";
 import { Input } from "./ui/input";
 import { formatMoney } from "@/lib/utils";
-import { getStoredGiftToken, clearStoredGiftToken } from "@/lib/giftToken";
+import {
+  getStoredGiftToken,
+  clearStoredGiftToken,
+  GIFT_TOKEN_KEY,
+} from "@/lib/giftToken";
 import { getFeatureFlags, FEATURE_FLAGS } from "@/lib/featureFlags";
 
 export const printTypes = {
@@ -292,7 +296,7 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
 
   const handleApplyNewToken = () => {
     if (newTokenInput.trim()) {
-      localStorage.setItem("topojoy_gift_token", newTokenInput.trim());
+      localStorage.setItem(GIFT_TOKEN_KEY, newTokenInput.trim());
       window.location.reload(); // Reload to apply new token
     }
   };

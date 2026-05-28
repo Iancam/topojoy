@@ -35,7 +35,18 @@ export const handler = async (event: any) => {
       return error("Gift not found", 404);
     }
 
-    return success(donation);
+    const allocationTotal = donation.allocations.reduce(
+      (sum, alloc) => sum + alloc.amountDrawn,
+      0,
+    );
+
+    const remainingBalance = donation.amount - allocationTotal;
+
+    return success({
+      ...donation,
+      allocations: undefined,
+      remainingBalance,
+    });
   } catch (err: any) {
     return error(err.message || "Internal server error", 500);
   }

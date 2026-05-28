@@ -4,6 +4,7 @@ import { createClerkClient } from "@clerk/backend";
 import { auth, error, getShippingPrice, success } from "../lib";
 import prisma from "../lib/prisma";
 import { submitOrderToLumaprints } from "../lib/lumaprints";
+import { createGiftedMapIfApplicable } from "../lib/giftedMap";
 import { initStripe } from "../lib/stripe";
 
 const stripe = initStripe();
@@ -70,7 +71,7 @@ export const handler = async (event: any) => {
 
     // process gift token if it exists
     const giftTokenResult = await processGiftToken(giftToken, amntToPay);
-    if (giftTokenResult.message) {
+    if ("message" in giftTokenResult && giftTokenResult.message) {
       return error(giftTokenResult.message, 400);
     }
 
@@ -79,12 +80,12 @@ export const handler = async (event: any) => {
     const amountDrawn = giftTokenResult.amountDrawn;
 
     if (finalAmntToPay === 0 && donation) {
-      prisma.order.update({
+      await prisma.order.update({
         where: { id: order.id },
         data: { status: "paid", paidAt: new Date() },
       });
 
-      prisma.donationAllocation.create({
+      await prisma.donationAllocation.create({
         data: {
           donationId: donation.id,
           orderId: order.id,
@@ -92,12 +93,40 @@ export const handler = async (event: any) => {
         },
       });
 
+      if (donation.donorId) {
+        await createGiftedMapIfApplicable({
+          donorId: donation.donorId,
+          orderId: order.id,
+          orderItems: order.orderItems,
+          totalCost: order.totalPrice,
+        });
+      }
+
       await submitOrderToLumaprints(order.id);
 
-      return {
-        statusCode: 200,
-        body: JSON.stringify({ freeOrder: true, amount: 0 }),
-      };
+      return success({
+        freeOrder: true,
+        amount: 0,
+      });
+    }
+
+    if (donation) {
+      await prisma.donationAllocation.create({
+        data: {
+          donationId: donation.id,
+          orderId: order.id,
+          amountDrawn,
+        },
+      });
+
+      if (donation.donorId) {
+        await createGiftedMapIfApplicable({
+          donorId: donation.donorId,
+          orderId: order.id,
+          orderItems: order.orderItems,
+          totalCost: order.totalPrice,
+        });
+      }
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
@@ -141,6 +170,7 @@ async function processGiftToken(
       amount: true,
       expiryDate: true,
       status: true,
+      donorId: true,
       allocations: { select: { amountDrawn: true } },
     },
   });

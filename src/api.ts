@@ -362,6 +362,7 @@ const donationAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
     "Failed to create donation payment intent",
   ],
   getGiftValue: ["donation-gift-value", "POST", "Failed to get gift value"],
+  getGift: ["donation-get-gift", "GET", "Failed to get gift"],
 });
 
 export const maps = Object.fromEntries(

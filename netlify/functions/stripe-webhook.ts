@@ -1,6 +1,7 @@
 import type { HandlerEvent, HandlerContext } from "@netlify/functions";
 import prisma from "../lib/prisma";
 import { submitOrderToLumaprints } from "../lib/lumaprints";
+import { createGiftedMapIfApplicable } from "../lib/giftedMap";
 import { initStripe, webhookSecret } from "../lib/stripe";
 import { error, success } from "../lib";
 
@@ -59,7 +60,10 @@ async function handleOrder(
   if (!orderId) {
     return;
   }
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { orderItems: { select: { mapConfigId: true } } },
+  });
   if (!order) {
     console.warn("Order not found for payment_intent", {
       orderId,
@@ -74,6 +78,20 @@ async function handleOrder(
     });
 
     await submitOrderToLumaprints(orderId);
+
+    const allocation = await prisma.donationAllocation.findFirst({
+      where: { orderId },
+      include: { donation: { select: { donorId: true } } },
+    });
+
+    if (allocation?.donation.donorId) {
+      await createGiftedMapIfApplicable({
+        donorId: allocation.donation.donorId,
+        orderId,
+        orderItems: order.orderItems,
+        totalCost: order.totalPrice,
+      });
+    }
   }
 }
 

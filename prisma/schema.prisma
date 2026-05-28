@@ -23,7 +23,8 @@ model User {
   mapConfigs MapConfig[]
   orders    Order[]
   donations Donation[]
-  giftedMaps GiftedMap[]
+  giftedMapsGiven    GiftedMap[] @relation("GiftGiver")
+  giftedMapsReceived GiftedMap[] @relation("GiftRecipient")
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -198,21 +199,27 @@ model Donation {
 }
 
 model GiftedMap {
-  id           String               @id @default(cuid())
-  giftGiverId  String
-  giftGiver    User            @relation(fields: [giftGiverId], references: [id])
-  
-  GGgratitudeMessage String?
-  GGreflections      String?
-  RgratitudeMessage String?
-  Rreflections      String?
+  id           String    @id @default(cuid())
 
-  orderId      String               @unique
-  order        Order                @relation(fields: [orderId], references: [id])
-  mapConfigId  String
-  mapConfig    MapConfig            @relation(fields: [mapConfigId], references: [id])
-  totalCost    Int                  // in cents
-  createdAt    DateTime             @default(now())
+  giftGiverId  String
+  giftGiver    User      @relation("GiftGiver", fields: [giftGiverId], references: [id])
+
+  recipientId  String?
+  recipient    User?     @relation("GiftRecipient", fields: [recipientId], references: [id])
+
+  giverMessage      String?
+  giverReflection   String?
+  recipientMessage  String?
+  recipientReflection String?
+
+  orderId      String    @unique
+  order        Order     @relation(fields: [orderId], references: [id])
+
+  mapConfigId  String?
+  mapConfig    MapConfig? @relation(fields: [mapConfigId], references: [id])
+
+  totalCost    Int       // in cents
+  createdAt    DateTime  @default(now())
 }
 
 model DonationAllocation {
