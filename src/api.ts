@@ -365,6 +365,16 @@ const donationAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
   getGift: ["donation-get-gift", "GET", "Failed to get gift"],
 });
 
+const giftedMapAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
+  get: ["gifted-map-get", "GET", "Failed to get gifted map"],
+  list: ["gifted-map-list", "GET", "Failed to list gifted maps"],
+  updateReflection: [
+    "gifted-map-update-reflection",
+    "POST",
+    "Failed to update reflection",
+  ],
+});
+
 export const maps = Object.fromEntries(
   Object.entries(mapsAPIData).map(([key, value]) => [
     key,
@@ -391,6 +401,12 @@ export const donation = Object.fromEntries(
 );
 export const featureFlags = Object.fromEntries(
   Object.entries(featureFlagsAPIData).map(([key, value]) => [
+    key,
+    APIDataToAPIFN(value),
+  ]),
+);
+export const giftedMap = Object.fromEntries(
+  Object.entries(giftedMapAPIData).map(([key, value]) => [
     key,
     APIDataToAPIFN(value),
   ]),

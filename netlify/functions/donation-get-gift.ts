@@ -41,11 +41,13 @@ export const handler = async (event: any) => {
     );
 
     const remainingBalance = donation.amount - allocationTotal;
+    const redeemedOrderId = donation.allocations[0]?.orderId ?? null;
 
     return success({
       ...donation,
       allocations: undefined,
       remainingBalance,
+      redeemedOrderId,
     });
   } catch (err: any) {
     return error(err.message || "Internal server error", 500);

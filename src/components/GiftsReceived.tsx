@@ -7,6 +7,7 @@ import {
 import { donation } from "../api";
 import { formatMoney } from "../lib/utils";
 import { Input } from "./ui/input";
+import { GiftedMapReflection } from "./GiftedMapReflection";
 
 export const GiftsReceived: React.FC = () => {
   const [currentToken, setCurrentToken] = useState<string | null>(
@@ -178,6 +179,10 @@ export const GiftsReceived: React.FC = () => {
               </div>
             </div>
           ) : null}
+
+          {giftInfo?.redeemedOrderId && (
+            <GiftedMapReflection orderId={giftInfo.redeemedOrderId} />
+          )}
         </div>
       )}
 

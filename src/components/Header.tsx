@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { useCartContext } from "../cartContext";
 import { UsernameModal } from "./UsernameModal";
 import { GiftsReceived } from "./GiftsReceived";
+import { GiftsSentReflections } from "./GiftsSentReflections";
 import { useState } from "react";
 
 export const Header = () => {
@@ -116,16 +117,19 @@ export const Header = () => {
                     labelIcon={<span>📦</span>}
                     url="gifts-sent"
                   >
-                    <div className="p-6">
-                      <h2 className="text-xl font-bold mb-4">Gifts Sent</h2>
-                      <p className="text-sm text-gray-600 mb-4">
-                        View your order history and gifts you've sent
-                      </p>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <h2 className="text-xl font-bold mb-1">Gifts Sent</h2>
+                        <p className="text-sm text-gray-500">
+                          Leave a note for someone whose gift has been redeemed.
+                        </p>
+                      </div>
+                      <GiftsSentReflections />
                       <button
                         onClick={() => navigate("/my-orders")}
-                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        className="text-xs text-blue-600 hover:underline"
                       >
-                        View All Gifts Sent
+                        View full order history →
                       </button>
                     </div>
                   </UserButton.UserProfilePage>
