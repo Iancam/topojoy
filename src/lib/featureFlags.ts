@@ -3,6 +3,7 @@ import { featureFlags } from "../api";
 export const FEATURE_FLAGS = {
   mapEditorEnabled: "map_editor_enabled",
   optionalDonationEnabled: "optional_donation_enabled",
+  purchaseWithoutGiftEnabled: "purchase_without_gift_enabled",
 } as const;
 
 export type FeatureFlagKey = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS];
