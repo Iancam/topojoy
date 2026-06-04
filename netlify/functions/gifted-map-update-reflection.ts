@@ -1,6 +1,10 @@
 import { createClerkClient } from "@clerk/backend";
 import { auth, error, success } from "../lib";
 import prisma from "../lib/prisma";
+import { sendEmail } from "../lib/email";
+import React from "react";
+import { GratitudeMessage } from "../emails/GratitudeMessage";
+import { GratitudeReply } from "../emails/GratitudeReply";
 
 const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
@@ -35,6 +39,9 @@ export const handler = async (event: any) => {
         giftGiverId: true,
         recipientId: true,
         orderId: true,
+        mapConfig: { select: { title: true } },
+        giftGiver: { select: { email: true, name: true } },
+        recipient: { select: { email: true, name: true } },
       },
     });
 
@@ -91,8 +98,81 @@ export const handler = async (event: any) => {
       },
     });
 
+    // send email notification
+    // await sendEmailNotification(giftedMap, role, message, userId);
+
     return success({ ...updated, role });
   } catch (err: any) {
     return error(err.message || "Internal server error", 500);
   }
 };
+
+async function sendEmailNotification(
+  giftedMap: any,
+  role: string,
+  message: string,
+  userId: string,
+) {
+  const BASE_URL = "https://topojoy.studio";
+  const reflectionUrl = `${BASE_URL}/user/gifts-received`;
+  const mapTitle = giftedMap.mapConfig?.title ?? undefined;
+
+  if (role === "giver" && typeof message === "string" && message.trim()) {
+    // Giver wrote a message → notify the recipient
+    const recipientUser =
+      giftedMap.recipient ??
+      (giftedMap.recipientId
+        ? await prisma.user.findUnique({
+            where: { id: giftedMap.recipientId },
+            select: { email: true, name: true },
+          })
+        : null);
+    const recipientEmail = recipientUser?.email;
+    if (recipientEmail) {
+      await sendEmail({
+        to: recipientEmail,
+        subject: `${giftedMap.giftGiver.name} left you a message on your TopoJoy map`,
+        template: React.createElement(GratitudeMessage, {
+          recipientName: recipientUser?.name ?? "there",
+          giverName: giftedMap.giftGiver.name,
+          message,
+          mapTitle,
+          reflectionUrl,
+        }),
+      }).catch((e: any) =>
+        console.error("[email] GratitudeMessage send failed:", e),
+      );
+    }
+  } else if (
+    role === "recipient" &&
+    typeof message === "string" &&
+    message.trim()
+  ) {
+    // Recipient replied → notify the giver
+    const giverEmail = giftedMap.giftGiver.email;
+    if (giverEmail) {
+      const recipientName =
+        giftedMap.recipient?.name ??
+        (
+          await prisma.user.findUnique({
+            where: { id: userId },
+            select: { name: true },
+          })
+        )?.name ??
+        "the recipient";
+      await sendEmail({
+        to: giverEmail,
+        subject: `${recipientName} replied to your TopoJoy gift`,
+        template: React.createElement(GratitudeReply, {
+          giverName: giftedMap.giftGiver.name,
+          recipientName,
+          message,
+          mapTitle,
+          reflectionUrl: `${BASE_URL}/user/gifts-sent`,
+        }),
+      }).catch((e: any) =>
+        console.error("[email] GratitudeReply send failed:", e),
+      );
+    }
+  }
+}
