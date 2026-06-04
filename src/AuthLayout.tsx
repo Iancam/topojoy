@@ -6,8 +6,6 @@ export default function AuthLayout() {
   const { userId, isLoaded } = useAuth();
   const navigate = useNavigate();
 
-  console.log("test", userId);
-
   React.useEffect(() => {
     if (!isLoaded) return;
     if (!userId) {

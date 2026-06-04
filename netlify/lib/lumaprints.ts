@@ -145,11 +145,16 @@ export async function submitOrderToLumaprints(orderId: string) {
 
   const lumaprintsOrder = await response.json();
 
+  console.log("Lumaprints order response:", lumaprintsOrder);
+
   const updatedOrder = await prisma.order.update({
     where: { id: order.id },
     data: {
       status: "submitted",
       submittedAt: new Date(),
+      orderNumber: lumaprintsOrder.orderNumber
+        ? String(lumaprintsOrder.orderNumber)
+        : undefined,
     },
   });
 

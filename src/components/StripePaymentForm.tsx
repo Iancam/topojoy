@@ -24,11 +24,13 @@ export const StripePaymentForm = ({
 
     setSubmitting(true);
     try {
-      const { error: stripeError } = await stripe.confirmPayment({
+      const data = await stripe.confirmPayment({
         elements,
         confirmParams: {},
         redirect: "if_required",
       });
+      const { error: stripeError } = data;
+      console.log("stripe payment result", data);
       if (stripeError) {
         setError(stripeError.message || "Payment failed");
         setSubmitting(false);

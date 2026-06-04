@@ -1,5 +1,6 @@
 import { maps, order, saveImageToAws } from "@/api";
-import { printTypes } from "@/components/PrintOptions";
+import { printTypes } from "@/lib/printSIzeHelpers";
+// import { printTypes } from "@/(components/PrintOptions";
 import { needsFilenamePrompt } from "@/lib/utils";
 import { configs } from "@/mapConfigs";
 import { useState } from "react";

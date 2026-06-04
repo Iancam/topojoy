@@ -125,6 +125,7 @@ model Recipient {
 
 model Order {
   id    String @id @default(cuid())
+  orderNumber String? @unique
   // nonce String @unique
 
   status String @default("pending")

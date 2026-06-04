@@ -6,6 +6,9 @@ import prisma from "../lib/prisma";
 import { submitOrderToLumaprints } from "../lib/lumaprints";
 import { createGiftedMapIfApplicable } from "../lib/giftedMap";
 import { initStripe } from "../lib/stripe";
+import { sendEmail } from "../lib/email";
+import React from "react";
+import { OrderConfirmation } from "../emails/OrderConfirmation";
 
 const stripe = initStripe();
 
@@ -36,7 +39,8 @@ export const handler = async (event: any) => {
       },
       include: {
         recipient: true,
-        orderItems: true,
+        orderItems: { include: { mapConfig: { select: { title: true } } } },
+        user: { select: { email: true, name: true } },
       },
     });
 
@@ -104,6 +108,48 @@ export const handler = async (event: any) => {
 
       await submitOrderToLumaprints(order.id);
 
+      const recipientEmail = order.recipient?.email ?? order.user?.email;
+      const recipientName =
+        order.recipient?.name ?? order.user?.name ?? "there";
+      if (recipientEmail) {
+        const fmt = (cents: number) =>
+          (cents / 100).toLocaleString("en-US", {
+            style: "currency",
+            currency: "USD",
+          });
+        await sendEmail({
+          to: recipientEmail,
+          subject: "Your TopoJoy order is confirmed",
+          template: React.createElement(OrderConfirmation, {
+            recipientName,
+            items: order.orderItems.map((item: any) => ({
+              title: item.mapConfig?.title ?? "",
+              printType: item.printType ?? "",
+              width: item.width,
+              height: item.height,
+              quantity: item.quantity,
+              priceFormatted: fmt(item.totalPrice),
+            })),
+            totalFormatted: fmt(order.totalPrice),
+            shippingMethod: order.shippingMethod ?? "",
+            shippingAddress: order.recipient
+              ? [
+                  order.recipient.addressLine1,
+                  order.recipient.addressLine2,
+                  order.recipient.city,
+                  order.recipient.state,
+                  order.recipient.postalCode,
+                  order.recipient.country,
+                ]
+                  .filter(Boolean)
+                  .join(", ")
+              : "",
+          }),
+        }).catch((e: any) =>
+          console.error("[email] Order confirmation failed:", e),
+        );
+      }
+
       return success({
         freeOrder: true,
         amount: 0,
@@ -144,8 +190,9 @@ export const handler = async (event: any) => {
       clientSecret: paymentIntent.client_secret,
       amount: finalAmntToPay,
       currency: order.currency || "usd",
+      paymentIntent,
     });
-  } catch (error: any) {
+  } catch (err: any) {
     return error("Internal server error", 500);
   }
 };

@@ -13,7 +13,7 @@ import AdminPage from "./pages/AdminPage";
 import DonationPage from "./pages/DonationPage";
 import GiftPage from "./pages/GiftPage";
 import { Cart } from "./pages/Cart";
-import { Checkout } from "./pages/Checkout";
+import { Checkout } from "./pages/checkout/Checkout";
 import { SignInPage } from "./pages/SignInPage";
 import { CartProvider } from "./cartContext";
 import { Terms } from "./Terms";

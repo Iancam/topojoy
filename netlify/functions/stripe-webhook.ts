@@ -4,6 +4,10 @@ import { submitOrderToLumaprints } from "../lib/lumaprints";
 import { createGiftedMapIfApplicable } from "../lib/giftedMap";
 import { initStripe, webhookSecret } from "../lib/stripe";
 import { error, success } from "../lib";
+import { sendEmail } from "../lib/email";
+import React from "react";
+import { OrderConfirmation } from "../emails/OrderConfirmation";
+import { DonationConfirmation } from "../emails/DonationConfirmation";
 
 const stripe = initStripe();
 export const handler = async (
@@ -62,7 +66,11 @@ async function handleOrder(
   }
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    include: { orderItems: { select: { mapConfigId: true } } },
+    include: {
+      recipient: true,
+      orderItems: { include: { mapConfig: { select: { title: true } } } },
+      user: { select: { email: true, name: true } },
+    },
   });
   if (!order) {
     console.warn("Order not found for payment_intent", {
@@ -92,6 +100,45 @@ async function handleOrder(
         totalCost: order.totalPrice,
       });
     }
+
+    const recipientEmail = order.recipient?.email ?? order.user?.email;
+    const recipientName = order.recipient?.name ?? order.user?.name ?? "there";
+    if (recipientEmail) {
+      const formatMoney = (cents: number) =>
+        (cents / 100).toLocaleString("en-US", {
+          style: "currency",
+          currency: "USD",
+        });
+      await sendEmail({
+        to: recipientEmail,
+        subject: "Your TopoJoy order is confirmed",
+        template: React.createElement(OrderConfirmation, {
+          recipientName,
+          items: order.orderItems.map((item) => ({
+            title: item.mapConfig?.title ?? "",
+            printType: `#${item.subcategoryId}`,
+            width: item.width,
+            height: item.height,
+            quantity: item.quantity,
+            priceFormatted: formatMoney(item.totalPrice),
+          })),
+          totalFormatted: formatMoney(order.totalPrice),
+          shippingMethod: order.shippingMethod ?? "",
+          shippingAddress: order.recipient
+            ? [
+                order.recipient.addressLine1,
+                order.recipient.addressLine2,
+                order.recipient.city,
+                order.recipient.state,
+                order.recipient.postalCode,
+                order.recipient.country,
+              ]
+                .filter(Boolean)
+                .join(", ")
+            : "",
+        }),
+      }).catch((e) => console.error("[email] Order confirmation failed:", e));
+    }
   }
 }
 
@@ -113,10 +160,37 @@ async function handleDonation(
     return;
   }
   if (donation.status !== "paid") {
-    await prisma.donation.update({
+    const updatedDonation = await prisma.donation.update({
       where: { id: donationId },
       data: { status: "paid" },
+      include: { donor: { select: { email: true, name: true } } },
     });
+
+    const donorEmail = updatedDonation.donor?.email;
+    const donorName = updatedDonation.donor?.name ?? "there";
+    if (donorEmail) {
+      const formatMoney = (cents: number) =>
+        (cents / 100).toLocaleString("en-US", {
+          style: "currency",
+          currency: "USD",
+        });
+      const BASE_URL = "https://topojoy.studio";
+      const giftLinkUrl = updatedDonation.accessToken
+        ? `${BASE_URL}/gift/${updatedDonation.accessToken}`
+        : `${BASE_URL}/donate`;
+      await sendEmail({
+        to: donorEmail,
+        subject: "Your TopoJoy gift is ready",
+        template: React.createElement(DonationConfirmation, {
+          donorName,
+          amountFormatted: formatMoney(updatedDonation.amount),
+          giftLinkUrl,
+          message: updatedDonation.message ?? undefined,
+        }),
+      }).catch((e) =>
+        console.error("[email] Donation confirmation failed:", e),
+      );
+    }
   }
 }
 
