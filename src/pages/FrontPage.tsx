@@ -1,42 +1,97 @@
-import { html } from "../content/about.md";
 import "../index.css";
 import { Link } from "react-router";
 import { Header } from "../components/Header";
+
 export const FrontPage = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-8 pt-20">
+    <div className="min-h-screen flex flex-col bg-[#071e25] text-[#d5f7ff]">
       <Header />
-      <div className="w-full max-w-[600px] text-center min-h-[calc(100vh-60px)] flex flex-col items-center justify-center py-8 px-4 mt-4">
-        <h1 className="text-4xl font-bold text-gray-800 mb-4">
-          Welcome to TopoJoy
-        </h1>
-        <p className="text-lg leading-7 text-gray-600 mb-8">
-          These maps tell stories of wilderness. The time we built an aspen
-          bridge across a raging creek; the time it snowed on us in June; The
-          time we climbed Arrow, Handies, Jones, Crown, Niagra. Tell your story.
-          Zoom to a place that has meaning to a friend, select the area you want
-          to remember, then customize the details. Send a gift that'll mean
-          something.
+
+      {/* Hero */}
+      <section className="relative w-full pt-15">
+        <img
+          src="/img/topojoy-hero.png"
+          alt="Bullet Canyon topographic map"
+          className="w-full object-cover max-h-[85vh]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#071e25] via-transparent to-transparent" />
+        <div className="absolute bottom-10 left-0 right-0 text-center px-4">
+          <p className="text-3xl md:text-5xl font-light tracking-widest text-white/90 mb-8 drop-shadow-lg">
+            Tell your story.
+          </p>
+          <a
+            href="/geojson.io/index.html"
+            className="inline-block text-base md:text-lg px-8 py-3 bg-teal-500 hover:bg-teal-400 text-[#071e25] font-bold rounded transition-colors duration-200"
+          >
+            Open Map Editor
+          </a>
+        </div>
+      </section>
+
+      {/* Gift story — Albert */}
+      <section className="w-full max-w-5xl mx-auto px-6 py-20 grid md:grid-cols-2 gap-12 items-center">
+        <div className="order-2 md:order-1">
+          <blockquote className="text-lg md:text-xl italic leading-8 text-[#a8dde9] mb-6">
+            "I'm beyond grateful for, even more than a map, this poetic monument
+            to and living memory of our trek together. I will think of our wet
+            footsteps through the tall trees, our quiet night camped on the
+            gravel bar of Redwood Creek, and our thrilling descent in the back
+            of the truck each time I see this on the wall. Eleven years later,
+            it's a treat to have a physical manifestation of an
+            otherwise-distant memory, and to know it mattered as much to you as
+            it did to me."
+          </blockquote>
+          <p className="text-sm text-[#6ab3c2] tracking-widest uppercase">
+            — Albert
+          </p>
+          <div className="mt-8 border-t border-[#0e3942] pt-6 text-sm text-[#6ab3c2] leading-6">
+            <p>
+              The first map I ever made was a gift to my sister — her favorite
+              trail, her favorite color scheme, song lyrics she'd hum to herself
+              on the trail. It was an experiment in generosity. It's still on
+              her wall.
+            </p>
+            <Link
+              to="/origin-story"
+              className="inline-block mt-3 text-teal-400 hover:text-teal-300 transition-colors"
+            >
+              Read the origin story →
+            </Link>
+          </div>
+        </div>
+        <div className="order-1 md:order-2">
+          <img
+            src="/img/Albert.png"
+            alt="Tall Trees, Ian and Albert — topographic map of Redwood Creek"
+            className="w-full rounded shadow-2xl shadow-black/60"
+          />
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="border-t border-[#0e3942] w-full max-w-5xl mx-auto px-6 py-16 text-center">
+        <p className="text-base md:text-lg text-[#a8dde9] max-w-xl mx-auto leading-7 mb-10">
+          If you have a friend who goes backpacking, or a place in the woods
+          that matters to someone you know — make something that'll stay on
+          their wall.
         </p>
-        <a
-          href="geojson.io/index.html"
-          className="text-2xl px-8 py-4 bg-indigo-600 text-white rounded-lg mb-4 transition-colors hover:bg-indigo-700 inline-block"
-        >
-          Open Map Editor
-        </a>
-        <a
-          href="app.html"
-          className="text-gray-500 hover:underline inline-block"
-        >
-          View App
-        </a>
-      </div>
-      <section
-        id="about"
-        className="py-12 px-4 max-w-[700px] mx-auto text-slate-700 leading-7 prose"
-        dangerouslySetInnerHTML={{ __html: html }}
-      ></section>
-      <footer className="border-t border-gray-200 py-4 text-center text-xs text-gray-500">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <a
+            href="/geojson.io/index.html"
+            className="px-8 py-3 bg-teal-500 hover:bg-teal-400 text-[#071e25] font-bold rounded transition-colors duration-200"
+          >
+            Make a map
+          </a>
+          <Link
+            to="/donate"
+            className="px-8 py-3 border border-teal-500 text-teal-400 hover:bg-teal-500/10 rounded transition-colors duration-200"
+          >
+            Give a gift
+          </Link>
+        </div>
+      </section>
+
+      <footer className="border-t border-[#0e3942] py-6 text-center text-xs text-[#4a8a99]">
         <Link to="/privacy" className="hover:underline">
           Privacy Policy
         </Link>

@@ -1,17 +1,12 @@
-# TopoJoy
+The first map I ever made, the map that kicked off this project, was a gift to my sister. The location was her favorite trail from summer camp, I figured out her favorite color scheme, the background text was two songs she used to sing to herself on the trail. Today, the map sits in her library as a reminder of friendship, wilderness, and a place that mattered to her.
 
-![Final Product](/assets/finishedProduct.jpg)
+From another recipient:
+"I’m beyond grateful for, even more than a map, this poetic monument to and living memory of our trek together.
+I will think of our wet footsteps through the tall trees, our quiet night camped on the gravel bar of Redwood Creek, and our thrilling descent in the back of \[a\] truck each time I see this on the wall.
+Eleven years later, it’s a treat... to have a physical manifestation of an otherwise-distant memory, and to know it mattered as much to you as it did to me.
+Thank you 💚💙
+Albert"
 
-TopoJoy generates artistic maps from topographical data.
+If you have a friend who goes backpacking, or a place in the woods that is important to someone you know, if you otherwise want to experience the joy of giving and feel inspired to participate in this experiment, explore the map maker. To give a map, someone has to donate the cost. Contact us here to request the ability to send a map of your own!
 
-The colorful lines in the background represent features of the landscape. Lines will follow the contours of a river or a mountain ridge, but over some terrain they curve in unpredictable ways. Colors are determined by the elevation of the terrain.
-
-Trails and rivers are sketched to match the style of the background lines, at the expense of accuracy.
-
-## Background
-
-The project was inspired by my older sister's love of geology and the great enjoyment I got from working with a student on [this tutorial](https://tylerxhobbs.com/essays/2020/flow-fields) by Tyler Hobbs.
-
-The project began when I made a map in this style for my older sister, in 2020. I customized the colors to match her house and favorite color scheme. I chose the location based on her favorite backpacking trip. As background text, I added lyrics from the songs she would sing to herself while hiking. I intended the sketch to be a one-off, but years later, I wanted to commemorate trips I had taken with other friends. We realized other people might be interested in sending maps as gifts to their friends, so the web app was born.
-
-There's something rewarding about giving a gift that you have taken time on, that will be unique to the recipient. The process isn't meant to be easy, it requires a good amount of tweaking to make it look right. I hope you find it enjoyable to use.
+Read more about the philosophy [here](/origin-story).

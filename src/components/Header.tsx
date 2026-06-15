@@ -167,7 +167,12 @@ export const Header = () => {
               </div>
             </SignedIn>
             <SignedOut>
-              <Link to="/sign-in">Sign In</Link>
+              <Link
+                to="/sign-in"
+                className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200"
+              >
+                Sign In
+              </Link>
             </SignedOut>
           </div>
         </div>

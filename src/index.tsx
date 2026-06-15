@@ -17,6 +17,7 @@ import { Checkout } from "./pages/checkout/Checkout";
 import { SignInPage } from "./pages/SignInPage";
 import { CartProvider } from "./cartContext";
 import { Terms } from "./Terms";
+import { OriginStory } from "./pages/OriginStory";
 import { Privacy } from "./Privacy";
 const AppError = () => {
   const error = useRouteError() as Error | string | null | undefined;
@@ -96,6 +97,10 @@ const router = createBrowserRouter([
       {
         path: "/privacy",
         element: <Privacy />,
+      },
+      {
+        path: "/origin-story",
+        element: <OriginStory />,
       },
       {
         path: "/:username/:filename",

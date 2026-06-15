@@ -200,7 +200,7 @@ export default function (context) {
         .attr('id', 'help-next')
         .attr(
           'class',
-          'bg-indigo-500 hover:bg-indigo-700 text-white text-xs font-bold py-1 px-4 rounded'
+          'bg-teal-500 hover:bg-teal-400 text-[#071e25] text-xs font-bold py-1 px-4 rounded'
         )
         .text('Next');
 
