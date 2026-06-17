@@ -25,13 +25,59 @@ export const labelManagerFactory = (sketch: p5) => {
   }[] = [];
   let contexts: (() => void)[] = [];
   let collisions: [number, number][] = [];
+  const getMultiLineBounds = (
+    text: string,
+    pt: [number, number],
+    fontSize: number,
+    f: p5.Font,
+  ): { x: number; y: number; w: number; h: number } => {
+    const lines = text.split("\n");
+    if (lines.length === 1) {
+      return (f as any).textBounds(text, pt[0], pt[1], fontSize) as {
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+      };
+    }
+    const leading = fontSize * 1.25; // p5 default leading
+    const totalH = leading * lines.length;
+    let maxW = 0;
+    lines.forEach((line) => {
+      const b = (f as any).textBounds(line, pt[0], pt[1], fontSize) as {
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+      };
+      if (b.w > maxW) maxW = b.w;
+    });
+    // Return uncorrected (anchor-relative) like textBounds does for 1 line —
+    // getRealBoundingBox will apply the alignment/baseline corrections.
+    return { x: pt[0], y: pt[1], w: maxW, h: totalH };
+  };
+
   const getRealBoundingBox = (
     pt: [number, number],
-    bbox: { x: number; y: number; w: number; h: number }
+    bbox: { x: number; y: number; w: number; h: number },
   ) => {
     let { x, y, w, h } = bbox;
-    if (sketch._renderer._textBaseline === "center") {
+    const baseline: string = (sketch as any)._renderer._textBaseline;
+    const fontSize: number = (sketch as any)._renderer._textSize;
+    const isMultiLine = h > fontSize * 1.1;
+    if (baseline === "center") {
       y = pt[1] - h / 2;
+      if (!isMultiLine) h = fontSize;
+    } else if (baseline === "bottom") {
+      // y = pt[1] - h;
+      // h = fontSize;
+    } else if (baseline === "top") {
+      // h = fontSize;
+      y = pt[1];
+    }
+    // x: y from textBounds is already the top edge for top/alphabetic
+    if ((sketch as any)._renderer._textAlign === "center") {
+      x = pt[0] - w / 2;
     }
     return { x, y, w, h };
   };
@@ -39,12 +85,12 @@ export const labelManagerFactory = (sketch: p5) => {
   const checkCollisions = (
     bbox: { x: number; y: number; w: number; h: number },
     name: string,
-    aIndex: number
+    aIndex: number,
   ) => {
     let collides = false;
+
     for (let bIndex = 0; bIndex < labels.length; bIndex++) {
       const bLabel = labels[bIndex];
-
       if (collision(bbox, bLabel.bbox)) {
         collisions.push([aIndex, bIndex]);
         if (bLabel.keep) {
@@ -63,7 +109,7 @@ export const labelManagerFactory = (sketch: p5) => {
       keepList: string[],
       { setContext, font }: { setContext: () => void; font: p5.Font },
       category: string,
-      drop: boolean
+      drop: boolean,
     ) => {
       if (!Array.isArray(givenLabels)) {
         givenLabels = Object.entries(givenLabels).map(
@@ -71,7 +117,7 @@ export const labelManagerFactory = (sketch: p5) => {
             name,
             displayName,
             pt,
-          })
+          }),
         );
       }
 
@@ -83,12 +129,12 @@ export const labelManagerFactory = (sketch: p5) => {
       givenLabels.forEach(({ name, displayName, pt }) => {
         const bbox = getRealBoundingBox(
           pt,
-          font.textBounds(displayName || name, pt[0], pt[1]) as {
-            x: number;
-            y: number;
-            w: number;
-            h: number;
-          }
+          getMultiLineBounds(
+            displayName || name,
+            pt,
+            (sketch as any)._renderer._textSize,
+            font,
+          ),
         );
         const collides = checkCollisions(bbox, name, labels.length);
         const keep = drop
@@ -132,7 +178,7 @@ export const labelManagerFactory = (sketch: p5) => {
             name,
             category,
             keep,
-          }: { name: string; category: string; keep: boolean }
+          }: { name: string; category: string; keep: boolean },
         ) => {
           if (!acc[category]) {
             acc[category] = [];
@@ -141,12 +187,12 @@ export const labelManagerFactory = (sketch: p5) => {
           acc[category].push(name);
           return acc;
         },
-        {} as Record<string, string[]>
+        {} as Record<string, string[]>,
       );
       return keepLists;
     },
     collisions: {
-      edgelist: () => {
+      edgeList: () => {
         return collisions.map(([a, b]) => [
           { name: labels[a].name, keep: labels[a].keep },
           { name: labels[b].name, keep: labels[b].keep },
@@ -167,7 +213,7 @@ export const labelManagerFactory = (sketch: p5) => {
               acc[b].push(a);
               return acc;
             },
-            {} as Record<number, number[]>
+            {} as Record<string, string[]>,
           );
       },
     },

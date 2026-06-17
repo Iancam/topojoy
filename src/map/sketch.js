@@ -23,6 +23,9 @@ import { drawTitle } from "./title";
 import chroma from "chroma-js";
 import { drawLegend } from "./legend";
 import _ from "lodash";
+import { joyDivision } from "./joyDivision";
+import { dxdy } from "./dxdy";
+import { colorAndDrawCurve, genCurve } from "./original";
 export const sketchFactory = (
   boundsGeojson,
   selectedTrails,
@@ -90,6 +93,23 @@ export const sketchFactory = (
         OGCanvas.style("left", 0);
         OGCanvas.style("pointer-events", "none");
 
+        // --- Create offscreen layers ---
+        const w = canvas.width;
+        const h = canvas.height;
+        const layers = {
+          curvesBack: sketch.createGraphics(w, h),
+          text: sketch.createGraphics(w, h),
+          curvesFront: sketch.createGraphics(w, h),
+          overlay: sketch.createGraphics(w, h),
+        };
+
+        // Reset default state on each layer to avoid p5 defaults (blue stroke, etc.)
+        Object.values(layers).forEach((g) => {
+          g.noStroke();
+          g.noFill();
+        });
+
+        // Main canvas just holds the background fill
         sketch.background(config.background);
 
         const features = getFeatures(
@@ -100,34 +120,29 @@ export const sketchFactory = (
           featuresToScreenCoords(config.zoomLevel, bounds.box, true),
         );
 
-        const labelManager = labelManagerFactory(sketch);
+        const labelManager = labelManagerFactory(layers.overlay);
+
         if (config.eleVis === "contour") {
           // WARNING: this path is untested
           await contourCurvesPath(
-            sketch,
+            layers.curvesBack,
             boundsGeojson,
             config,
             colorAt,
             config.curveCount,
           );
         } else if (config.eleVis === "original") {
-          // const multiplier = config.backgroundText.highContrast ? 0.6 : 0.8;
-          times(
-            0.6 * config.curveCount,
+          const allCurves = times(
+            config.curveCount,
             genCurve(sketch, config, topo),
-          ).forEach(colorAndDrawCurve(sketch, colorAt));
-          drawLayers(
-            config,
-            bounds,
-            topo,
-            colorAt,
-            features,
-            userSelectedTrails,
-            labelManager,
           );
-          if (config.legend?.enabled) drawLegend(sketch, config, topo, colorAt);
-        } else if (config.eleVis === "joyDivision") {
-          joyDivision(sketch, {}, topo);
+          const splitAt = Math.floor(allCurves.length * 0.8);
+          allCurves
+            .slice(0, splitAt)
+            .forEach(colorAndDrawCurve(layers.curvesBack, colorAt));
+          allCurves
+            .slice(splitAt)
+            .forEach(colorAndDrawCurve(layers.curvesFront, colorAt));
           drawLayers(
             config,
             bounds,
@@ -136,9 +151,31 @@ export const sketchFactory = (
             features,
             userSelectedTrails,
             labelManager,
+            layers,
+          );
+          if (config.legend?.enabled)
+            drawLegend(layers.overlay, config, topo, colorAt);
+        } else if (config.eleVis === "joyDivision") {
+          joyDivision(layers.curvesBack, {}, topo, colorAt);
+          drawLayers(
+            config,
+            bounds,
+            topo,
+            colorAt,
+            features,
+            userSelectedTrails,
+            labelManager,
+            layers,
           );
         } else if (config.eleVis === "dxdy") {
-          dxdy(sketch, config, topo, colorAt);
+          dxdy(
+            sketch,
+            layers.curvesBack,
+            layers.curvesFront,
+            config,
+            topo,
+            colorAt,
+          );
           drawLayers(
             config,
             bounds,
@@ -147,16 +184,80 @@ export const sketchFactory = (
             features,
             userSelectedTrails,
             labelManager,
+            layers,
           );
         } else if (config.eleVis === "JDDots") {
           JDDots();
         }
+
+        // --- Recomposite helper: re-stamp all layers onto main canvas ---
+        const recompose = () => {
+          sketch.background(config.background);
+          Object.values(layers).forEach((layer) => {
+            sketch.image(layer, 0, 0);
+          });
+        };
+
+        recompose();
+
+        // --- Per-layer redraw functions for partial updates ---
+        const redrawTextLayer = (newConfig) => {
+          newConfig.textSizeMultiplier = config.textSizeMultiplier;
+          // bbox is set once in setup() via baseConfigTransforms — raw form has [0,0,0,0]
+          newConfig.backgroundText.bbox = config.backgroundText.bbox;
+          layers.text.clear();
+          layers.text.noStroke();
+          layers.text.noFill();
+          textsLayer(layers.text, topo, colorAt, labelManager.textBoxes(), {
+            ...newConfig.backgroundText,
+            textSize:
+              newConfig.backgroundText.textSize * newConfig.textSizeMultiplier,
+            backgroundColor: newConfig.background,
+          });
+          recompose();
+        };
+
+        const redrawOverlayLayer = (
+          newConfig,
+          newFeatures,
+          newUserSelectedTrails,
+        ) => {
+          // textSizeMultiplier is computed once in setup() and never stored in the form
+          newConfig.textSizeMultiplier = config.textSizeMultiplier;
+          // keepLists are populated — always drop unlisted labels on a partial redraw
+
+          const nCOnfig = { ...newConfig };
+          nCOnfig.mountain.drop = true;
+          nCOnfig.river.drop = true;
+          nCOnfig.trail.drop = true;
+          nCOnfig.lake.drop = true;
+
+          layers.overlay.clear();
+          layers.overlay.noStroke();
+          layers.overlay.noFill();
+          const newLabelManager = labelManagerFactory(layers.overlay);
+          drawLayers(
+            nCOnfig,
+            bounds,
+            topo,
+            colorAt,
+            newFeatures || features,
+            newUserSelectedTrails || userSelectedTrails,
+            newLabelManager,
+            layers,
+          );
+          recompose();
+        };
+
+        // Expose layers via callback for future partial redraws
         callback(
           OGCanvas,
           sketch,
           labelManager.keepLists(),
           labelManager.collisions.object(),
           features,
+          layers,
+          { recompose, redrawTextLayer, redrawOverlayLayer },
         );
       };
 
@@ -165,9 +266,10 @@ export const sketchFactory = (
         bounds,
         { mountains, rivers, trails, lakes },
         { addLabels },
+        overlay,
       ) => {
         drawTitle(
-          sketch,
+          overlay,
           config.title.text,
           bounds.latLngBox,
           config.background,
@@ -175,7 +277,7 @@ export const sketchFactory = (
           addLabels,
         );
         mountainLayer(
-          sketch,
+          overlay,
           mountains,
           courier,
           {
@@ -186,7 +288,7 @@ export const sketchFactory = (
         );
 
         namedLines(
-          sketch,
+          overlay,
           rivers,
           config.river.keepList || [],
           "river",
@@ -199,7 +301,7 @@ export const sketchFactory = (
         );
 
         namedLines(
-          sketch,
+          overlay,
           trails,
           config.trail.keepList || [],
           "trail",
@@ -212,7 +314,7 @@ export const sketchFactory = (
         );
 
         lakesLabels(
-          sketch,
+          overlay,
           lakes,
           config.lake.keepList || [],
           {
@@ -233,16 +335,32 @@ export const sketchFactory = (
         features,
         userSelectedTrails,
         labelManager,
+        layers,
       ) => {
-        placeLabelsWithoutCollision(config, bounds, features, labelManager);
-        // labelManager.labels().forEach(({ bbox }) => {
-        //   sketch.rect(bbox.x, bbox.y, bbox.w, bbox.h);
-        // });
+        placeLabelsWithoutCollision(
+          config,
+          bounds,
+          features,
+          labelManager,
+          layers.overlay,
+        );
 
         const keepLists = labelManager.keepLists();
-
+        // labelManager.labels().forEach((label) => {
+        //   layers.overlay.push();
+        //   layers.overlay.noFill();
+        //   layers.overlay.stroke(255, 0, 0);
+        //   layers.overlay.strokeWeight(2);
+        //   layers.overlay.rect(
+        //     label.bbox.x,
+        //     label.bbox.y,
+        //     label.bbox.w,
+        //     label.bbox.h,
+        //   );
+        //   layers.overlay.pop();
+        // });
         drawLines(
-          sketch,
+          layers.overlay,
           topo,
           _.pick(features.rivers, keepLists.river),
           config.textSizeMultiplier,
@@ -252,7 +370,7 @@ export const sketchFactory = (
           },
         );
         drawLines(
-          sketch,
+          layers.overlay,
           topo,
           _.pick(features.trails, keepLists.trail),
           config.textSizeMultiplier,
@@ -263,7 +381,7 @@ export const sketchFactory = (
         );
 
         drawLines(
-          sketch,
+          layers.overlay,
           topo,
           userSelectedTrails,
           config.textSizeMultiplier * 2,
@@ -276,272 +394,19 @@ export const sketchFactory = (
             style: "basic",
           },
         );
-        drawLakes(sketch, _.pick(features.lakes, keepLists.lake), {
+        drawLakes(layers.overlay, _.pick(features.lakes, keepLists.lake), {
           color: config.river.colorRange[0],
         });
 
-        textsLayer(sketch, topo, colorAt, labelManager.textBoxes(), {
+        textsLayer(layers.text, topo, colorAt, labelManager.textBoxes(), {
           ...config.backgroundText,
           textSize: config.backgroundText.textSize * config.textSizeMultiplier,
           backgroundColor: config.background,
         });
-        times(0.2 * config.curveCount, genCurve(sketch, config, topo)).forEach(
-          colorAndDrawCurve(sketch, colorAt),
-        );
 
         labelManager.drawLabels();
       };
 
-      const genCurve = (sketch, config, topo) => () => {
-        const angleTransforms = [
-          (aspect) => aspect + 180,
-          (aspect) => aspect,
-          (aspect) => aspect + 90,
-          (aspect) => aspect - 90,
-        ];
-        const x = Math.floor(sketch.random(0, topo.width - 1));
-        const y = Math.floor(sketch.random(0, topo.height - 1));
-        const [elevation, slope, aspect, cosIncidence] = topo.pixels[y][x];
-        const random = sketch.random();
-        // makes curves less likely to be drawn on flat areas
-        if (slope / 70 < random) {
-          return null;
-        }
-        return makeCurve(
-          x,
-          y,
-          config.curve.stepCount,
-          config.curve.stepLength,
-          topo,
-          {
-            angleTransform: config.crossHatch
-              ? sketch.random(angleTransforms)
-              : sketch.random([angleTransforms[0], angleTransforms[1]]),
-            // angleTransform: random([angleTransforms[3], angleTransforms[2]]),
-            // angleTransform: random(angleTransforms), // make it gridlike
-          },
-        );
-      };
-      const colorAndDrawCurve = (sketch, colorAt) => (c) => {
-        if (!c) return;
-        const col1 = colorAt(c[0]);
-        const col = sketch.color(col1);
-        col.setAlpha(128);
-        sketch.stroke(col);
-
-        drawCurve(sketch, c, 1.8);
-      };
-
-      const contourCurvesPath = async (
-        sketch,
-        boundsGeojson,
-        config,
-        colorAt,
-        curveCount,
-      ) => {
-        const { tiles, bounds } = tilesForFeatures(
-          boundsGeojson,
-          config.zoomLevel,
-        );
-        const webglCanvas = await stitchMapTiles(tiles, bounds.width, 256, 256);
-
-        const canvasDataUrl = webglCanvas.toDataURL("image/png");
-        sketch.loadImage(canvasDataUrl, (img) => {
-          console.log("canvas converted to p5.image");
-          const flowField = createWebGLFlowField(sketch, img, {
-            smoothingFactor: 1,
-            mode: "contour",
-          });
-          drawContourCurves(sketch, flowField, colorAt, {
-            numCurves: curveCount * 0.5,
-            lineLength: 30,
-            strokeWeight: 1.5,
-            stepSize: 1,
-            jitter: 0,
-          });
-
-          drawLayers();
-        });
-      };
-
-      /**
-       * Draw artistic curves that follow the flow field contours
-       * @param {p5} sketch - p5.js instance
-       * @param {Object} flowField - Flow field object with getAngle method
-       * @param {Function} colorFn - Function to map height to color
-       * @param {Object} options - Drawing options
-       */
-      function drawContourCurves(sketch, flowField, colorFn, options = {}) {
-        const {
-          numCurves = 200,
-          lineLength = 100,
-          stepSize = 1,
-          strokeWeight = 1.8,
-          jitter = 0.3,
-
-          randomSeed = null,
-        } = options;
-
-        // Set random seed if provided
-        const originalSeed = sketch.random(10000);
-        if (randomSeed !== null) {
-          sketch.randomSeed(randomSeed);
-        }
-
-        // Save original stroke settings
-        sketch.push();
-        sketch.noFill();
-
-        // Generate starting points
-        const startPoints = [];
-        for (let i = 0; i < numCurves; i++) {
-          startPoints.push({
-            x: sketch.random(sketch.width),
-            y: sketch.random(sketch.height),
-          });
-        }
-
-        // Draw each curve
-        startPoints.forEach((start) => {
-          // Create points array for this curve
-          const points = [];
-          let x = start.x;
-          let y = start.y;
-
-          // Follow flow field to generate curve points
-          for (let i = 0; i < lineLength; i++) {
-            // Add current point
-            points.push([x, y]);
-
-            // Get flow direction at this point
-            const angle = flowField.getAngle(x, y);
-            const jitterAmount = sketch.random(-jitter, jitter);
-
-            // Move along flow direction
-            x += Math.cos(angle + jitterAmount) * stepSize;
-            y += Math.sin(angle + jitterAmount) * stepSize;
-
-            // Stop if we go out of bounds
-            if (x < 0 || x >= sketch.width || y < 0 || y >= sketch.height) {
-              break;
-            }
-          }
-
-          // Only draw if we have enough points
-          if (points.length >= 3) {
-            // Sample height at the middle of the curve for color
-            const midPoint = points[Math.floor(points.length / 2)];
-            // const normalizedHeight = flowField.getMagnitude(midPoint[0], midPoint[1]);
-
-            // Get color based on height
-            const col = colorFn(midPoint.map((v) => Math.floor(v)));
-            sketch.stroke(col);
-            sketch.strokeWeight(strokeWeight);
-
-            // Draw the curve with p5's curve function for smoothness
-            sketch.beginShape();
-
-            // Add first point twice for proper curve start
-            sketch.curveVertex(points[0][0], points[0][1]);
-
-            // Add all points
-            points.forEach((p) => {
-              sketch.curveVertex(p[0], p[1]);
-            });
-
-            // Add last point twice for proper curve end
-            sketch.curveVertex(
-              points[points.length - 1][0],
-              points[points.length - 1][1],
-            );
-
-            sketch.endShape();
-          }
-        });
-
-        // Restore original state
-        sketch.randomSeed(originalSeed);
-        sketch.pop();
-      }
-
-      // topo pixels structure [elevation, dx, dy, cosIncidence]
-      const dxdy = (sketch, config, topo, colorAt, dxdyTransform = "none") => {
-        const transform = {
-          none: (dx, dy) => [dx, dy],
-          erosion: (dx, dy) => [-dy, dx],
-          crossHatch: (dx, dy) => sketch.random([-dy, dx], [dx, dy]),
-        }[dxdyTransform];
-        const gradientMakeCurve = (
-          length,
-          step_length,
-          topo,
-          dxdyTransform,
-        ) => {
-          const [x, y] = [
-            Math.floor(sketch.random(0, topo.width - 1)),
-            Math.floor(sketch.random(0, topo.height - 1)),
-          ];
-          let curvePoints = [
-            [x, y, topo.pixels[y][x][1], topo.pixels[y][x][2]],
-          ];
-          let last = (array) => array[array.length - 1];
-          for (let i = 0; i < length; i++) {
-            // normalize dx, dy ?
-            const [x, y, dx, dy] = last(curvePoints);
-            const [tdx, tdy] = dxdyTransform(dx, dy);
-            let mag = Math.sqrt(tdx * tdx + tdy * tdy);
-            const maxMag = 1.0;
-            if (mag > maxMag) mag = maxMag;
-            let [ndx, ndy] = [tdx / mag, tdy / mag];
-            if (mag === 0) {
-              ndx = 0;
-              ndy = 0;
-            }
-
-            const [nx, ny] = [
-              Math.floor(x + ndx * step_length),
-              Math.floor(y + ndy * step_length),
-            ];
-            if (!topo.pixels[ny]?.[nx]) break;
-            const [e2, dx2, dy2] = topo.pixels[ny][nx];
-            curvePoints.push([nx, ny, dx2, dy2]);
-          }
-          return curvePoints;
-        };
-        const fn = colorAndDrawCurve(sketch, colorAt);
-        for (let i = 0; i < config.curveCount * 0.8; i++) {
-          fn(
-            gradientMakeCurve(
-              config.curve.stepCount,
-              config.curve.stepLength,
-              topo,
-              transform,
-            ),
-          );
-        }
-      };
-
-      const joyDivision = (sketch, config, topo) => {
-        const { spacing = 10, amplitude = 150, xRes = 5 } = config;
-        const { width, height, magnitude, min, pixels } = topo;
-        console.log(topo);
-        sketch.stroke("white");
-        sketch.strokeWeight(2);
-        sketch.noFill();
-        for (let y = 0; y < height; y += spacing) {
-          sketch.beginShape();
-          for (let x = 0; x < width; x += xRes) {
-            let [elev, dx, dy, cosIncidence] = pixels[y][x];
-            let hnorm = (elev - min) / magnitude; // normalized 0-1
-            hnorm = Math.min(1, Math.max(0, hnorm));
-            const eased = hnorm * hnorm * (3 - 2 * hnorm); // smoothstep(0,1,h)
-            const Dy = y - amplitude * (eased - 0.5);
-            // const Dx = x + dx * amplitude * (eased - 0.5);
-            sketch.vertex(x, Dy);
-          }
-          sketch.endShape();
-        }
-      };
       p5.disableFriendlyErrors = true;
     },
   };

@@ -8,7 +8,7 @@ import { P5Canvas } from "../components/p5Canvas.tsx";
 import { maps, order, saveImageToAws } from "../api.ts";
 import { fitToParent, LS, needsFilenamePrompt } from "../lib/utils.ts";
 import { useUser } from "@clerk/clerk-react";
-import { addHeightsToForm, convertToNestedObject } from "../lib/utils.ts";
+import { addHeightsToForm } from "../lib/utils.ts";
 import _ from "lodash";
 import { Header } from "../components/Header.tsx";
 import { printTypes } from "../components/PrintOptions.tsx";
@@ -18,9 +18,32 @@ import { useToast } from "@/hooks/useToast.ts";
 import { configs } from "@/mapConfigs.ts";
 import { Toast } from "@/components/Toast.tsx";
 import { useRenderSketch } from "@/hooks/useRenderSketch.ts";
+import { useLayerRedraw } from "@/hooks/useLayerRedraw.ts";
 import { imageCapture } from "@/lib/imageCapture.ts";
 import { useSaveMap } from "@/hooks/useSaveMap.ts";
 import { usePersistHook } from "@/hooks/persistHook.ts";
+
+const TEXT_KEYS = [
+  "backgroundText.text",
+  "backgroundText.elevationRange",
+  "backgroundText.highContrast",
+  "backgroundText.contrast",
+];
+
+const OVERLAY_KEYS = [
+  "mountain.keepList",
+  "trail.keepList",
+  "river.keepList",
+  "lake.keepList",
+  "title.text",
+  "mountain.labelColor",
+  "mountain.iconColor",
+  "river.textColor",
+  "river.colorRange",
+  "trail.textColor",
+  "trail.colorRange",
+  "trail.selectedTrailColor",
+];
 
 export const App = () => {
   // Always use Clerk's useUser hook so auth works in both development and production.
@@ -44,6 +67,7 @@ export const App = () => {
     p5MountRef,
     p5Ref,
     isInitialRun,
+    redrawFnsRef,
   } = useRenderSketch({
     setIsRendering,
   });
@@ -67,6 +91,26 @@ export const App = () => {
     setIsRendering,
     setToast,
     renderSketch,
+  });
+
+  useLayerRedraw({
+    keys: OVERLAY_KEYS,
+    form,
+    config: config ?? null,
+    redrawFnsRef,
+    redrawFn: (fns, nestedForm) => fns.redrawOverlayLayer(nestedForm),
+    debounceMs: 400,
+    setIsRendering,
+  });
+
+  useLayerRedraw({
+    keys: TEXT_KEYS,
+    form,
+    config: config ?? null,
+    redrawFnsRef,
+    redrawFn: (fns, nestedForm) => fns.redrawTextLayer(nestedForm),
+    debounceMs: 600,
+    setIsRendering,
   });
 
   useEffect(() => {

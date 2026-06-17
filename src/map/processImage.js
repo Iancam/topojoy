@@ -296,6 +296,9 @@ async function loadTileBitmap(url) {
  *     width and height are the dimensions of the bounding box.
  */
 export function tilesForFeatures(feature, zoom) {
+  if (!feature) {
+    throw new Error("No feature provided");
+  }
   const limits = { min_zoom: zoom, max_zoom: zoom };
   const coverTiles = cover
     .tiles(feature.geometry, limits)

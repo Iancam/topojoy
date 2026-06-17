@@ -91,6 +91,26 @@ export const FrontPage = () => {
         </div>
       </section>
 
+      {/* Contact / Gift Token */}
+      <section className="border-t border-[#0e3942] w-full max-w-5xl mx-auto px-6 py-16 text-center">
+        <h2 className="text-2xl md:text-3xl font-light tracking-wide text-[#d5f7ff] mb-4">
+          Get in Touch
+        </h2>
+        <p className="text-sm md:text-base text-[#6ab3c2] max-w-lg mx-auto leading-7 mb-2">
+          Maps are only made with a gift token. Gift tokens come from donations
+          — every donation unlocks one.
+        </p>
+        <p className="text-sm md:text-base text-[#6ab3c2] max-w-lg mx-auto leading-7 mb-8">
+          If you'd like a token, just ask.
+        </p>
+        <a
+          href="mailto:hello@topojoy.com"
+          className="inline-block px-8 py-3 bg-teal-500 hover:bg-teal-400 text-[#071e25] font-bold rounded transition-colors duration-200"
+        >
+          hello@topojoy.com
+        </a>
+      </section>
+
       <footer className="border-t border-[#0e3942] py-6 text-center text-xs text-[#4a8a99]">
         <Link to="/privacy" className="hover:underline">
           Privacy Policy

@@ -91,7 +91,7 @@ export const basicFormElements: FormElements = {
   forceCollisionDetection: [
     "boolean",
     "force collision detection, overrides keepList",
-    false,
+    true,
     "Force Collision Detection",
   ],
   filename: [
@@ -138,7 +138,7 @@ export const basicFormElements: FormElements = {
   "curve.density": [
     "number",
     "the density of the background curves",
-    1,
+    3,
     "Curve Density",
   ],
   zoomLevel: [

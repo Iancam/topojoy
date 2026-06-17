@@ -16,6 +16,23 @@ export type RenderSketchParams = {
   setCollisions: (collisions: Record<string, string[]>) => void;
 };
 
+export type SketchLayers = {
+  curvesBackLayer: p5.Graphics;
+  textLayer: p5.Graphics;
+  curvesFrontLayer: p5.Graphics;
+  overlayLayer: p5.Graphics;
+};
+
+export type SketchRedrawFns = {
+  recompose: () => void;
+  redrawTextLayer: (newConfig: any) => void;
+  redrawOverlayLayer: (
+    newConfig: any,
+    newFeatures?: any,
+    newUserSelectedTrails?: any,
+  ) => void;
+};
+
 export function useRenderSketch({
   setIsRendering,
 }: {
@@ -31,6 +48,10 @@ export function useRenderSketch({
   const [sketchDims, setSketchDims] = useState({ width: 0, height: 0 });
   const p5Ref = useRef<HTMLDivElement>(null);
   const p5MountRef = useRef<HTMLDivElement>(null);
+  const layersRef = useRef<SketchLayers | null>(null);
+  const redrawFnsRef = useRef<SketchRedrawFns | null>(null);
+  const p5InstanceRef = useRef<p5 | null>(null);
+  const displayImgRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
     // Ensure the ref is attached to a current DOM node
@@ -100,6 +121,22 @@ export function useRenderSketch({
       const mountNode = p5MountRef.current;
       if (!mountNode) return;
 
+      // Destroy previous p5 instance and free its GPU buffers before re-rendering
+      if (p5InstanceRef.current) {
+        const prev = layersRef.current;
+        if (prev) {
+          prev.curvesBackLayer.remove();
+          prev.textLayer.remove();
+          prev.curvesFrontLayer.remove();
+          prev.overlayLayer.remove();
+        }
+        p5InstanceRef.current.remove();
+        p5InstanceRef.current = null;
+        layersRef.current = null;
+        redrawFnsRef.current = null;
+        displayImgRef.current = null;
+      }
+
       while (mountNode.firstChild) {
         mountNode.removeChild(mountNode.firstChild);
       }
@@ -118,7 +155,32 @@ export function useRenderSketch({
           keepLists: any,
           sketchCollisions: Record<string, string[]>,
           sketchFeatures: Record<string, string[]>,
+          layers: SketchLayers,
+          redrawFns: SketchRedrawFns,
         ) => {
+          layersRef.current = layers;
+
+          // Wrap each redraw fn so the displayed <img> is updated after every call
+          const updateImg = () => {
+            if (displayImgRef.current) {
+              displayImgRef.current.src = canvas.elt.toDataURL("image/png");
+            }
+          };
+          redrawFnsRef.current = {
+            recompose: () => {
+              redrawFns.recompose();
+              updateImg();
+            },
+            redrawTextLayer: (newConfig) => {
+              redrawFns.redrawTextLayer(newConfig);
+              updateImg();
+            },
+            redrawOverlayLayer: (newConfig, newFeatures?, newTrails?) => {
+              redrawFns.redrawOverlayLayer(newConfig, newFeatures, newTrails);
+              updateImg();
+            },
+          };
+
           setSketchDims({ width: sketch.width, height: sketch.height });
           setForm((prev: any) => ({
             ...prev,
@@ -139,8 +201,10 @@ export function useRenderSketch({
           img.style.left = "0";
           img.style.zIndex = "-1";
 
-          p5MountRef.current?.appendChild(img); // 2. use <img>, not <canvas>
-          sketch.remove();
+          p5MountRef.current?.appendChild(img);
+          displayImgRef.current = img;
+          // Keep p5 instance alive for partial redraws; canvas stays hidden behind img
+          p5InstanceRef.current = sketch;
           if (isInitialRun || form.forceCollisionDetection) {
             setIsInitialRun(false);
             setForm((prev: any) => {
@@ -184,5 +248,7 @@ export function useRenderSketch({
     p5MountRef,
     p5Ref,
     isInitialRun,
+    layersRef,
+    redrawFnsRef,
   };
 }

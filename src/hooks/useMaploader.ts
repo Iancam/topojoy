@@ -65,7 +65,13 @@ export function useLoadMap({
     setSelectedTrails(selectedTrails);
     setConfig(configName);
     setForm(form);
-
+    if (!bbox) {
+      setToast({
+        message: "No bounding box found in localStorage",
+        type: "error",
+      });
+      return;
+    }
     const { bounds } = tilesForFeatures(bbox, downstreamConfig.zoomLevel);
 
     // Show loading state while fetching trail data
