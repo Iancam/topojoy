@@ -28,6 +28,7 @@ const TEXT_KEYS = [
   "backgroundText.elevationRange",
   "backgroundText.highContrast",
   "backgroundText.contrast",
+  "textSizeMultiplier",
 ];
 
 const OVERLAY_KEYS = [
@@ -35,6 +36,7 @@ const OVERLAY_KEYS = [
   "trail.keepList",
   "river.keepList",
   "lake.keepList",
+  "textSizeMultiplier",
   "title.text",
   "mountain.labelColor",
   "mountain.iconColor",
@@ -114,6 +116,37 @@ export const App = () => {
   });
 
   useEffect(() => {
+    if (isRendering) {
+      setMapImageIsExpanded(false);
+    } else {
+      // Re-apply fit-to-container after render completes so the canvas is
+      // correctly sized and the toggle state matches the visual state.
+      const canvasEl = p5MountRef.current?.querySelector(
+        "canvas",
+      ) as HTMLCanvasElement | null;
+      if (
+        canvasEl &&
+        dimensions.width &&
+        dimensions.height &&
+        sketchDims.width &&
+        sketchDims.height
+      ) {
+        const scale = Math.min(
+          dimensions.width / sketchDims.width,
+          dimensions.height / sketchDims.height,
+        );
+        canvasEl.style.maxWidth = `fit-content`;
+        canvasEl.style.maxHeight = `100%`;
+        canvasEl.style.width = `${sketchDims.width * scale}px`;
+        canvasEl.style.height = `${sketchDims.height * scale}px`;
+        canvasEl.style.position = "absolute";
+        canvasEl.style.top = "0";
+        canvasEl.style.left = "0";
+      }
+    }
+  }, [isRendering]);
+
+  useEffect(() => {
     setForm((prev: any) => ({
       ...prev,
       "cart.orderId": cartContext.cart?.id ?? null,
@@ -165,21 +198,31 @@ export const App = () => {
   const toggleMapImageIsExpanded = () => {
     const expanded = !mapImageIsExpanded;
     setMapImageIsExpanded(expanded);
-    console.log(sketchDims);
-    console.log("toggling map image is expanded");
-    const img = p5MountRef.current?.firstElementChild;
-    if (img instanceof HTMLImageElement) {
-      if (expanded) {
-        img.style.width = `${sketchDims.width}px`;
-        img.style.height = `${sketchDims.height}px`;
-        img.style.maxWidth = `${sketchDims.width}px`;
-        img.style.maxHeight = `${sketchDims.height}px`;
-        img.style.top = "0";
-        img.style.left = "0";
-        img.style.transform = "";
-      } else {
-        fitToParent(img, dimensions, sketchDims);
-      }
+    const canvasEl = p5MountRef.current?.querySelector(
+      "canvas",
+    ) as HTMLCanvasElement | null;
+    if (!canvasEl) return;
+    if (expanded) {
+      canvasEl.style.width = `${sketchDims.width}px`;
+      canvasEl.style.height = `${sketchDims.height}px`;
+      canvasEl.style.maxWidth = `${sketchDims.width}px`;
+      canvasEl.style.maxHeight = `${sketchDims.height}px`;
+      canvasEl.style.position = "absolute";
+      canvasEl.style.top = "0";
+      canvasEl.style.left = "0";
+      canvasEl.style.transform = "";
+    } else {
+      const pw = dimensions.width;
+      const ph = dimensions.height;
+      const scale = Math.min(pw / sketchDims.width, ph / sketchDims.height);
+      canvasEl.style.width = `${sketchDims.width * scale}px`;
+      canvasEl.style.height = `${sketchDims.height * scale}px`;
+      canvasEl.style.maxWidth = "";
+      canvasEl.style.maxHeight = "";
+      canvasEl.style.position = "absolute";
+      canvasEl.style.top = "0";
+      canvasEl.style.left = "0";
+      canvasEl.style.transform = "";
     }
   };
 
@@ -220,8 +263,6 @@ export const App = () => {
           </div>
         </div>
       )}
-
-      {/* Toast */}
       {toast && <Toast toast={toast} setToast={setToast} />}
       <div className="flex h-screen">
         {/* Sidebar */}

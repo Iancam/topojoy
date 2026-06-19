@@ -78,7 +78,7 @@ export const P5Canvas = ({
     if (!container) return;
 
     const update = () => {
-      const img = container.querySelector("img");
+      const img = container.querySelector("canvas");
       if (img) {
         setContainerSize({
           width: img.offsetWidth || img.width,

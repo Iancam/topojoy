@@ -12,7 +12,7 @@ export function cn(...inputs: ClassValue[]) {
 export const fitToParent = (
   img: HTMLImageElement,
   dimensions: { width: number; height: number },
-  sketchDims: { width: number; height: number }
+  sketchDims: { width: number; height: number },
 ) => {
   const pw = dimensions.width;
   const ph = dimensions.height;
@@ -27,12 +27,11 @@ export const fitToParent = (
   img.style.height = `${ph}px`;
   img.style.maxWidth = `fit-content`;
   img.style.maxHeight = `100%`;
-
-  // img.style.position = "absolute";
-  // img.style.left = "50%";
-  // img.style.top = "50%";
-  // img.style.transform = "translate(-50%, -50%)";
-  // img.style.zIndex = "-1";
+  img.style.position = "absolute";
+  img.style.top = "0";
+  img.style.left = "0";
+  img.style.transform = "";
+  img.style.zIndex = "-1";
 };
 
 // use when you want to delete old values from the heights, IE, when you're
@@ -60,7 +59,7 @@ const deepClone = (obj: any) => {
 
 export const convertToNestedObject = (
   flat: { [key: string]: any },
-  defaultObject?: { [key: string]: any }
+  defaultObject?: { [key: string]: any },
 ) => {
   const base = defaultObject || {};
   let config = deepClone(base);
@@ -96,7 +95,7 @@ export const LS = {
 export const getFormFromLocalStorage = (
   preForm: any,
   config: string,
-  configs: Configs
+  configs: Configs,
 ) => {
   const saved = JSON.parse(localStorage.getItem(LS.FORM) || "{}") || {};
   Object.keys(saved).forEach((k) => {

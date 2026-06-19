@@ -1,4 +1,4 @@
-import { convertToNestedObject, LS } from "@/lib/utils";
+import { convertToNestedObject, fitToParent, LS } from "@/lib/utils";
 import { sketchFactory } from "@/map/sketch";
 import { configs } from "@/mapConfigs";
 import _ from "lodash";
@@ -17,10 +17,10 @@ export type RenderSketchParams = {
 };
 
 export type SketchLayers = {
-  curvesBackLayer: p5.Graphics;
-  textLayer: p5.Graphics;
-  curvesFrontLayer: p5.Graphics;
-  overlayLayer: p5.Graphics;
+  curvesBack: p5.Graphics;
+  text: p5.Graphics;
+  curvesFront: p5.Graphics;
+  overlay: p5.Graphics;
 };
 
 export type SketchRedrawFns = {
@@ -124,11 +124,12 @@ export function useRenderSketch({
       // Destroy previous p5 instance and free its GPU buffers before re-rendering
       if (p5InstanceRef.current) {
         const prev = layersRef.current;
+        console.log(prev);
         if (prev) {
-          prev.curvesBackLayer.remove();
-          prev.textLayer.remove();
-          prev.curvesFrontLayer.remove();
-          prev.overlayLayer.remove();
+          prev.curvesBack.remove();
+          prev.text.remove();
+          prev.curvesFront.remove();
+          prev.overlay.remove();
         }
         p5InstanceRef.current.remove();
         p5InstanceRef.current = null;
@@ -157,6 +158,7 @@ export function useRenderSketch({
           sketchFeatures: Record<string, string[]>,
           layers: SketchLayers,
           redrawFns: SketchRedrawFns,
+          resolvedTextSizeMultiplier: number,
         ) => {
           layersRef.current = layers;
 
@@ -186,6 +188,7 @@ export function useRenderSketch({
             ...prev,
             "print.imageWidth": sketch.width,
             "print.imageHeight": sketch.height,
+            textSizeMultiplier: resolvedTextSizeMultiplier,
           }));
           const png = canvas.elt.toDataURL("image/png");
           const img = new Image();
@@ -195,7 +198,7 @@ export function useRenderSketch({
           img.style.width = `${sketch.width}px`;
           img.style.height = `${sketch.height}px`;
           img.style.maxWidth = `${sketch.width}px`;
-          img.style.display = "block";
+          img.style.display = "none";
           img.style.position = "absolute";
           img.style.top = "0";
           img.style.left = "0";
@@ -203,7 +206,23 @@ export function useRenderSketch({
 
           p5MountRef.current?.appendChild(img);
           displayImgRef.current = img;
-          // Keep p5 instance alive for partial redraws; canvas stays hidden behind img
+          // Fit the canvas to the visible container so the default state is minimized
+          const canvasEl = p5MountRef.current?.querySelector(
+            "canvas",
+          ) as HTMLCanvasElement | null;
+          if (canvasEl && p5Ref.current) {
+            const { width: pw, height: ph } =
+              p5Ref.current.getBoundingClientRect();
+            if (pw && ph) {
+              const scale = Math.min(pw / sketch.width, ph / sketch.height);
+              canvasEl.style.width = `${sketch.width * scale}px`;
+              canvasEl.style.height = `${sketch.height * scale}px`;
+              canvasEl.style.position = "absolute";
+              canvasEl.style.top = "0";
+              canvasEl.style.left = "0";
+            }
+          }
+          // Keep p5 instance alive for partial redraws; canvas is the visible display layer
           p5InstanceRef.current = sketch;
           if (isInitialRun || form.forceCollisionDetection) {
             setIsInitialRun(false);

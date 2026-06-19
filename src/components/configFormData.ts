@@ -48,6 +48,7 @@ export const formJourney: {
       "title.text",
       "curve.density",
       "zoomLevel",
+      "textSizeMultiplier",
       "legend.enabled",
     ],
   },
@@ -164,6 +165,13 @@ export const basicFormElements: FormElements = {
     },
   ],
   "print.quantity": ["number", "the quantity of the print", 1, "Quantity"],
+  textSizeMultiplier: [
+    "number",
+    "scales text and stroke weight — derived from canvas size, but can be overridden",
+    0,
+    "Text / Stroke Scale",
+    { min: 0.1, max: 5, step: 0.05 },
+  ],
 } satisfies FormElements;
 
 export const advancedFormElements: FormElements = {

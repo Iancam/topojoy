@@ -72,10 +72,12 @@ export const sketchFactory = (
         Object.values(baseConfigTransforms).forEach((transform) => {
           transform(config);
         });
-        config.textSizeMultiplier = textSizeMultiplier(
-          canvas.width,
-          canvas.height,
-        );
+        if (!config.textSizeMultiplier) {
+          config.textSizeMultiplier = textSizeMultiplier(
+            canvas.width,
+            canvas.height,
+          );
+        }
 
         const geoJSON = await getGeoJSONFromOSM(bounds.latLngBox);
 
@@ -202,7 +204,8 @@ export const sketchFactory = (
 
         // --- Per-layer redraw functions for partial updates ---
         const redrawTextLayer = (newConfig) => {
-          newConfig.textSizeMultiplier = config.textSizeMultiplier;
+          newConfig.textSizeMultiplier =
+            newConfig.textSizeMultiplier || config.textSizeMultiplier;
           // bbox is set once in setup() via baseConfigTransforms — raw form has [0,0,0,0]
           newConfig.backgroundText.bbox = config.backgroundText.bbox;
           layers.text.clear();
@@ -222,8 +225,8 @@ export const sketchFactory = (
           newFeatures,
           newUserSelectedTrails,
         ) => {
-          // textSizeMultiplier is computed once in setup() and never stored in the form
-          newConfig.textSizeMultiplier = config.textSizeMultiplier;
+          newConfig.textSizeMultiplier =
+            newConfig.textSizeMultiplier || config.textSizeMultiplier;
           // keepLists are populated — always drop unlisted labels on a partial redraw
 
           const nCOnfig = { ...newConfig };
@@ -258,6 +261,7 @@ export const sketchFactory = (
           features,
           layers,
           { recompose, redrawTextLayer, redrawOverlayLayer },
+          config.textSizeMultiplier,
         );
       };
 
