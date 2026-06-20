@@ -104,10 +104,10 @@ export const FrontPage = () => {
           If you'd like a token, just ask.
         </p>
         <a
-          href="mailto:hello@topojoy.com"
+          href="mailto:hello@topojoy.studio"
           className="inline-block px-8 py-3 bg-teal-500 hover:bg-teal-400 text-[#071e25] font-bold rounded transition-colors duration-200"
         >
-          hello@topojoy.com
+          hello@topojoy.studio
         </a>
       </section>
 
