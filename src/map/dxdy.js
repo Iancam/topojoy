@@ -1,3 +1,4 @@
+import { times } from "@/lib/map/utils";
 import { colorAndDrawCurve } from "./original";
 
 // topo pixels structure [elevation, dx, dy, cosIncidence]
@@ -20,6 +21,9 @@ export const dxdy = (
       Math.floor(sketch.random(0, topo.width - 1)),
       Math.floor(sketch.random(0, topo.height - 1)),
     ];
+    const [, sdx, sdy, slope] = topo.pixels[y]?.[x];
+
+    if (slope / 70 < Math.random()) return null;
     let curvePoints = [[x, y, topo.pixels[y][x][1], topo.pixels[y][x][2]]];
     let last = (array) => array[array.length - 1];
     for (let i = 0; i < length; i++) {
@@ -46,17 +50,14 @@ export const dxdy = (
 
   // Pre-generate all curves, then split 80/20 across layers
   const totalCount = Math.floor(config.curveCount * 0.8);
-  const allCurves = [];
-  for (let i = 0; i < totalCount; i++) {
-    allCurves.push(
-      gradientMakeCurve(
-        config.curve.stepCount,
-        config.curve.stepLength,
-        topo,
-        transform,
-      ),
-    );
-  }
+  const allCurves = times(totalCount, () =>
+    gradientMakeCurve(
+      config.curve.stepCount,
+      config.curve.stepLength,
+      topo,
+      transform,
+    ),
+  );
   const splitAt = Math.floor(allCurves.length * 0.8);
   const drawBack = colorAndDrawCurve(curvesBackLayer, colorAt);
   const drawFront = colorAndDrawCurve(curvesFrontLayer, colorAt);

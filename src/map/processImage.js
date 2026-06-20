@@ -106,7 +106,7 @@ const initKernels = () => {
           Math.sin(El) * Math.cos(slope) +
           Math.cos(El) * Math.sin(slope) * Math.cos(Az - aspect);
 
-        return [height, dzdx, dzdy, cosIncidence];
+        return [height, dzdx, dzdy, slope];
       },
       {
         dynamicArguments: true,
