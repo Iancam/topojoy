@@ -38,7 +38,7 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
     getStoredGiftToken(),
   );
 
-  const [isDonationEnabled, setIsDonationEnabled] = useState(false);
+  const [isChipInEnabled, setIsChipInEnabled] = useState(false);
   const [isPurchaseWithoutGiftEnabled, setPurchaseWithoutGiftEnabled] =
     useState(false);
 
@@ -79,7 +79,7 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
         FEATURE_FLAGS.purchaseWithoutGiftEnabled,
       );
       setPurchaseWithoutGiftEnabled(purchaseWithoutGiftEnabled);
-      setIsDonationEnabled(donationEnabled);
+      setIsChipInEnabled(donationEnabled);
     }
     checkFeatures();
   }, []);
@@ -113,9 +113,47 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
     );
   };
 
+  const [giftTokenInput, setGiftTokenInput] = React.useState("");
+
+  const handleApplyGiftToken = () => {
+    const token = giftTokenInput.trim();
+    if (!token) return;
+    localStorage.setItem(GIFT_TOKEN_KEY, token);
+    setCurrentGiftToken(token);
+    setGiftTokenInput("");
+    window.location.reload();
+  };
+  console.log(isChipInEnabled);
   return (
     <div className="space-y-4">
-      {/* Gift Indicator Banner */}
+      {/* Gift token entry — shown when no token is active */}
+      {!currentGiftToken && (
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <p className="text-xs font-medium text-gray-700 mb-2">
+            Have a gift token?
+          </p>
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              value={giftTokenInput}
+              onChange={(e) => setGiftTokenInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleApplyGiftToken()}
+              placeholder="Enter token"
+              className="text-sm flex-1"
+            />
+            <button
+              type="button"
+              onClick={handleApplyGiftToken}
+              disabled={!giftTokenInput.trim()}
+              className="text-xs px-3 py-1.5 rounded bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-40 transition-colors"
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Gift Indicator Banner — shown when token is active */}
       {currentGiftToken && availableAmountCents !== null && (
         <GiftIndicatorBanner
           availableAmountCents={availableAmountCents}
@@ -183,7 +221,7 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
           }
         />
       </div>
-      {isDonationEnabled && !getStoredGiftToken() && (
+      {isChipInEnabled && !getStoredGiftToken() && (
         <div className="mt-6 space-y-2">
           <h3 className="text-sm font-medium text-gray-900">
             Chip in, if you&apos;d like

@@ -81,7 +81,9 @@ export const DonationConfirmation: React.FC<Props> = ({
   recipientName,
   message,
 }) => (
-  <BaseLayout preview={`Your TopoJoy gift of ${amountFormatted} is ready to share`}>
+  <BaseLayout
+    preview={`Your TopoJoy gift of ${amountFormatted} is ready to share`}
+  >
     <Text style={styles.heading}>Your gift is ready! 🎁</Text>
     <Text style={styles.body}>
       Hi {donorName}, your donation was successful. Here's a gift link
@@ -100,7 +102,7 @@ export const DonationConfirmation: React.FC<Props> = ({
       </Text>
     )}
 
-    <Text style={{ ...styles.body, margin: "20px 0 8px" }}>
+    {/* <Text style={{ ...styles.body, margin: "20px 0 8px" }}>
       Share this link with the recipient so they can apply the gift at checkout:
     </Text>
 
@@ -109,7 +111,7 @@ export const DonationConfirmation: React.FC<Props> = ({
       <Link href={giftLinkUrl} style={styles.giftLink}>
         {giftLinkUrl}
       </Link>
-    </Section>
+    </Section> */}
 
     <Button href={giftLinkUrl} style={styles.button}>
       View Gift

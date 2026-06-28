@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { Link } from "react-router";
-import { Header } from "../components/Header";
-import { MapThumbnail } from "../components/MapThumbnail";
-import { admin } from "../api";
+import { Header } from "../../components/Header";
+import { MapThumbnail } from "../../components/MapThumbnail";
+import { admin, netlifyImageUrl } from "../../api";
+import { FeatureFlagsSection } from "./FeatureFlagsSection";
+import { AdminDonation, DonationsSection } from "./donationsSection";
 
 type AdminMapItem = {
   id: string;
@@ -23,11 +25,12 @@ type AdminFeatureFlag = {
   updatedAt: string;
 };
 
-type Section = "maps" | "flags";
+type Section = "maps" | "flags" | "donations";
 
 const NAV_ITEMS: { id: Section; label: string; icon: string }[] = [
   { id: "maps", label: "All Maps", icon: "🗺️" },
   { id: "flags", label: "Feature Flags", icon: "🚩" },
+  { id: "donations", label: "Donations", icon: "💰" },
 ];
 
 function MapsSection({
@@ -92,7 +95,10 @@ function MapsSection({
                     <MapThumbnail title={m.title} s3Key={m.s3Key} />
                   ) : m.imageUrl ? (
                     <img
-                      src={m.imageUrl}
+                      src={netlifyImageUrl(m.imageUrl, {
+                        w: 640,
+                        fit: "cover",
+                      })}
                       alt={m.title}
                       className="w-full h-full object-cover"
                     />
@@ -123,153 +129,42 @@ function MapsSection({
   );
 }
 
-function FeatureFlagsSection({
-  flags,
-  error,
-  updatingKey,
-  creating,
-  createKey,
-  createEnabled,
-  onCreateKeyChange,
-  onCreateEnabledChange,
-  onCreate,
-  onToggle,
-}: {
-  flags: AdminFeatureFlag[] | null;
-  error: string | null;
-  updatingKey: string | null;
-  creating: boolean;
-  createKey: string;
-  createEnabled: boolean;
-  onCreateKeyChange: (value: string) => void;
-  onCreateEnabledChange: (value: boolean) => void;
-  onCreate: () => Promise<void>;
-  onToggle: (key: string, enabled: boolean) => Promise<void>;
-}) {
-  return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">Feature Flags</h2>
-        <p className="text-xs text-gray-400 mt-0.5">
-          Control app behavior without deploys.
-        </p>
-      </div>
-
-      <div className="rounded-lg border border-gray-200 bg-white p-4">
-        <div className="text-sm font-medium text-gray-900 mb-3">
-          Create feature flag
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            type="text"
-            value={createKey}
-            onChange={(e) => onCreateKeyChange(e.target.value)}
-            placeholder="example_flag_key"
-            className="w-72 text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <label className="inline-flex items-center gap-2 text-xs text-gray-700">
-            <input
-              type="checkbox"
-              checked={createEnabled}
-              onChange={(e) => onCreateEnabledChange(e.target.checked)}
-            />
-            Enabled
-          </label>
-          <button
-            type="button"
-            disabled={creating}
-            onClick={onCreate}
-            className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
-              creating
-                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                : "bg-blue-100 text-blue-700 hover:bg-blue-200"
-            }`}
-          >
-            {creating ? "Creating…" : "Create"}
-          </button>
-        </div>
-      </div>
-
-      {error && (
-        <div className="p-3 rounded border border-red-200 bg-red-50 text-red-700 text-sm">
-          {error}
-        </div>
-      )}
-
-      {!flags ? (
-        <div className="text-gray-400 text-sm">Loading…</div>
-      ) : flags.length === 0 ? (
-        <div className="text-gray-400 text-sm">No flags yet.</div>
-      ) : (
-        <div className="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100">
-          {flags.map((flag) => {
-            const isUpdating = updatingKey === flag.key;
-            return (
-              <div
-                key={flag.id}
-                className="flex items-center justify-between gap-4 px-4 py-3"
-              >
-                <div className="min-w-0">
-                  <div className="text-sm font-medium text-gray-900 font-mono truncate">
-                    {flag.key}
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    Updated {new Date(flag.updatedAt).toLocaleString()}
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  disabled={isUpdating}
-                  onClick={() => onToggle(flag.key, !flag.enabled)}
-                  className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
-                    flag.enabled
-                      ? "bg-green-100 text-green-700 hover:bg-green-200"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  } ${isUpdating ? "opacity-60 cursor-not-allowed" : ""}`}
-                >
-                  {isUpdating
-                    ? "Saving…"
-                    : flag.enabled
-                      ? "Enabled"
-                      : "Disabled"}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function AdminPage() {
   const { user, isLoaded } = useUser();
-  const [maps, setMaps] = React.useState<AdminMapItem[] | null>(null);
-  const [flags, setFlags] = React.useState<AdminFeatureFlag[] | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
-  const [flagsError, setFlagsError] = React.useState<string | null>(null);
-  const [updatingFlagKey, setUpdatingFlagKey] = React.useState<string | null>(
-    null,
-  );
-  const [creatingFlag, setCreatingFlag] = React.useState(false);
-  const [createFlagKey, setCreateFlagKey] = React.useState("");
-  const [createFlagEnabled, setCreateFlagEnabled] = React.useState(false);
-  const [activeSection, setActiveSection] = React.useState<Section>("maps");
+  const [maps, setMaps] = useState<AdminMapItem[] | null>(null);
+  const [flags, setFlags] = useState<AdminFeatureFlag[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [flagsError, setFlagsError] = useState<string | null>(null);
+  const [updatingFlagKey, setUpdatingFlagKey] = useState<string | null>(null);
+  const [creatingFlag, setCreatingFlag] = useState(false);
+  const [createFlagKey, setCreateFlagKey] = useState("");
+  const [createFlagEnabled, setCreateFlagEnabled] = useState(false);
+  const [activeSection, setActiveSection] = useState<Section>("maps");
+  const [donations, setDonations] = useState<AdminDonation[] | null>(null);
+  const [donationsError, setDonationsError] = useState<string | null>(null);
 
   const isAdmin = isLoaded && (user?.publicMetadata as any)?.role === "admin";
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isLoaded || !isAdmin) return;
     admin
-      .mapsAll()
-      .then(setMaps)
-      .catch((e: any) => setError(e.message));
+      .mapsAll({})
+      .then((data: AdminMapItem[]) => {
+        setMaps(data);
+      })
+      .catch((e: any) => {
+        setError(e.message);
+      });
 
     admin
       .featureFlagsList()
       .then(setFlags)
       .catch((e: any) => setFlagsError(e.message));
+
+    admin
+      .donationsList()
+      .then(setDonations)
+      .catch((e: any) => setDonationsError(e.message));
   }, [isLoaded, isAdmin]);
 
   const handleToggleFlag = async (key: string, enabled: boolean) => {
@@ -398,6 +293,11 @@ export default function AdminPage() {
                     {flags.length}
                   </span>
                 )}
+                {item.id === "donations" && donations && (
+                  <span className="ml-auto text-[10px] bg-teal-800 text-teal-200 rounded-full px-1.5 py-0.5 font-mono">
+                    {donations.length}
+                  </span>
+                )}
               </button>
             ))}
           </nav>
@@ -420,6 +320,49 @@ export default function AdminPage() {
               onCreateEnabledChange={setCreateFlagEnabled}
               onCreate={handleCreateFlag}
               onToggle={handleToggleFlag}
+            />
+          )}
+          {activeSection === "donations" && (
+            <DonationsSection
+              donations={donations}
+              error={donationsError}
+              onAllocationCreated={(donationId, allocation) => {
+                setDonations((curr) =>
+                  (curr ?? []).map((d) =>
+                    d.id === donationId
+                      ? {
+                          ...d,
+                          allocations: [...d.allocations, allocation],
+                          totalAmountDrawn:
+                            d.totalAmountDrawn + allocation.amountDrawn,
+                          effectiveAmountDrawn:
+                            d.effectiveAmountDrawn +
+                            (allocation.amountDrawn > 0
+                              ? allocation.amountDrawn
+                              : (allocation.maxAmountDrawn ?? 0)),
+                        }
+                      : d,
+                  ),
+                );
+              }}
+              onAllocationDeleted={(donationId, allocationId) => {
+                setDonations((curr) =>
+                  (curr ?? []).map((d) => {
+                    if (d.id !== donationId) return d;
+                    const removed = d.allocations.find(
+                      (a) => a.id === allocationId,
+                    );
+                    return {
+                      ...d,
+                      allocations: d.allocations.filter(
+                        (a) => a.id !== allocationId,
+                      ),
+                      effectiveAmountDrawn:
+                        d.effectiveAmountDrawn - (removed?.maxAmountDrawn ?? 0),
+                    };
+                  }),
+                );
+              }}
             />
           )}
         </main>

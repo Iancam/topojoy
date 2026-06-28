@@ -80,26 +80,26 @@ export const handler = async (event: any) => {
     }
 
     finalAmntToPay = giftTokenResult.finalAmntToPay;
-    const donation = giftTokenResult.donation;
+    const donationAllocation = giftTokenResult.donationAllocation;
     const amountDrawn = giftTokenResult.amountDrawn;
 
-    if (finalAmntToPay === 0 && donation) {
+    if (finalAmntToPay === 0 && donationAllocation) {
       await prisma.order.update({
         where: { id: order.id },
         data: { status: "paid", paidAt: new Date() },
       });
 
-      await prisma.donationAllocation.create({
+      await prisma.donationAllocation.update({
+        where: { id: donationAllocation.id },
         data: {
-          donationId: donation.id,
           orderId: order.id,
           amountDrawn,
         },
       });
 
-      if (donation.donorId) {
+      if (donationAllocation.donorId) {
         await createGiftedMapIfApplicable({
-          donorId: donation.donorId,
+          donorId: donationAllocation.donation.donorId,
           orderId: order.id,
           orderItems: order.orderItems,
           totalCost: order.totalPrice,
@@ -156,23 +156,13 @@ export const handler = async (event: any) => {
       });
     }
 
-    if (donation) {
-      await prisma.donationAllocation.create({
-        data: {
-          donationId: donation.id,
-          orderId: order.id,
-          amountDrawn,
-        },
+    if (donationAllocation.donation && donationAllocation.donation.donorId) {
+      await createGiftedMapIfApplicable({
+        donorId: donationAllocation.donation.donorId,
+        orderId: order.id,
+        orderItems: order.orderItems,
+        totalCost: order.totalPrice,
       });
-
-      if (donation.donorId) {
-        await createGiftedMapIfApplicable({
-          donorId: donation.donorId,
-          orderId: order.id,
-          orderItems: order.orderItems,
-          totalCost: order.totalPrice,
-        });
-      }
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
@@ -210,21 +200,28 @@ async function processGiftToken(
     return errorVal;
   }
 
-  const donation = await prisma.donation.findUnique({
+  const donationAllocation = await prisma.donationAllocation.findUnique({
     where: { accessToken: giftToken },
     select: {
       id: true,
-      amount: true,
-      expiryDate: true,
-      status: true,
-      donorId: true,
-      allocations: { select: { amountDrawn: true } },
+      maxAmountDrawn: true,
+      donation: {
+        select: {
+          id: true,
+          amount: true,
+          expiryDate: true,
+          status: true,
+          donorId: true,
+          allocations: { select: { amountDrawn: true } },
+        },
+      },
     },
   });
 
-  if (!donation) {
+  if (!donationAllocation) {
     return { ...errorVal, message: "Invalid gift token" };
   }
+  const donation = donationAllocation?.donation;
   if (donation.expiryDate <= new Date()) {
     return { ...errorVal, message: "Gift token has expired" };
   }
@@ -245,16 +242,29 @@ async function processGiftToken(
   if (availableAmountCents <= 0) {
     return {
       ...errorVal,
-      message: "Gift has already been fully redeemed",
+      message: "Donation has already been fully redeemed",
     };
   }
 
-  const amountDrawn = Math.min(availableAmountCents, amntToPay);
+  if (
+    donationAllocation.maxAmountDrawn !== null &&
+    donationAllocation.maxAmountDrawn < amntToPay
+  ) {
+    return {
+      ...errorVal,
+      message: "Amount to pay exceeds maximum allowed",
+    };
+  }
+
+  const amountDrawn = Math.min(
+    donationAllocation.maxAmountDrawn ?? availableAmountCents,
+    amntToPay,
+  );
   const finalAmntToPay = Math.max(0, amntToPay - amountDrawn);
 
   return {
     finalAmntToPay,
-    donation,
+    donationAllocation,
     amountDrawn,
   };
 }

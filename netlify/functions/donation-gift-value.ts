@@ -37,15 +37,14 @@ export const handler = async (event: any) => {
 
   try {
     // Fetch donation and existing order items in parallel
-    const [donation, existingOrderItems] = await Promise.all([
-      prisma.donation.findUnique({
+    const [donationAllocation, existingOrderItems] = await Promise.all([
+      prisma.donationAllocation.findUnique({
         where: { accessToken },
         select: {
           id: true,
-          amount: true,
-          status: true,
-          expiryDate: true,
-          allocations: { select: { amountDrawn: true } },
+          amountDrawn: true,
+          maxAmountDrawn: true,
+          donation: { select: { status: true, expiryDate: true, id: true } },
         },
       }),
       orderId
@@ -63,28 +62,23 @@ export const handler = async (event: any) => {
         : Promise.resolve([]),
     ]);
 
-    if (!donation) {
+    if (!donationAllocation) {
       return error("Gift not found", 404);
     }
 
-    if (donation.status !== "paid") {
+    if (donationAllocation.donation.status !== "paid") {
       return error("Gift payment not completed", 402);
     }
-
-    if (donation.expiryDate && new Date(donation.expiryDate) < new Date()) {
+    const expiryDate = donationAllocation.donation.expiryDate;
+    if (expiryDate && new Date(expiryDate) < new Date()) {
       return error("Gift has expired", 410);
     }
 
-    // How much of the donation is still available (not yet drawn by prior allocations)
-    const alreadyDrawnCents = donation.allocations.reduce(
-      (sum, a) => sum + a.amountDrawn,
-      0,
-    );
-    const availableAmountCents = donation.amount - alreadyDrawnCents;
-
-    if (availableAmountCents <= 0) {
-      return error("Gift has already been fully redeemed", 409);
+    if (donationAllocation.amountDrawn > 0) {
+      return error("Gift has already been partially redeemed", 409);
     }
+
+    const availableAmountCents = donationAllocation.maxAmountDrawn ?? 0;
 
     // Sum of existing items' prices (cents), excluding the candidate item
     const existingItemsPriceCents = existingOrderItems.reduce(
@@ -139,8 +133,6 @@ export const handler = async (event: any) => {
               },
             ];
 
-      // if items is empty, return
-
       adjustedItems = shippingResults.map((item) => {
         const methods: { cost: number; method: string }[] =
           item.shipping?.shippingMethods ?? [];
@@ -169,9 +161,8 @@ export const handler = async (event: any) => {
     }
 
     return success({
-      donationId: donation.id,
-      grossAmountCents: donation.amount,
-      alreadyDrawnCents,
+      donationId: donationAllocation.donation.id,
+      donationAllocationId: donationAllocation.id,
       availableAmountCents,
       items: adjustedItems,
     });

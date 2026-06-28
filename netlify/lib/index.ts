@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import prisma from "../lib/prisma";
 import { isProduction } from "./env";
 
@@ -169,3 +170,19 @@ export const getShippingPrice = async ({
   const json = await response.json();
   return json;
 };
+
+export function createSecureRandomString(length: number, charSet: string) {
+  let result = "";
+  const bytes = crypto.randomBytes(length);
+  for (let i = 0; i < length; i++) {
+    result += charSet[bytes[i] % charSet.length];
+  }
+  return result;
+}
+
+export function createRandomAccessToken() {
+  return createSecureRandomString(
+    12,
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+  );
+}

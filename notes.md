@@ -60,3 +60,23 @@ I made a function to convert flat keys to nested keys, but it didn't make a clon
 
 if drop, only keep if in keeplist
 if !drop, keep if no collisions
+
+# sat june 20th 2026
+
+## refactor donations
+
+accessTokens should be associated with donationAllocations, enabling multiple tokens per donation. DAs should have a max draw, to ensure that admin doesn't overdraw the donation. The old token system needs to be completely replaced
+
+- [x] make admin page to create accessTokens
+  - [x] backend endpoint to create donationAllocations
+  - [x] backend endpoint to update donationAllocations
+
+  - [x] frontend form to create accessTokens. Should show all viable donations, and allow selection of multiple. require setting maxAmountDrawn
+
+- [ ] refactor all donation related code to use new system. FindAll on "donation."
+  - [x] stripe-webhook
+  - [x] stripe-create-payment-intent
+
+- [ ] when a donation comes in, I should get an email
+
+updating a donationAllocation currently has no auth. Updating a donationAllocation.amountDrawn should only be done by the stripe webhook.

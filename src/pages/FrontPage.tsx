@@ -1,6 +1,7 @@
 import "../index.css";
 import { Link } from "react-router";
 import { Header } from "../components/Header";
+import { netlifyImageUrl } from "../api";
 
 export const FrontPage = () => {
   return (
@@ -10,7 +11,10 @@ export const FrontPage = () => {
       {/* Hero */}
       <section className="relative w-full pt-15">
         <img
-          src="/img/topojoy-hero.png"
+          src={netlifyImageUrl("/img/topojoy-hero.png", {
+            w: 1600,
+            fit: "cover",
+          })}
           alt="Bullet Canyon topographic map"
           className="w-full object-cover max-h-[85vh]"
         />
@@ -61,7 +65,7 @@ export const FrontPage = () => {
         </div>
         <div className="order-1 md:order-2">
           <img
-            src="/img/Albert.png"
+            src={netlifyImageUrl("/img/Albert.png", { w: 800, fit: "cover" })}
             alt="Tall Trees, Ian and Albert — topographic map of Redwood Creek"
             className="w-full rounded shadow-2xl shadow-black/60"
           />

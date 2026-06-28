@@ -349,6 +349,17 @@ const adminAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
     "POST",
     "Failed to update feature flag",
   ],
+  donationsList: ["admin-donations-list", "GET", "Failed to list donations"],
+  donationAllocationCreate: [
+    "admin-donationAllocation-create",
+    "POST",
+    "Failed to create donation allocation",
+  ],
+  donationAllocationDelete: [
+    "admin-donationAllocation-delete",
+    "POST",
+    "Failed to delete donation allocation",
+  ],
 });
 
 const featureFlagsAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
@@ -426,7 +437,22 @@ export const saveImageToAws = async (body: {
   // return { url, key };
 };
 
-// use to send to lumaprints
+/**
+ * Wraps any image URL through Netlify Image CDN for resizing + edge caching.
+ * https://docs.netlify.com/image-cdn/overview/
+ */
+export const netlifyImageUrl = (
+  sourceUrl: string,
+  opts: { w?: number; h?: number; fit?: "cover" | "contain" | "fill" } = {},
+): string => {
+  const params = new URLSearchParams({ url: sourceUrl });
+  if (opts.w) params.set("w", String(opts.w));
+  if (opts.h) params.set("h", String(opts.h));
+  if (opts.fit) params.set("fit", opts.fit);
+  return `/.netlify/images?${params.toString()}`;
+};
+
+// use to send to lumaprints (returns raw signed URL, not CDN-wrapped)
 export const getImageUrlFromAws = async (key: string) => {
   const res = await fetch("/.netlify/functions/print-get-signed-url", {
     method: "POST",
@@ -440,6 +466,15 @@ export const getImageUrlFromAws = async (key: string) => {
   const { url } = await res.json();
 
   return url;
+};
+
+// For display thumbnails — signed URL piped through Netlify Image CDN
+export const getThumbnailUrl = async (
+  key: string,
+  width = 640,
+): Promise<string> => {
+  const signedUrl = await getImageUrlFromAws(key);
+  return netlifyImageUrl(signedUrl, { w: width, fit: "cover" });
 };
 
 /********* Lumaprints API *********/

@@ -5,6 +5,7 @@ import { auth, error, success } from "../lib/index";
 const prisma = new PrismaClient();
 
 export const handler = async (event: any) => {
+  console.log("ping");
   try {
     const clerkClient = createClerkClient({
       secretKey: process.env.CLERK_SECRET_KEY,
@@ -34,7 +35,7 @@ export const handler = async (event: any) => {
         userId: true,
       },
     });
-
+    console.log(maps);
     return success(maps);
   } catch (err: any) {
     return error(err.message || "Server error", 500);

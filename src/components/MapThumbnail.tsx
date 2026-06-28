@@ -1,4 +1,4 @@
-import { getImageUrlFromAws } from "@/api";
+import { getThumbnailUrl } from "@/api";
 import React from "react";
 
 export const MapThumbnail: React.FC<{
@@ -11,7 +11,7 @@ export const MapThumbnail: React.FC<{
     let cancelled = false;
     if (!s3Key) return;
 
-    getImageUrlFromAws(s3Key)
+    getThumbnailUrl(s3Key)
       .then((url) => {
         if (!cancelled) setSrc(url);
       })

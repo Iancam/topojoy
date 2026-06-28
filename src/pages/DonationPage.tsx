@@ -66,8 +66,7 @@ export default function DonationPage() {
             Make a Donation
           </h1>
           <p className="text-gray-500 text-sm">
-            Gift a map to someone — or contribute to the community pool. No
-            account required.
+            Gift some maps! No account required.
           </p>
         </div>
 

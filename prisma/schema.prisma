@@ -194,7 +194,7 @@ model Donation {
   donor            User?                 @relation(fields: [donorId], references: [id])
   expiryDate       DateTime
   allocations      DonationAllocation[]
-  accessToken      String?              @unique // non-null when public: false
+  accessToken      String?  //deprecated            @unique // non-null when public: false
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
 }
@@ -224,11 +224,15 @@ model GiftedMap {
 }
 
 model DonationAllocation {
-  id          String   @id @default(cuid())
-  donationId  String
-  donation    Donation @relation(fields: [donationId], references: [id])
-  orderId     String
-  order       Order    @relation(fields: [orderId], references: [id])
-  amountDrawn Int      // in cents
-  createdAt   DateTime @default(now())
+  id             String   @id @default(cuid())
+  donationId     String
+  donation       Donation @relation(fields: [donationId], references: [id])
+  orderId        String?
+  order          Order?    @relation(fields: [orderId], references: [id])
+  accessToken    String?   @unique
+  maxAmountDrawn Int?
+  
+  amountDrawn    Int      // in cents
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }

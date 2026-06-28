@@ -22,6 +22,7 @@ export const SizeButton =
       <button
         key={`${width}x${height}`}
         type="button"
+        disabled={discounted !== 0}
         onClick={() => onClick(width, height, rawPrice)}
         className={`text-left px-2 py-1.5 rounded border text-xs transition-colors ${
           isSelected
@@ -34,12 +35,12 @@ export const SizeButton =
             {width}" × {height}"
           </span>
           <span className="text-[10px] ml-1 flex items-center gap-1">
-            {discounted < rawPrice && (
+            {/* {discounted < rawPrice && (
               <span className="line-through text-gray-400">
                 {formatMoney(rawPrice)}
               </span>
-            )}
-            <span
+            )} */}
+            {/* <span
               className={
                 discounted < rawPrice
                   ? "text-teal-600 font-semibold"
@@ -47,7 +48,7 @@ export const SizeButton =
               }
             >
               {formatMoney(discounted)}
-            </span>
+            </span> */}
           </span>
         </div>
       </button>

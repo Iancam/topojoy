@@ -11,5 +11,8 @@
 [functions]
   node_bundler = "esbuild"
 
+[images]
+  remote_images = ["https://topojoy\\.s3\\.us-east-1\\.amazonaws\\.com/.*", "https://.*\\.s3\\.amazonaws\\.com/.*"]
+
 [[plugins]]
   package = "netlify-plugin-inline-functions-env"

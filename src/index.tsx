@@ -9,7 +9,7 @@ import AuthLayout from "./AuthLayout";
 import { FrontPage } from "./pages/FrontPage";
 import MyMaps from "./pages/MyMaps";
 import MyOrders from "./pages/MyOrders";
-import AdminPage from "./pages/AdminPage";
+import AdminPage from "./pages/admin/AdminPage";
 import DonationPage from "./pages/DonationPage";
 import GiftPage from "./pages/GiftPage";
 import { Cart } from "./pages/Cart";

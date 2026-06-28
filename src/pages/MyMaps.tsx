@@ -2,7 +2,7 @@ import React from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { Link } from "react-router";
 import { Header } from "../components/Header";
-import { maps as mapAPI, getImageUrlFromAws } from "../api";
+import { maps as mapAPI, netlifyImageUrl } from "../api";
 import { MapThumbnail } from "../components/MapThumbnail";
 export type MapListItem = {
   id: string;
@@ -98,7 +98,10 @@ export default function MyMaps() {
                       <MapThumbnail title={m.title} s3Key={m.s3Key} />
                     ) : m.imageUrl ? (
                       <img
-                        src={m.imageUrl}
+                        src={netlifyImageUrl(m.imageUrl, {
+                          w: 640,
+                          fit: "cover",
+                        })}
                         alt={m.title}
                         className="w-full h-full object-cover"
                       />

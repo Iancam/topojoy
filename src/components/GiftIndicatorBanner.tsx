@@ -52,10 +52,10 @@ export const GiftIndicatorBanner = ({
               Gift Credit Applied
             </h4>
           </div>
-          <p className="text-xs text-teal-700">
+          {/* <p className="text-xs text-teal-700">
             You have {formatMoney(availableAmountCents)} in gift credit
             available. Discounts are shown on print sizes below.
-          </p>
+          </p> */}
         </div>
         <div className="flex gap-2">
           <button
