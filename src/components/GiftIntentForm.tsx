@@ -6,6 +6,7 @@ export type GiftIntent = {
   who: string;
   why: string;
   empathy: string;
+  title: string;
 };
 
 export const getStoredGiftIntent = (): GiftIntent | null => {
@@ -20,7 +21,7 @@ export const getStoredGiftIntent = (): GiftIntent | null => {
 export const clearStoredGiftIntent = () =>
   localStorage.removeItem(GIFT_INTENT_KEY);
 
-const steps = [
+export const steps = [
   {
     key: "who" as const,
     prompt: "Who are you making this map for?",
@@ -38,9 +39,16 @@ const steps = [
   {
     key: "empathy" as const,
     prompt:
-      "Put yourself in their shoes for a moment. How would it feel to receive this?",
+      "The gift will mean more to you if you put yourself in their shoes for a moment. How would it feel to receive this?",
     placeholder: "What would it mean to them to have this on their wall?",
-    multiline: true,
+    noAnswer: true,
+    multiline: false,
+  },
+  {
+    key: "title" as const,
+    prompt: "Last thing — what would you like to call this map?",
+    placeholder: 'e.g. "Redwood Creek, 2013" or "The PCT trip"…',
+    multiline: false,
   },
 ];
 
@@ -58,6 +66,7 @@ export function GiftIntentForm({
     who: "",
     why: "",
     empathy: "",
+    title: "",
   });
 
   const current = steps[step];
@@ -65,7 +74,7 @@ export function GiftIntentForm({
   const isLast = step === steps.length - 1;
 
   const handleNext = () => {
-    if (!currentAnswer.trim()) return;
+    if (!current.noAnswer && !currentAnswer.trim()) return;
     if (isLast) {
       localStorage.setItem(GIFT_INTENT_KEY, JSON.stringify(answers));
       onComplete(answers);
@@ -83,6 +92,40 @@ export function GiftIntentForm({
       e.preventDefault();
       handleNext();
     }
+  };
+
+  const renderInput = () => {
+    if (current.noAnswer) {
+      return null;
+    }
+    if (current.multiline) {
+      return (
+        <textarea
+          autoFocus
+          rows={3}
+          value={currentAnswer}
+          onChange={(e) =>
+            setAnswers((a) => ({ ...a, [current.key]: e.target.value }))
+          }
+          onKeyDown={handleKeyDown}
+          placeholder={current.placeholder}
+          className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm text-white placeholder-white/40 focus:outline-none focus:border-teal-400 resize-none transition-colors"
+        />
+      );
+    }
+    return (
+      <input
+        autoFocus
+        type="text"
+        value={currentAnswer}
+        onChange={(e) =>
+          setAnswers((a) => ({ ...a, [current.key]: e.target.value }))
+        }
+        onKeyDown={handleKeyDown}
+        placeholder={current.placeholder}
+        className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm text-white placeholder-white/40 focus:outline-none focus:border-teal-400 transition-colors"
+      />
+    );
   };
 
   return (
@@ -103,44 +146,14 @@ export function GiftIntentForm({
           {current.prompt}
         </p>
 
-        {current.multiline ? (
-          <textarea
-            autoFocus
-            rows={3}
-            value={currentAnswer}
-            onChange={(e) =>
-              setAnswers((a) => ({ ...a, [current.key]: e.target.value }))
-            }
-            onKeyDown={handleKeyDown}
-            placeholder={current.placeholder}
-            className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm text-white placeholder-white/40 focus:outline-none focus:border-teal-400 resize-none transition-colors"
-          />
-        ) : (
-          <input
-            autoFocus
-            type="text"
-            value={currentAnswer}
-            onChange={(e) =>
-              setAnswers((a) => ({ ...a, [current.key]: e.target.value }))
-            }
-            onKeyDown={handleKeyDown}
-            placeholder={current.placeholder}
-            className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm text-white placeholder-white/40 focus:outline-none focus:border-teal-400 transition-colors"
-          />
-        )}
-
-        {current.multiline && (
-          <p className="text-[10px] text-white/30 mt-1">
-            ⌘ + Enter to continue
-          </p>
-        )}
+        {renderInput()}
       </div>
 
       <div className="flex items-center justify-between gap-4">
         <button
           type="button"
           onClick={handleNext}
-          disabled={!currentAnswer.trim()}
+          disabled={current.noAnswer ? false : !currentAnswer.trim()}
           className="px-6 py-2.5 bg-teal-500 hover:bg-teal-400 disabled:opacity-30 text-[#071e25] font-semibold rounded transition-colors duration-200 text-sm"
         >
           {isLast ? ctaLabel : "Continue →"}

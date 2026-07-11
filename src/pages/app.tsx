@@ -50,6 +50,9 @@ const OVERLAY_KEYS = [
 export const App = () => {
   // Always use Clerk's useUser hook so auth works in both development and production.
   const { isSignedIn, user } = useUser();
+  const isAdmin = (user?.publicMetadata as any)?.role === "admin";
+  const [variantLabel, setVariantLabel] = useState("");
+  const [savingVariant, setSavingVariant] = useState(false);
 
   const [mapImageIsExpanded, setMapImageIsExpanded] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
@@ -75,7 +78,7 @@ export const App = () => {
   });
 
   const {
-    canEdit,
+    canEdit: canEditFromAPI,
     mapNotFoundError,
     bbox,
     selectedTrails,
@@ -94,6 +97,9 @@ export const App = () => {
     setToast,
     renderSketch,
   });
+
+  // Admins can always edit any map; non-admins defer to API ownership check
+  const canEdit = isAdmin || canEditFromAPI;
 
   useLayerRedraw({
     keys: OVERLAY_KEYS,
@@ -226,6 +232,41 @@ export const App = () => {
     }
   };
 
+  const handleSaveVariant = async () => {
+    if (!configId || !variantLabel.trim()) return;
+    setSavingVariant(true);
+    try {
+      const variantForm = {
+        ...form,
+        id: undefined,
+        "title.text": variantLabel,
+      };
+      await maps.upsert({
+        form: variantForm,
+        givenFeatures: features,
+        bbox,
+        selectedTrails,
+        user,
+        configName: config,
+        defaultConfig: configs[config],
+        imageUrl: undefined,
+        s3Key: undefined,
+        parentId: configId,
+        status: "variant",
+        reflections: [],
+      });
+      setToast({ message: `Variant "${variantLabel}" saved`, type: "success" });
+      setVariantLabel("");
+    } catch (err: any) {
+      setToast({
+        message: err.message || "Failed to save variant",
+        type: "error",
+      });
+    } finally {
+      setSavingVariant(false);
+    }
+  };
+
   // Persist current config selection
   usePersistHook({
     configId,
@@ -267,7 +308,7 @@ export const App = () => {
       <div className="flex h-screen">
         {/* Sidebar */}
         <div className="w-80"></div>
-        <div className="w-80 fixed top-15 left-0 h-full overflow-y-auto border-r bg-white p-4 flex-shrink-0">
+        <div className="w-80 fixed top-15 left-0 h-full overflow-y-auto border-r bg-white p-4 pb-24 flex-shrink-0">
           <ConfigForm
             config={config}
             configs={configs}
@@ -295,6 +336,28 @@ export const App = () => {
             onAnnotationsModeToggle={() => setAnnotationsMode((m) => !m)}
             canEdit={canEdit}
           />
+          {isAdmin && configId && (
+            <div className="border-t border-gray-200 mt-4 pt-4 px-1">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2">
+                Save as Variant
+              </p>
+              <input
+                type="text"
+                value={variantLabel}
+                onChange={(e) => setVariantLabel(e.target.value)}
+                placeholder="Variant label (e.g. Desert Sunset)"
+                className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs mb-2 focus:outline-none focus:border-teal-400"
+              />
+              <button
+                type="button"
+                onClick={handleSaveVariant}
+                disabled={savingVariant || !variantLabel.trim()}
+                className="w-full py-1.5 bg-teal-500 hover:bg-teal-400 disabled:opacity-40 text-white text-xs font-semibold rounded transition-colors"
+              >
+                {savingVariant ? "Saving…" : "Save Variant →"}
+              </button>
+            </div>
+          )}
         </div>
         {/* Main Content */}
         <div className="flex-1">

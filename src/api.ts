@@ -155,6 +155,8 @@ const formToDTO = ({
   imageUrl,
   s3Key,
   reflections,
+  parentId,
+  status,
 }: {
   form: any;
   givenFeatures: Record<string, string[]>;
@@ -166,6 +168,8 @@ const formToDTO = ({
   imageUrl: string | undefined;
   s3Key: string | undefined;
   reflections?: { question?: string; answer?: string }[];
+  parentId?: string;
+  status?: string;
 }) => {
   const nestedForm = convertToNestedObject(form, defaultConfig);
   const featuresData = {
@@ -223,6 +227,8 @@ const formToDTO = ({
       }),
     ),
     reflections: reflections ?? [],
+    ...(parentId !== undefined && { parentId }),
+    ...(status !== undefined && { status }),
   };
 };
 
@@ -389,6 +395,11 @@ const giftedMapAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
   ],
 });
 
+const submissionAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
+  create: ["map-submission-create", "POST", "Failed to submit map"],
+  variantsList: ["map-variants-list", "GET", "Failed to load variants"],
+});
+
 export const maps = Object.fromEntries(
   Object.entries(mapsAPIData).map(([key, value]) => [
     key,
@@ -421,6 +432,12 @@ export const featureFlags = Object.fromEntries(
 );
 export const giftedMap = Object.fromEntries(
   Object.entries(giftedMapAPIData).map(([key, value]) => [
+    key,
+    APIDataToAPIFN(value),
+  ]),
+);
+export const submission = Object.fromEntries(
+  Object.entries(submissionAPIData).map(([key, value]) => [
     key,
     APIDataToAPIFN(value),
   ]),

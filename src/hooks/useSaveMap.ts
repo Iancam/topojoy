@@ -4,8 +4,12 @@ import { printTypes } from "@/lib/printSIzeHelpers";
 import { needsFilenamePrompt } from "@/lib/utils";
 import { configs } from "@/mapConfigs";
 import { useState } from "react";
-import { getStoredGiftIntent } from "@/components/GiftIntentForm";
-
+import {
+  steps as reflectionSteps,
+  getStoredGiftIntent,
+} from "@/components/GiftIntentForm";
+// TODO: REFACTOR, decouple setToast: we should make this function more generic
+// able to be used by clients other than app.tsx
 export const useSaveMap = ({
   form,
   onFormChange,
@@ -45,16 +49,8 @@ export const useSaveMap = ({
   const buildReflections = () => {
     const intent = getStoredGiftIntent();
     if (!intent) return [];
-    const questions = [
-      { key: "who", prompt: "Who are you making this map for?" },
-      { key: "why", prompt: "Why this place? Why them?" },
-      {
-        key: "empathy",
-        prompt:
-          "Put yourself in their shoes for a moment. How would it feel to receive this?",
-      },
-    ] as const;
-    return questions
+
+    return reflectionSteps
       .filter((q) => intent[q.key]?.trim())
       .map((q) => ({ question: q.prompt, answer: intent[q.key] }));
   };

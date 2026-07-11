@@ -104,6 +104,11 @@ model MapConfig {
   giftedMaps  GiftedMap[]
   reflections Reflection[]
 
+  parentId  String?
+  parent    MapConfig?  @relation("Variants", fields: [parentId], references: [id])
+  variants  MapConfig[] @relation("Variants")
+  status    String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@unique([filename, userId])

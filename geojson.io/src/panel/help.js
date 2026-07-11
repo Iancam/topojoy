@@ -104,13 +104,11 @@ export default function (context) {
 
   let disposer = null;
 
-  const onToApp = () => {
+  const saveToLocalStorage = () => {
     const linestringFeatures = window.api.data
       .all()
       .map.features.filter((f) => f.geometry.type === 'LineString');
-    // get rid of store reaction
     disposer && disposer();
-    // put data in localStorage
     localStorage.setItem(
       LS.GEOJSON_SELECTED_TRAIL_SEGMENTS,
       JSON.stringify(store.getSelectedTrailSegments())
@@ -122,8 +120,16 @@ export default function (context) {
         features: linestringFeatures
       })
     );
-    // go to map
+  };
+
+  const onToApp = () => {
+    saveToLocalStorage();
     window.location.href = '/app';
+  };
+
+  const onToSubmit = () => {
+    saveToLocalStorage();
+    window.location.href = '/submit';
   };
 
   const StateToHtml = {
@@ -224,7 +230,24 @@ export default function (context) {
         backBtn.on('click', () =>
           store.setInterfaceState(interfaceStates.VERTICES)
         );
-        nextBtn.text('Open App').on('click', onToApp);
+        // Replace nextBtn with the primary hand-off CTA
+        nextBtn
+          .text('Hand off to Ian →')
+          .attr(
+            'class',
+            'bg-teal-500 hover:bg-teal-400 text-[#071e25] text-xs font-bold py-1 px-4 rounded'
+          )
+          .on('click', onToSubmit);
+        // Add secondary Open App link
+        footer
+          .append('button')
+          .attr('id', 'help-open-app')
+          .attr(
+            'class',
+            'bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold py-1 px-4 rounded ml-2'
+          )
+          .text('Open App')
+          .on('click', onToApp);
       }
     };
     update();

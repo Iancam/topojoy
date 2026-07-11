@@ -65,6 +65,8 @@ export const handler = async (event: any) => {
     colorPlan: z.string(),
     annotations: z.array(annotationSchema).optional().default([]),
     reflections: z.array(reflectionSchema).optional().default([]),
+    parentId: z.string().optional(),
+    status: z.string().optional(),
   });
 
   try {
@@ -117,7 +119,12 @@ export const handler = async (event: any) => {
           }
         }
 
-        const { reflections: _reflections, ...upsertData } = mapConfigData;
+        const {
+          reflections: _reflections,
+          parentId,
+          status,
+          ...upsertData
+        } = mapConfigData;
         const cfg = await tx.mapConfig.upsert({
           where: {
             id: uuid,
@@ -128,6 +135,8 @@ export const handler = async (event: any) => {
             features: {},
             bbox: mapConfigData.bbox,
             selectedTrails: mapConfigData.selectedTrails,
+            ...(parentId !== undefined && { parentId }),
+            ...(status !== undefined && { status }),
           },
           create: {
             ...upsertData,
@@ -138,6 +147,8 @@ export const handler = async (event: any) => {
             },
             bbox: mapConfigData.bbox,
             selectedTrails: mapConfigData.selectedTrails,
+            ...(parentId !== undefined && { parentId }),
+            ...(status !== undefined && { status }),
           },
         });
         await Promise.all([

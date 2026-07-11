@@ -18,6 +18,8 @@ import { SignInPage } from "./pages/SignInPage";
 import { CartProvider } from "./cartContext";
 import { Terms } from "./Terms";
 import { OriginStory } from "./pages/OriginStory";
+import SubmitPage from "./pages/SubmitPage";
+import ChooseVariantPage from "./pages/ChooseVariantPage";
 import { Privacy } from "./Privacy";
 const AppError = () => {
   const error = useRouteError() as Error | string | null | undefined;
@@ -80,11 +82,19 @@ const router = createBrowserRouter([
             path: "/admin",
             element: <AdminPage />,
           },
+          {
+            path: "/choose/:parentId",
+            element: <ChooseVariantPage />,
+          },
         ],
       },
       {
         path: "/donate",
         element: <DonationPage />,
+      },
+      {
+        path: "/submit",
+        element: <SubmitPage />,
       },
       {
         path: "/gift/:accessToken",
