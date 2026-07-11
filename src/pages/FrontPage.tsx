@@ -1,9 +1,21 @@
 import "../index.css";
+import { useState } from "react";
 import { Link } from "react-router";
 import { Header } from "../components/Header";
 import { netlifyImageUrl } from "../api";
+import { GiftIntentForm, type GiftIntent } from "../components/GiftIntentForm";
 
 export const FrontPage = () => {
+  const [formOpen, setFormOpen] = useState(false);
+
+  const handleComplete = (_intent: GiftIntent) => {
+    window.location.href = `${window.location.origin}/geojson.io/index.html`;
+  };
+
+  const handleSkip = () => {
+    window.location.href = `${window.location.origin}/geojson.io/index.html`;
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#071e25] text-[#d5f7ff]">
       <Header />
@@ -19,16 +31,27 @@ export const FrontPage = () => {
           className="w-full object-cover max-h-[85vh]"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#071e25] via-transparent to-transparent" />
-        <div className="absolute bottom-10 left-0 right-0 text-center px-4">
-          <p className="text-3xl md:text-5xl font-light tracking-widest text-white/90 mb-8 drop-shadow-lg">
-            Tell your story.
-          </p>
-          <a
-            href="/geojson.io/index.html"
-            className="inline-block text-base md:text-lg px-8 py-3 bg-teal-500 hover:bg-teal-400 text-[#071e25] font-bold rounded transition-colors duration-200"
-          >
-            Open Map Editor
-          </a>
+        <div className="absolute bottom-10 left-0 right-0 px-6">
+          {!formOpen ? (
+            <div className="text-center">
+              <p className="text-3xl md:text-5xl font-light tracking-widest text-white/90 mb-8 drop-shadow-lg">
+                Tell your story.
+              </p>
+              <button
+                type="button"
+                onClick={() => setFormOpen(true)}
+                className="inline-block text-base md:text-lg px-8 py-3 bg-teal-500 hover:bg-teal-400 text-[#071e25] font-bold rounded transition-colors duration-200"
+              >
+                Think of someone →
+              </button>
+            </div>
+          ) : (
+            <GiftIntentForm
+              onComplete={handleComplete}
+              onSkip={handleSkip}
+              ctaLabel="Start drawing the map →"
+            />
+          )}
         </div>
       </section>
 

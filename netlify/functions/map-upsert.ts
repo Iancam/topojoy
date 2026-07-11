@@ -38,6 +38,11 @@ export const handler = async (event: any) => {
   });
 
   // validate body
+  const reflectionSchema = z.object({
+    question: z.string().optional(),
+    answer: z.string().optional(),
+  });
+
   const configSchema = z.object({
     id: z.string().optional(),
     userId: z.string(),
@@ -59,11 +64,12 @@ export const handler = async (event: any) => {
     // num array converted to csv string
     colorPlan: z.string(),
     annotations: z.array(annotationSchema).optional().default([]),
+    reflections: z.array(reflectionSchema).optional().default([]),
   });
 
   try {
     const validatedBody = configSchema.parse(body);
-    const { annotations, ...mapConfigData } = validatedBody;
+    const { annotations, reflections, ...mapConfigData } = validatedBody;
 
     // Slugify filename to ensure URL-friendly format
     if (mapConfigData.filename) {
@@ -111,19 +117,20 @@ export const handler = async (event: any) => {
           }
         }
 
+        const { reflections: _reflections, ...upsertData } = mapConfigData;
         const cfg = await tx.mapConfig.upsert({
           where: {
             id: uuid,
           },
           update: {
-            ...mapConfigData,
+            ...upsertData,
             id: undefined,
             features: {},
             bbox: mapConfigData.bbox,
             selectedTrails: mapConfigData.selectedTrails,
           },
           create: {
-            ...mapConfigData,
+            ...upsertData,
             s3Key,
             id: uuid,
             features: {
@@ -136,6 +143,9 @@ export const handler = async (event: any) => {
         await Promise.all([
           tx.feature.deleteMany({ where: { mapConfigId: cfg.id } }),
           tx.annotation.deleteMany({ where: { mapConfigId: cfg.id } }),
+          ...(reflections.length > 0
+            ? [tx.reflection.deleteMany({ where: { mapConfigId: cfg.id } })]
+            : []),
         ]);
         await Promise.all([
           tx.feature.createMany({
@@ -154,6 +164,17 @@ export const handler = async (event: any) => {
               mapConfigId: cfg.id,
             })),
           }),
+          ...(reflections.length > 0
+            ? [
+                tx.reflection.createMany({
+                  data: reflections.map((r) => ({
+                    question: r.question,
+                    answer: r.answer,
+                    mapConfigId: cfg.id,
+                  })),
+                }),
+              ]
+            : []),
         ]);
         return cfg;
       }),

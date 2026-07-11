@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useAuth } from "@clerk/clerk-react";
 import { Header } from "../components/Header";
 import { GIFT_TOKEN_KEY } from "../lib/giftToken";
+import { GiftIntentForm, type GiftIntent } from "../components/GiftIntentForm";
 
 type GiftInfo = {
   id: string;
@@ -21,6 +22,7 @@ export default function GiftPage() {
   const [gift, setGift] = React.useState<GiftInfo | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [formOpen, setFormOpen] = useState(false);
 
   // Persist the token to localStorage immediately so it survives external redirects
   React.useEffect(() => {
@@ -50,16 +52,26 @@ export default function GiftPage() {
 
   const amountDollars = gift ? (gift.amount / 100).toFixed(0) : null;
 
+  const goToEditor = () => {
+    window.location.href = `${window.location.origin}/geojson.io/index.html`;
+  };
+
   const handleMakeMap = () => {
     if (!userId) {
-      // Not signed in — send to sign-in then back here
       navigate("/sign-in", {
         state: { from: `/gift/${accessToken}` },
       });
       return;
     }
-    // accessToken is already in localStorage; navigate to the external editor
-    window.location.href = `${window.location.origin}/geojson.io/index.html`;
+    setFormOpen(true);
+  };
+
+  const handleIntentComplete = (_intent: GiftIntent) => {
+    goToEditor();
+  };
+
+  const handleIntentSkip = () => {
+    goToEditor();
   };
 
   return (
@@ -129,12 +141,20 @@ export default function GiftPage() {
               </div>
 
               {/* CTA */}
-              <button
-                onClick={handleMakeMap}
-                className="w-full py-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-base font-semibold transition-colors shadow-sm"
-              >
-                {userId ? "Open Map Editor →" : "Sign in to get started →"}
-              </button>
+              {!formOpen ? (
+                <button
+                  onClick={handleMakeMap}
+                  className="w-full py-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-base font-semibold transition-colors shadow-sm"
+                >
+                  {userId ? "Think of someone →" : "Sign in to get started →"}
+                </button>
+              ) : (
+                <GiftIntentForm
+                  onComplete={handleIntentComplete}
+                  onSkip={handleIntentSkip}
+                  ctaLabel="Start drawing the map →"
+                />
+              )}
 
               <p className="text-center text-xs text-gray-400">
                 Your gift will be here when you come back.

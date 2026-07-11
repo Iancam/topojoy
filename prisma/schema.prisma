@@ -100,8 +100,9 @@ model MapConfig {
   // Array of Clerk user IDs who can edit this map
   collaborators String[] @default([])
 
-  orderItems OrderItem[]
-  giftedMaps GiftedMap[]
+  orderItems  OrderItem[]
+  giftedMaps  GiftedMap[]
+  reflections Reflection[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -221,6 +222,15 @@ model GiftedMap {
 
   totalCost    Int       // in cents
   createdAt    DateTime  @default(now())
+}
+
+model Reflection {
+  id          String    @id @default(cuid())
+  mapConfigId String
+  mapConfig   MapConfig @relation(fields: [mapConfigId], references: [id], onDelete: Cascade)
+  question    String?
+  answer      String?
+  createdAt   DateTime  @default(now())
 }
 
 model DonationAllocation {

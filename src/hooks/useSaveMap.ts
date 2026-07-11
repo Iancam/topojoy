@@ -4,6 +4,7 @@ import { printTypes } from "@/lib/printSIzeHelpers";
 import { needsFilenamePrompt } from "@/lib/utils";
 import { configs } from "@/mapConfigs";
 import { useState } from "react";
+import { getStoredGiftIntent } from "@/components/GiftIntentForm";
 
 export const useSaveMap = ({
   form,
@@ -41,6 +42,23 @@ export const useSaveMap = ({
   const [isUploading, setIsUploading] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
 
+  const buildReflections = () => {
+    const intent = getStoredGiftIntent();
+    if (!intent) return [];
+    const questions = [
+      { key: "who", prompt: "Who are you making this map for?" },
+      { key: "why", prompt: "Why this place? Why them?" },
+      {
+        key: "empathy",
+        prompt:
+          "Put yourself in their shoes for a moment. How would it feel to receive this?",
+      },
+    ] as const;
+    return questions
+      .filter((q) => intent[q.key]?.trim())
+      .map((q) => ({ question: q.prompt, answer: intent[q.key] }));
+  };
+
   const upsertMap = async (
     mapConfigData: {
       form: Record<string, string>;
@@ -53,7 +71,10 @@ export const useSaveMap = ({
     },
     blob: Blob,
   ) => {
-    const newMapConfig = await maps.upsert(mapConfigData);
+    const newMapConfig = await maps.upsert({
+      ...mapConfigData,
+      reflections: buildReflections(),
+    });
     const AWSPutUrl = newMapConfig.AWSPutURL;
     saveImageToAws({
       blob,

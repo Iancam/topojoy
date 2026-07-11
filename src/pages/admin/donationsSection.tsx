@@ -222,16 +222,24 @@ function DonationRow({
                   key={a.id}
                   className="rounded border border-gray-100 bg-gray-50 px-3 py-2 flex flex-wrap items-center gap-x-4 gap-y-1"
                 >
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide">
-                      Token
+                  <div className="flex items-center gap-1 min-w-0">
+                    <span className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide shrink-0">
+                      Gift Link
                     </span>
                     {a.accessToken ? (
                       <>
-                        <span className="text-xs font-mono text-gray-900">
-                          {a.accessToken}
-                        </span>
-                        <CopyButton text={a.accessToken} />
+                        <a
+                          href={`${window.location.origin}/gift/${a.accessToken}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-mono text-teal-700 hover:underline truncate max-w-[220px]"
+                          title={`${window.location.origin}/gift/${a.accessToken}`}
+                        >
+                          {window.location.host}/gift/{a.accessToken}
+                        </a>
+                        <CopyButton
+                          text={`${window.location.origin}/gift/${a.accessToken}`}
+                        />
                       </>
                     ) : (
                       <span className="text-xs text-gray-400">—</span>

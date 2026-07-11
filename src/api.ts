@@ -154,6 +154,7 @@ const formToDTO = ({
   defaultConfig,
   imageUrl,
   s3Key,
+  reflections,
 }: {
   form: any;
   givenFeatures: Record<string, string[]>;
@@ -164,6 +165,7 @@ const formToDTO = ({
   defaultConfig: MapConfig;
   imageUrl: string | undefined;
   s3Key: string | undefined;
+  reflections?: { question?: string; answer?: string }[];
 }) => {
   const nestedForm = convertToNestedObject(form, defaultConfig);
   const featuresData = {
@@ -220,6 +222,7 @@ const formToDTO = ({
         yRatio: ann.yRatio,
       }),
     ),
+    reflections: reflections ?? [],
   };
 };
 
