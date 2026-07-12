@@ -47,29 +47,33 @@ const selectTrailsMD = `
 Select the trails you want to highlight in the map. If you want to
 select only part of a trail, you can make edits in the next step.
 
-To see the name of a trail, zoom in close. If the trail has a name, it will
+**To see the name of a trail, zoom in close.** If the trail has a name, it will
 appear as a label.
 `;
 
 const editTrailVerticesMD = `
-## 4. Select where to split trails
+## 4. Trim unwanted sections
 
-Click on the trails where you'd like to split.
+Do you only want part of a trail? Split it here.
 
-You can select multiple vertices.
+**Click on a trail at the point where you want to cut it.** This divides
+the trail into two separate segments — you'll choose which ones to keep
+in the next step.
 
-We'll select the segments you want to keep in the next step.
+You can add multiple split points on the same trail, or across different trails.
+
+If you're happy with all your trails as-is, just click **Next** to continue.
 `;
 
 const selectSegmentsMD = `
-## 5. Select segments
+## 5. Deselect the parts you don't want
 
-All the segments are selected. Click unwanted segments
-to deselect them.
+Each trail section is highlighted. **Click any section to remove it** from
+your map.
 
-Leave the segments you want to keep selected.
+Leave only the parts you want to keep highlighted.
 
-When you're finished selecting, go to the app.
+When you're done, click **Hand off to Ian** or **Open App**.
 `;
 
 function setTrailsLayerInteraction(map, interactive) {

@@ -116,6 +116,20 @@ export default function (context, readonly) {
       hash: 'map'
     });
 
+    // On first load (no map hash), fly to the user's location
+    if (!window.location.hash.includes('map=') && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => {
+          context.map.flyTo({
+            center: [coords.longitude, coords.latitude],
+            zoom: 10,
+            duration: 1000
+          });
+        },
+        () => {} // silently ignore denial/unavailability
+      );
+    }
+
     if (writable) {
       // context.map.addControl(
       //   new MapboxGeocoder({
