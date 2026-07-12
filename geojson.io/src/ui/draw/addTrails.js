@@ -47,6 +47,62 @@ const showNoninteractiveBBox = (map, bboxFeature) => {
   }
 };
 
+/**
+ * Removes shorter trails that are significantly overlapped by a longer trail.
+ * Two trails "overlap significantly" when ≥70% of the shorter trail's vertices
+ * each lie within ~15m of any vertex on the longer trail.
+ * When one trail is completely contained in another (≥95% covered), only the
+ * longer trail is kept.
+ */
+const OVERLAP_THRESHOLD = 0.7;
+const PROXIMITY_DEG_SQ = 0.000135 * 0.000135; // ~15 m in degrees, squared
+
+const minDistSqToTrail = (coord, coords) => {
+  let min = Infinity;
+  for (const c of coords) {
+    const dx = coord[0] - c[0];
+    const dy = coord[1] - c[1];
+    const d = dx * dx + dy * dy;
+    if (d < min) min = d;
+  }
+  return min;
+};
+
+const overlapFraction = (shorterCoords, longerCoords) => {
+  if (!shorterCoords.length) return 0;
+  let covered = 0;
+  for (const coord of shorterCoords) {
+    if (minDistSqToTrail(coord, longerCoords) <= PROXIMITY_DEG_SQ) covered++;
+  }
+  return covered / shorterCoords.length;
+};
+
+const deduplicateOverlappingTrails = (features) => {
+  const removed = new Set();
+  for (let i = 0; i < features.length; i++) {
+    if (removed.has(i)) continue;
+    const a = features[i];
+    const aCoords = a.geometry?.coordinates || [];
+    for (let j = i + 1; j < features.length; j++) {
+      if (removed.has(j)) continue;
+      const b = features[j];
+      const bCoords = b.geometry?.coordinates || [];
+      if (!aCoords.length || !bCoords.length) continue;
+
+      const aIsLonger = aCoords.length >= bCoords.length;
+      const longerCoords = aIsLonger ? aCoords : bCoords;
+      const shorterCoords = aIsLonger ? bCoords : aCoords;
+      const shorterIdx = aIsLonger ? j : i;
+
+      const fraction = overlapFraction(shorterCoords, longerCoords);
+      if (fraction >= OVERLAP_THRESHOLD) {
+        removed.add(shorterIdx);
+      }
+    }
+  }
+  return features.filter((_, i) => !removed.has(i));
+};
+
 // expects the selected trailsFC, not all of the bbox trails
 
 const _addTrails = (geoJSON, map, store) => {
@@ -89,12 +145,12 @@ const _addTrails = (geoJSON, map, store) => {
   };
 
   // Filter to likely trails and ensure each feature has a stable id
-  const lineFeatures = (geoJSON.features || [])
-    .filter(trailsFilter)
-    .map((f, i) => ({
+  const lineFeatures = deduplicateOverlappingTrails(
+    (geoJSON.features || []).filter(trailsFilter).map((f, i) => ({
       ...f,
       id: i
-    }));
+    }))
+  );
 
   store.setBBoxTrails(lineFeatures);
 
@@ -184,12 +240,14 @@ const _addTrails = (geoJSON, map, store) => {
         const fIndex = f?.id;
         if (fIndex === undefined || fIndex === null) return;
         if (store.selectedTrailIndices.has(fIndex)) {
+          console.log('unselecting', fIndex);
           store.deleteSelectedTrailIndex(fIndex);
           map.setFeatureState(
             { source: sourceId, id: fIndex },
             { selected: false }
           );
         } else {
+          console.log('selecting', fIndex);
           store.addSelectedTrailIndex(fIndex);
           map.setFeatureState(
             { source: sourceId, id: fIndex },

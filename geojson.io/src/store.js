@@ -61,7 +61,7 @@ export class Store {
   }
   deleteSelectedTrailIndex(index) {
     this.selectedTrailIndices.delete(index);
-    this.selectedTrails = this.selectedTrails.filter((f, i) => i !== index);
+    delete this.selectedTrails[index];
   }
   addSelectedTrailIndex(index) {
     this.selectedTrailIndices.add(index);
