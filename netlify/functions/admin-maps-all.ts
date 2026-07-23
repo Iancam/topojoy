@@ -5,7 +5,6 @@ import { auth, error, success } from "../lib/index";
 const prisma = new PrismaClient();
 
 export const handler = async (event: any) => {
-  console.log("ping");
   try {
     const clerkClient = createClerkClient({
       secretKey: process.env.CLERK_SECRET_KEY,
@@ -23,6 +22,7 @@ export const handler = async (event: any) => {
     }
 
     const maps = await prisma.mapConfig.findMany({
+      where: { parentId: null },
       orderBy: { updatedAt: "desc" },
       select: {
         id: true,
@@ -33,10 +33,40 @@ export const handler = async (event: any) => {
         imageUrl: true,
         s3Key: true,
         userId: true,
+        status: true,
+        user: {
+          select: { email: true },
+        },
+        variants: {
+          orderBy: { createdAt: "asc" },
+          select: {
+            id: true,
+            title: true,
+            imageUrl: true,
+            s3Key: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
       },
     });
-    console.log(maps);
-    return success(maps);
+
+    const result = maps.map((m) => ({
+      id: m.id,
+      title: m.title,
+      filename: m.filename,
+      createdAt: m.createdAt,
+      updatedAt: m.updatedAt,
+      imageUrl: m.imageUrl,
+      s3Key: m.s3Key,
+      userId: m.userId,
+      status: m.status,
+      ownerEmail: m.user?.email ?? null,
+      variants: m.variants,
+    }));
+
+    return success(result);
   } catch (err: any) {
     return error(err.message || "Server error", 500);
   }

@@ -239,8 +239,9 @@ export const App = () => {
       const variantForm = {
         ...form,
         id: undefined,
-        "title.text": variantLabel,
+        filename: variantLabel.replace(/\s+/g, "-").toLowerCase(),
       };
+
       await maps.upsert({
         form: variantForm,
         givenFeatures: features,
@@ -251,7 +252,7 @@ export const App = () => {
         defaultConfig: configs[config],
         imageUrl: undefined,
         s3Key: undefined,
-        parentId: configId,
+        parentId: variantForm.parentId ?? configId,
         status: "variant",
         reflections: [],
       });

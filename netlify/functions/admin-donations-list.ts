@@ -32,7 +32,7 @@ export const handler = async (event: any) => {
             id: true,
             accessToken: true,
             maxAmountDrawn: true,
-            useFullAmount: true,
+            // useFullAmount: true,
             amountDrawn: true,
             orderId: true,
             createdAt: true,

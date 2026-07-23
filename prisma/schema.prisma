@@ -246,6 +246,7 @@ model DonationAllocation {
   order          Order?    @relation(fields: [orderId], references: [id])
   accessToken    String?   @unique
   maxAmountDrawn Int?
+  // useFullAmount  Boolean  @default(false)
   
   amountDrawn    Int      // in cents
   createdAt      DateTime @default(now())

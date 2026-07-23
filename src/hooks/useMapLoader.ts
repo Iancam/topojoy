@@ -142,7 +142,6 @@ export function useLoadMap({
             type: "info",
           });
         }
-
         setConfig(config.config);
         setForm({ ...preForm, ...config });
         setSelectedTrails(config.selectedTrails);

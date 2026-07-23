@@ -9,16 +9,21 @@ export const handler = async (
   _context: HandlerContext,
 ) => {
   try {
-    const userId = event.queryStringParameters?.userId || null;
-
-    if (!userId) {
+    const clerkId = event.queryStringParameters?.userId || null;
+    // user id is clerk user,
+    if (!clerkId) {
       return error("Missing required userId", 400);
     }
+
+    const user = await prisma.user.findUnique({
+      where: { clerkId },
+      select: { id: true },
+    });
 
     // TODO: Add auth verification (e.g., Clerk) to ensure the caller is authorized for this userId
 
     const maps = await prisma.mapConfig.findMany({
-      where: { userId },
+      where: { userId: user?.id },
       orderBy: { updatedAt: "desc" },
       select: {
         id: true,

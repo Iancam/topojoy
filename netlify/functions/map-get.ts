@@ -64,6 +64,7 @@ export const handler = async (
           annotations: true,
         },
       });
+      console.log("map parent id", map?.parentId);
     } else {
       return error(
         "Missing required parameters. Provide either configId or (username + filename)",
