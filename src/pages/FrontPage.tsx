@@ -25,7 +25,7 @@ export const FrontPage = () => {
         <img
           src={netlifyImageUrl("/img/topojoy-hero.png", {
             w: 1600,
-            fit: "cover",
+            fit: "contain",
           })}
           alt="Bullet Canyon topographic map"
           className="w-full object-cover max-h-[85vh]"
@@ -88,7 +88,7 @@ export const FrontPage = () => {
         </div>
         <div className="order-1 md:order-2">
           <img
-            src={netlifyImageUrl("/img/Albert.png", { w: 800, fit: "cover" })}
+            src={netlifyImageUrl("/img/Albert.png", { w: 800, fit: "contain" })}
             alt="Tall Trees, Ian and Albert — topographic map of Redwood Creek"
             className="w-full rounded shadow-2xl shadow-black/60"
           />
