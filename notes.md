@@ -80,3 +80,7 @@ accessTokens should be associated with donationAllocations, enabling multiple to
 - [ ] when a donation comes in, I should get an email
 
 updating a donationAllocation currently has no auth. Updating a donationAllocation.amountDrawn should only be done by the stripe webhook.
+
+# wed jul 22nd 2026
+
+- [ ] test the "after handoff" part of the new map flow

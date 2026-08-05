@@ -3,7 +3,8 @@ import prisma from "../lib/prisma";
 import { getAWSKey, putAWSImage } from "../lib/aws";
 import { S3Client } from "@aws-sdk/client-s3";
 import { filenameSchema, slugify } from "../lib/validation";
-import { success, error } from "../lib";
+import { success, error, auth } from "../lib";
+import { createClerkClient } from "@clerk/backend";
 
 const s3 = new S3Client({
   region: process.env.MY_AWS_REGION,
@@ -69,6 +70,16 @@ export const handler = async (event: any) => {
     status: z.string().optional(),
   });
 
+  const clerkClient = createClerkClient({
+    secretKey: process.env.CLERK_SECRET_KEY,
+    publishableKey: process.env.VITE_CLERK_PUBLISHABLE_KEY,
+  });
+
+  const { userId, clerkUserId } = await auth(event, clerkClient);
+
+  const clerkUser = await clerkClient.users.getUser(clerkUserId);
+  const isAdmin = (clerkUser.publicMetadata as any)?.role !== "admin";
+
   try {
     const validatedBody = configSchema.parse(body);
     const { annotations, reflections, ...mapConfigData } = validatedBody;
@@ -111,7 +122,7 @@ export const handler = async (event: any) => {
               mapConfigData.userId,
             );
 
-            if (!isOwner && !isCollaborator) {
+            if (!isOwner && !isCollaborator && !isAdmin) {
               throw new Error(
                 "UNAUTHORIZED: You do not have permission to edit this map",
               );

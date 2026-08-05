@@ -4,6 +4,7 @@ import { auth, error, success } from "../lib";
 
 const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
+  publishableKey: process.env.VITE_CLERK_PUBLISHABLE_KEY,
 });
 
 export const handler = async (event: any) => {

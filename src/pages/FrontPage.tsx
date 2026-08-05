@@ -35,7 +35,7 @@ export const FrontPage = () => {
           {!formOpen ? (
             <div className="text-center">
               <p className="text-3xl md:text-5xl font-light tracking-widest text-white/90 mb-8 drop-shadow-lg">
-                Tell your story.
+                Give Your Gift
               </p>
               <button
                 type="button"

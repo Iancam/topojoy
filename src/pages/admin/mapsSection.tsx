@@ -3,6 +3,8 @@ import { MapThumbnail } from "../../components/MapThumbnail";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 
+const BASE_URL = "https://topojoy.studio";
+
 export type AdminVariant = {
   id: string;
   title: string;
@@ -63,6 +65,31 @@ function MapThumbBox({
       />
     );
   return <span className="text-xs text-gray-400">No image</span>;
+}
+
+function CopyLink({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <div className="mt-2 flex items-center gap-1.5">
+      <span className="text-[10px] text-gray-400 font-mono truncate flex-1 min-w-0">
+        /choose/{url.split("/choose/")[1]}
+      </span>
+      <button
+        type="button"
+        onClick={handleCopy}
+        title="Copy shareable link"
+        className="shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700 transition-colors"
+      >
+        {copied ? "✓ copied" : "copy link"}
+      </button>
+    </div>
+  );
 }
 
 function SubmissionCard({ m }: { m: AdminMapItem }) {
@@ -132,6 +159,10 @@ function SubmissionCard({ m }: { m: AdminMapItem }) {
               </div>
             )}
           </div>
+        )}
+
+        {m.variants.length > 0 && (
+          <CopyLink url={`${BASE_URL}/choose/${m.id}`} />
         )}
       </div>
     </article>

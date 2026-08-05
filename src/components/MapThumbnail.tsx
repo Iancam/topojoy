@@ -4,14 +4,15 @@ import React from "react";
 export const MapThumbnail: React.FC<{
   title: string;
   s3Key: string | null | undefined;
-}> = ({ title, s3Key }) => {
+  width?: number;
+}> = ({ title, s3Key, width = 640 }) => {
   const [src, setSrc] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
     if (!s3Key) return;
 
-    getThumbnailUrl(s3Key)
+    getThumbnailUrl(s3Key, width)
       .then((url) => {
         if (!cancelled) setSrc(url);
       })

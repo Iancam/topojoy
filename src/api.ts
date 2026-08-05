@@ -399,6 +399,7 @@ const giftedMapAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
 const submissionAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
   create: ["map-submission-create", "POST", "Failed to submit map"],
   variantsList: ["map-variants-list", "GET", "Failed to load variants"],
+  sendMessage: ["variant-message-send", "POST", "Failed to send message"],
 });
 
 export const maps = Object.fromEntries(

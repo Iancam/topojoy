@@ -25,8 +25,8 @@ export function useLoadMap({
   setToast: (toast: ToastState) => void;
   renderSketch: (params: RenderSketchParams) => () => void;
 }) {
-  const [canEdit, setCanEdit] = useState(true);
   const [mapNotFoundError, setMapNotFoundError] = useState<string | null>(null);
+  const [canEdit, setCanEdit] = useState(true);
   const [bbox, setBbox] = useState<any>(null);
   const [selectedTrails, setSelectedTrails] = useState<string[]>([]);
   const [features, setFeatures] = useState<{ [key: string]: string[] }>({});
@@ -51,6 +51,8 @@ export function useLoadMap({
     const saved = localStorage.getItem(LS.COLLISIONS);
     return saved ? JSON.parse(saved) : {};
   });
+
+  const isAdmin = (user?.publicMetadata as any)?.role === "admin";
 
   function mapFromLocalStorage() {
     console.log("loading data from localStorage");
@@ -130,18 +132,6 @@ export function useLoadMap({
         console.log("retrieved config from database");
         // Clear any previous error
         setMapNotFoundError(null);
-
-        // Set edit permissions based on API response
-        setCanEdit(config.canEdit ?? true);
-
-        // Show notification if user cannot edit
-        if (config.canEdit === false) {
-          setToast({
-            message:
-              "You are viewing this map in read-only mode. Only the owner can make changes.",
-            type: "info",
-          });
-        }
         setConfig(config.config);
         setForm({ ...preForm, ...config });
         setSelectedTrails(config.selectedTrails);
@@ -161,6 +151,18 @@ export function useLoadMap({
           {} as Record<string, string[]>,
         );
         setFeatures(feats);
+
+        const localCanEdit = config.canEdit ?? isAdmin;
+        setCanEdit(localCanEdit);
+        console.log({ localCanEdit });
+        if (!localCanEdit) {
+          setToast({
+            message:
+              "You are viewing this map in read-only mode. Only the owner can make changes.",
+            type: "info",
+          });
+        }
+
         renderSketch({
           config: config.config,
           form: { ...preForm, ...config },

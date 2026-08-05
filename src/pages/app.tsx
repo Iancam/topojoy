@@ -51,7 +51,7 @@ export const App = () => {
   // Always use Clerk's useUser hook so auth works in both development and production.
   const { isSignedIn, user } = useUser();
   const isAdmin = (user?.publicMetadata as any)?.role === "admin";
-  const [variantLabel, setVariantLabel] = useState("");
+  // const [variantLabel, setVariantLabel] = useState("");
   const [savingVariant, setSavingVariant] = useState(false);
 
   const [mapImageIsExpanded, setMapImageIsExpanded] = useState(false);
@@ -100,7 +100,8 @@ export const App = () => {
 
   // Admins can always edit any map; non-admins defer to API ownership check
   const canEdit = isAdmin || canEditFromAPI;
-
+  console.log({ canEdit });
+  if(!)
   useLayerRedraw({
     keys: OVERLAY_KEYS,
     form,
@@ -233,15 +234,16 @@ export const App = () => {
   };
 
   const handleSaveVariant = async () => {
-    if (!configId || !variantLabel.trim()) return;
+    // if (!configId || !variantLabel.trim()) return;
+    if (!configId) return;
     setSavingVariant(true);
     try {
       const variantForm = {
         ...form,
         id: undefined,
-        filename: variantLabel.replace(/\s+/g, "-").toLowerCase(),
+        // filename: variantLabel.replace(/\s+/g, "-").toLowerCase(),
       };
-
+      console.log("variantForm", variantForm);
       await maps.upsert({
         form: variantForm,
         givenFeatures: features,
@@ -256,8 +258,10 @@ export const App = () => {
         status: "variant",
         reflections: [],
       });
-      setToast({ message: `Variant "${variantLabel}" saved`, type: "success" });
-      setVariantLabel("");
+      setToast({
+        message: `Variant "${form.filename}" saved`,
+        type: "success",
+      });
     } catch (err: any) {
       setToast({
         message: err.message || "Failed to save variant",
@@ -342,17 +346,17 @@ export const App = () => {
               <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2">
                 Save as Variant
               </p>
-              <input
+              {/* <input
                 type="text"
                 value={variantLabel}
                 onChange={(e) => setVariantLabel(e.target.value)}
                 placeholder="Variant label (e.g. Desert Sunset)"
                 className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs mb-2 focus:outline-none focus:border-teal-400"
-              />
+              /> */}
               <button
                 type="button"
                 onClick={handleSaveVariant}
-                disabled={savingVariant || !variantLabel.trim()}
+                // disabled={savingVariant || !variantLabel.trim()}
                 className="w-full py-1.5 bg-teal-500 hover:bg-teal-400 disabled:opacity-40 text-white text-xs font-semibold rounded transition-colors"
               >
                 {savingVariant ? "Saving…" : "Save Variant →"}

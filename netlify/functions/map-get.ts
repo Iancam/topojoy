@@ -1,7 +1,8 @@
+import { createClerkClient } from "@clerk/backend";
 import type { HandlerEvent, HandlerContext } from "@netlify/functions";
 import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
-import { success, error } from "../lib";
+import { success, error, auth } from "../lib";
 
 const prisma = new PrismaClient();
 
@@ -22,8 +23,17 @@ export const handler = async (
   event: HandlerEvent,
   _context: HandlerContext,
 ) => {
+  const clerkClient = createClerkClient({
+    secretKey: process.env.CLERK_SECRET_KEY,
+    publishableKey: process.env.VITE_CLERK_PUBLISHABLE_KEY,
+  });
+
+  const { userId: authUserId, clerkUserId } = await auth(event, clerkClient);
+  const clerkUser = await clerkClient.users.getUser(clerkUserId);
+  const isAdmin = (clerkUser.publicMetadata as any)?.role !== "admin";
+
   try {
-    const userId = event.queryStringParameters?.userId || null;
+    const paramUserId = event.queryStringParameters?.userId || null;
     const configId = event.queryStringParameters?.configId || null;
     const username = event.queryStringParameters?.username || null;
     const filename = event.queryStringParameters?.filename || null;
@@ -80,9 +90,10 @@ export const handler = async (
     // User can edit if they are:
     // 1. The owner (userId matches map.userId)
     // 2. A collaborator (userId is in map.collaborators array)
-    const canEdit = userId
-      ? userId === map.userId || map.collaborators.includes(userId)
-      : false;
+    // 3. the user is admin
+    const isOwner = authUserId && authUserId === map.userId;
+    const isCollaborator = authUserId && map.collaborators.includes(authUserId);
+    const canEdit = isOwner || isCollaborator || isAdmin;
 
     return success({
       ...map,
