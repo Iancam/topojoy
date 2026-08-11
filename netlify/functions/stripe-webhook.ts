@@ -8,6 +8,7 @@ import { sendEmail } from "../lib/email";
 import React from "react";
 import { OrderConfirmation } from "../emails/OrderConfirmation";
 import { DonationConfirmation } from "../emails/DonationConfirmation";
+import { AdminDonationNotification } from "../emails/AdminDonationNotification";
 
 const stripe = initStripe();
 export const handler = async (
@@ -168,22 +169,25 @@ async function handleDonation(
 
     const donorEmail = updatedDonation.donor?.email;
     const donorName = updatedDonation.donor?.name ?? "there";
+
+    const formatMoney = (cents: number) =>
+      (cents / 100).toLocaleString("en-US", {
+        style: "currency",
+        currency: "USD",
+      });
+    const BASE_URL = "https://topojoy.studio";
+    const giftLinkUrl = updatedDonation.accessToken
+      ? `${BASE_URL}/gift/${updatedDonation.accessToken}`
+      : `${BASE_URL}/donate`;
+    const amountFormatted = formatMoney(updatedDonation.amount);
+
     if (donorEmail) {
-      const formatMoney = (cents: number) =>
-        (cents / 100).toLocaleString("en-US", {
-          style: "currency",
-          currency: "USD",
-        });
-      const BASE_URL = "https://topojoy.studio";
-      const giftLinkUrl = updatedDonation.accessToken
-        ? `${BASE_URL}/gift/${updatedDonation.accessToken}`
-        : `${BASE_URL}/donate`;
       await sendEmail({
         to: donorEmail,
         subject: "Your TopoJoy gift is ready",
         template: React.createElement(DonationConfirmation, {
           donorName,
-          amountFormatted: formatMoney(updatedDonation.amount),
+          amountFormatted,
           giftLinkUrl,
           message: updatedDonation.message ?? undefined,
         }),
@@ -191,6 +195,22 @@ async function handleDonation(
         console.error("[email] Donation confirmation failed:", e),
       );
     }
+
+    const ian = process.env.IAN_EMAIL ?? "hello@topojoy.studio";
+
+      await sendEmail({
+        to: ian,
+        subject: `New donation: ${amountFormatted} from ${donorName}`,
+        template: React.createElement(AdminDonationNotification, {
+          donorName,
+          donorEmail: updatedDonation.donor?.email ?? "",
+          amountFormatted,
+          giftLinkUrl,
+          message: updatedDonation.message ?? undefined,
+        }),
+      }).catch((e) =>
+        console.error("[email] Admin donation notification failed:", e),
+      );
   }
 }
 
