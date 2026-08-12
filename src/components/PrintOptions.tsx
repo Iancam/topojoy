@@ -72,14 +72,14 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
   // Load feature flag
   useEffect(() => {
     async function checkFeatures() {
-      const donationEnabled = await isFeatureEnabled(
-        FEATURE_FLAGS.optionalDonationEnabled,
-      );
+      // const donationEnabled = await isFeatureEnabled(
+      //   FEATURE_FLAGS.optionalDonationEnabled,
+      // );
       const purchaseWithoutGiftEnabled = await isFeatureEnabled(
         FEATURE_FLAGS.purchaseWithoutGiftEnabled,
       );
       setPurchaseWithoutGiftEnabled(purchaseWithoutGiftEnabled);
-      setIsChipInEnabled(donationEnabled);
+      setIsChipInEnabled(false);
     }
     checkFeatures();
   }, []);
