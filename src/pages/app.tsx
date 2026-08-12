@@ -100,8 +100,6 @@ export const App = () => {
 
   // Admins can always edit any map; non-admins defer to API ownership check
   const canEdit = isAdmin || canEditFromAPI;
-  console.log({ canEdit });
-  if(!)
   useLayerRedraw({
     keys: OVERLAY_KEYS,
     form,

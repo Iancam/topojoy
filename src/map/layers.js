@@ -264,8 +264,8 @@ function fillText(
         // if(colorStrategy === "oppose"){
 
         // }
-        let col = chroma(c).mix("black", shade).hex();
-
+        // let col = chroma(c).mix("black", shade).hex();
+        let col = c;
         col = contrastingLuminance(col, contrast);
         if (luminanceContrastRatio(col, backgroundColor) < 5.5) {
           col = contrastingLuminance(col, contrast);
