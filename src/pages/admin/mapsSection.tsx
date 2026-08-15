@@ -1,4 +1,4 @@
-import { netlifyImageUrl } from "@/api";
+import { admin, netlifyImageUrl } from "@/api";
 import { MapThumbnail } from "../../components/MapThumbnail";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
@@ -92,6 +92,55 @@ function CopyLink({ url }: { url: string }) {
   );
 }
 
+function NotifyVariantsReadyButton({
+  mapId,
+  disabled,
+}: {
+  mapId: string;
+  disabled?: boolean;
+}) {
+  const [state, setState] = useState<"idle" | "sending" | "sent" | "error">(
+    "idle",
+  );
+
+  const handleClick = async () => {
+    setState("sending");
+    try {
+      await admin.notifyVariantsReady({ mapId });
+      setState("sent");
+      setTimeout(() => setState("idle"), 3000);
+    } catch (e: any) {
+      setState("error");
+      setTimeout(() => setState("idle"), 3000);
+    }
+  };
+
+  const label =
+    state === "sending"
+      ? "sending…"
+      : state === "sent"
+        ? "✓ sent"
+        : state === "error"
+          ? "failed — retry"
+          : "notify submitter";
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={disabled || state === "sending"}
+      title={
+        disabled
+          ? "No email on file for submitter"
+          : "Email the submitter that their variants are ready for review"
+      }
+      className="shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700 transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:border-gray-200 disabled:hover:text-gray-500"
+    >
+      {label}
+    </button>
+  );
+}
+
 function SubmissionCard({ m }: { m: AdminMapItem }) {
   const [open, setOpen] = useState(false);
 
@@ -162,7 +211,15 @@ function SubmissionCard({ m }: { m: AdminMapItem }) {
         )}
 
         {m.variants.length > 0 && (
-          <CopyLink url={`${BASE_URL}/choose/${m.id}`} />
+          <>
+            <CopyLink url={`${BASE_URL}/choose/${m.id}`} />
+            <div className="mt-1.5 flex items-center">
+              <NotifyVariantsReadyButton
+                mapId={m.id}
+                disabled={!m.ownerEmail}
+              />
+            </div>
+          </>
         )}
       </div>
     </article>

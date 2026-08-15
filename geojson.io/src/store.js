@@ -19,6 +19,7 @@ export const interfaceStates = {
   TRAILS: 'trails',
   VERTICES: 'vertices',
   TRAIL_SECTIONS: 'trail sections',
+  HANDOFF: 'handoff',
   EDITING: 'editing'
 };
 

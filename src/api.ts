@@ -370,6 +370,11 @@ const adminAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
     "POST",
     "Failed to delete donation allocation",
   ],
+  notifyVariantsReady: [
+    "admin-variants-notify",
+    "POST",
+    "Failed to notify submitter",
+  ],
 });
 
 const featureFlagsAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({

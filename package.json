@@ -2,14 +2,15 @@
   "source": "index.html",
   "scripts": {
     "dev": "vite",
-    "build": "npx prisma generate && cd geojson.io && npm run build && cd .. && vite build",
+    "build": "npx prisma migrate deploy && npx prisma generate && cd geojson.io && npm run build && cd .. && vite build",
     "test": "jest",
     "lint": "eslint .",
     "preview": "vite preview",
     "postinstall": "cd geojson.io && npm install",
     "api:generate": "node scripts/apiGenerator.ts",
     "api:watch": "node scripts/watchAPI.ts",
-    "migrate:filenames": "npx tsx scripts/migrate-filenames-to-slugs.ts"
+    "migrate:filenames": "npx tsx scripts/migrate-filenames-to-slugs.ts",
+    "migrate:deploy:prod": "dotenv -e .env.production -- npx prisma migrate deploy"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"
@@ -30,6 +31,7 @@
     "@typescript-eslint/eslint-plugin": "^8.26.0",
     "@typescript-eslint/parser": "^8.26.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9.19.0",
     "eslint-plugin-react": "^7.37.4",
     "eslint-plugin-react-hooks": "^5.0.0",

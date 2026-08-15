@@ -41,7 +41,9 @@ export default function SubmitPage() {
     const intent = getStoredGiftIntent();
     if (!intent) return [];
     return reflectionSteps
-      .filter((s) => !s.noAnswer && intent[s.key as keyof typeof intent]?.trim())
+      .filter(
+        (s) => !s.noAnswer && intent[s.key as keyof typeof intent]?.trim(),
+      )
       .map((s) => ({
         question: s.prompt,
         answer: intent[s.key as keyof typeof intent] as string,
@@ -56,9 +58,7 @@ export default function SubmitPage() {
     setError(null);
 
     try {
-      const bbox = JSON.parse(
-        localStorage.getItem(LS.GEOJSON_BBOX) || "{}",
-      );
+      const bbox = JSON.parse(localStorage.getItem(LS.GEOJSON_BBOX) || "{}");
       const selectedTrails = JSON.parse(
         localStorage.getItem(LS.GEOJSON_SELECTED_TRAIL_SEGMENTS) || "[]",
       );
@@ -92,8 +92,8 @@ export default function SubmitPage() {
               We've got it.
             </h1>
             <p className="text-base text-[#a8dde9] leading-7 mb-6">
-              Ian will review your trails and be in touch within a few days
-              with a selection of styles to choose from.
+              Ian will review your trails and be in touch within a few days with
+              a selection of map styles to choose from.
             </p>
             <p className="text-sm text-[#6ab3c2]">
               You'll get an email at{" "}

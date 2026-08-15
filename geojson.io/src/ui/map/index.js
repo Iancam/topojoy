@@ -1,4 +1,5 @@
 import mapboxgl from 'mapbox-gl';
+import { reaction } from 'mobx';
 
 import 'qs-hash';
 import geojsonRewind from '@mapbox/geojson-rewind';
@@ -10,6 +11,7 @@ import DrawRectangle from '../draw/rectangle';
 import DrawCircle from '../draw/circle';
 import SimpleSelect from '../draw/simple_select';
 import ExtendDrawBar from '../draw/extend_draw_bar';
+import store, { interfaceStates } from '../../store';
 import { EditControl, SaveCancelControl, TrashControl } from './controls';
 import { geojsonToLayer, bindPopup } from './util';
 import styles from './styles';
@@ -67,7 +69,7 @@ export default function (context, readonly) {
     //   }
     // })
     .on('r', () => {
-      if (!editing) {
+      if (!editing && store.interfaceState === interfaceStates.BBOX) {
         context.Draw.changeMode('draw_rectangle');
       }
     });
@@ -163,6 +165,17 @@ export default function (context, readonly) {
         styles: drawStyles
       });
 
+      const rectangleButtonConfig = {
+        on: 'click',
+        action: () => {
+          if (store.interfaceState !== interfaceStates.BBOX) return;
+          drawing = true;
+          context.Draw.changeMode('draw_rectangle');
+        },
+        classes: ['mapbox-gl-draw_ctrl-draw-btn', 'mapbox-gl-draw_rectangle'],
+        title: 'Draw Rectangular Polygon (r)'
+      };
+
       const drawControl = new ExtendDrawBar({
         draw: context.Draw,
         buttons: [
@@ -193,18 +206,7 @@ export default function (context, readonly) {
           //   classes: ['mapbox-gl-draw_ctrl-draw-btn', 'mapbox-gl-draw_polygon'],
           //   title: 'Draw Polygon (p)'
           // },
-          {
-            on: 'click',
-            action: () => {
-              drawing = true;
-              context.Draw.changeMode('draw_rectangle');
-            },
-            classes: [
-              'mapbox-gl-draw_ctrl-draw-btn',
-              'mapbox-gl-draw_rectangle'
-            ],
-            title: 'Draw Rectangular Polygon (r)'
-          }
+          rectangleButtonConfig
           // {
           //   on: 'click',
           //   action: () => {
@@ -220,6 +222,17 @@ export default function (context, readonly) {
       context.map.addControl(new mapboxgl.NavigationControl());
 
       context.map.addControl(drawControl, 'top-right');
+
+      const updateRectangleButtonState = () => {
+        const enabled = store.interfaceState === interfaceStates.BBOX;
+        const btn = rectangleButtonConfig.elButton;
+        if (!btn) return;
+        btn.disabled = !enabled;
+        btn.classList.toggle('opacity-40', !enabled);
+        btn.classList.toggle('cursor-not-allowed', !enabled);
+      };
+      updateRectangleButtonState();
+      reaction(() => store.interfaceState, updateRectangleButtonState);
 
       const editControl = new EditControl();
       context.map.addControl(editControl, 'top-right');

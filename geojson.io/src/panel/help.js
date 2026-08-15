@@ -76,6 +76,12 @@ Leave only the parts you want to keep highlighted.
 When you're done, click **Hand off to Ian** or **Open App**.
 `;
 
+const handoffMD = `
+If you don't want to select any trails, click **Hand off to Ian** or **Open App**.
+
+If you want to select trails, click **back**.
+`;
+
 function setTrailsLayerInteraction(map, interactive) {
   try {
     const layerId = 'topojoy-trails-line';
@@ -96,6 +102,7 @@ export default function (context) {
   const onToSelectSegments = () => {
     store.setInterfaceState(interfaceStates.TRAIL_SECTIONS);
     removeVertexLayer(context.map);
+    store.setSelectedtrailSegments(store.selectedTrails);
     store.splitTrailsAtVertices();
     addSegmentLayer(context.map, store);
   };
@@ -104,6 +111,9 @@ export default function (context) {
     store.setInterfaceState(interfaceStates.TRAILS);
     removeVertexLayer(context.map);
     setTrailsLayerInteraction(context.map, true);
+  };
+  const onToHandoff = () => {
+    store.setInterfaceState(interfaceStates.HANDOFF);
   };
 
   let disposer = null;
@@ -159,7 +169,8 @@ export default function (context) {
       marked(selectSegmentsMD),
       () => {},
       () => {}
-    ]
+    ],
+    [interfaceStates.HANDOFF]: [marked(handoffMD), () => {}, () => {}]
   };
 
   let renderHasBeenCalled = false;
@@ -220,21 +231,39 @@ export default function (context) {
       if (state === interfaceStates.BBOX) {
         backBtn.attr('disabled', true);
         nextBtn.on('click', onToSelectTrails);
+        if (store.bbox) {
+          nextBtn.attr('disabled', false);
+          nextBtn.attr(
+            'class',
+            'bg-teal-500 hover:bg-teal-400 text-[#071e25] text-xs font-bold py-1 px-4 rounded'
+          );
+        } else {
+          nextBtn
+            .attr('disabled', true)
+            .attr(
+              'class',
+              'bg-gray-200 text-gray-800 text-xs font-bold py-1 px-4 rounded disabled:opacity-50'
+            );
+        }
       } else if (state === interfaceStates.TRAILS) {
         backBtn.on('click', () =>
           store.setInterfaceState(interfaceStates.BBOX)
         );
-        nextBtn.on('click', () =>
-          store.setInterfaceState(interfaceStates.VERTICES)
-        );
+        nextBtn.on('click', () => {
+          if (store.selectedTrailIndices.size === 0) {
+            // No trails selected — nothing to trim, skip straight to segments.
+            onToHandoff();
+          } else {
+            store.setInterfaceState(interfaceStates.VERTICES);
+          }
+        });
       } else if (state === interfaceStates.VERTICES) {
         backBtn.on('click', onToSelectTrails);
         nextBtn.on('click', onToSelectSegments);
-      } else if (state === interfaceStates.TRAIL_SECTIONS) {
+      } else if (state === interfaceStates.HANDOFF) {
         backBtn.on('click', () =>
-          store.setInterfaceState(interfaceStates.VERTICES)
+          store.setInterfaceState(interfaceStates.TRAILS)
         );
-        // Replace nextBtn with the primary hand-off CTA
         nextBtn
           .text('Hand off to Ian →')
           .attr(
@@ -242,7 +271,6 @@ export default function (context) {
             'bg-teal-500 hover:bg-teal-400 text-[#071e25] text-xs font-bold py-1 px-4 rounded'
           )
           .on('click', onToSubmit);
-        // Add secondary Open App link
         footer
           .append('button')
           .attr('id', 'help-open-app')
@@ -252,13 +280,37 @@ export default function (context) {
           )
           .text('Open App')
           .on('click', onToApp);
+        // Add secondary Open App link
+      } else if (state === interfaceStates.TRAIL_SECTIONS) {
+        backBtn.on('click', () => {
+          store.setInterfaceState(interfaceStates.VERTICES);
+        });
+
+        footer
+          .append('button')
+          .attr('id', 'help-open-app')
+          .attr(
+            'class',
+            'bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold py-1 px-4 rounded ml-2'
+          )
+          .text('Open App')
+          .on('click', onToApp);
+        // Replace nextBtn with the primary hand-off CTA
+        nextBtn
+          .text('Hand off to Ian →')
+          .attr(
+            'class',
+            'bg-teal-500 hover:bg-teal-400 text-[#071e25] text-xs font-bold py-1 px-4 rounded'
+          )
+          .on('click', onToSubmit);
+        // Add secondary Open App link
       }
     };
     update();
     if (!renderHasBeenCalled) {
       renderHasBeenCalled = true;
       disposer = reaction(
-        () => store.interfaceState,
+        () => [store.interfaceState, store.bbox],
         () => {
           update();
         }
