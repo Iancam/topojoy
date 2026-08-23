@@ -18,7 +18,6 @@ export const CheckoutSummary = ({
   totalAmount: number | null;
   giftAccessToken: string | null;
 }) => {
-  console.log(items);
   return (
     <aside className="border rounded-lg p-4 bg-white shadow-sm h-fit space-y-3">
       <h2 className="text-lg font-semibold">Summary</h2>

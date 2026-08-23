@@ -158,8 +158,6 @@ export const Checkout = () => {
     });
   };
 
-  const currentStepIndex = CHECKOUT_STEPS.indexOf(step);
-
   const items = cart?.orderItems || [];
   const orderTotal =
     cart?.totalPrice ?? items.reduce((sum, i) => sum + (i.totalPrice ?? 0), 0);
@@ -175,6 +173,16 @@ export const Checkout = () => {
 
   const grandTotalCents = orderTotal + selectedShippingCostCents;
   const amountOwedCents = getAmountOwedCents(giftAdjustedTotal);
+
+  // When the gift credit fully covers the order, the method and payment
+  // steps are skipped entirely (see handleSubmitShipping's gift auto-flow),
+  // so don't show them in the step nav either.
+  const visibleSteps: CheckoutStep[] =
+    amountOwedCents === 0
+      ? CHECKOUT_STEPS.filter((s) => s !== "method" && s !== "payment")
+      : [...CHECKOUT_STEPS];
+
+  const currentStepIndex = visibleSteps.indexOf(step);
 
   useEffect(() => {
     if (step !== "confirm") return;
@@ -383,7 +391,7 @@ export const Checkout = () => {
 
         <div className="flex gap-4 text-sm">
           {/* nav */}
-          {CHECKOUT_STEPS.map((s, index) => {
+          {visibleSteps.map((s, index) => {
             const isActive = s === step;
             const isComplete = index < currentStepIndex;
             return (
