@@ -2,6 +2,7 @@ import { createClerkClient } from "@clerk/backend";
 import prisma from "../lib/prisma";
 import { createRandomAccessToken, error, success } from "../lib";
 import { calculateTentativeAmountDrawn } from "../lib/donation";
+import { randGiftCode } from "../lib/giftCodeGenerator";
 
 const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
@@ -46,7 +47,7 @@ export const handler = async (event: any) => {
       );
     }
 
-    const accessToken = createRandomAccessToken();
+    const accessToken = randGiftCode();
 
     const donationAllocation = await prisma.donationAllocation.create({
       data: {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 export const usePrintPrices = ({
   recommendedSizes,
+  giftAccessToken,
   orderId,
   imgW,
   imgH,
@@ -11,6 +12,7 @@ export const usePrintPrices = ({
   setAvailableAmountCents,
 }: {
   recommendedSizes: any;
+  giftAccessToken?: string;
   orderId?: string;
   imgW: number;
   imgH: number;
@@ -22,7 +24,7 @@ export const usePrintPrices = ({
 
   useEffect(() => {
     setIsLoadingPrices(true);
-    const token = getStoredGiftToken();
+    const token = giftAccessToken || getStoredGiftToken();
 
     const allRecommendedSizes = Object.values(recommendedSizes)
       .map((v: any) => v.recommended)

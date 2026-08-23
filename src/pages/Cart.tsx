@@ -6,6 +6,7 @@ import { formatMoney } from "../lib/utils";
 import { useCartContext } from "../cartContext";
 import { MapThumbnail } from "../components/MapThumbnail";
 import { getStoredGiftToken } from "@/lib/giftToken";
+import { getGiftAccessToken } from "./checkout/utils";
 
 export const Cart = () => {
   const { cart, loading, error, refresh, setCart } = useCartContext();
@@ -23,7 +24,7 @@ export const Cart = () => {
   }, []);
 
   useEffect(() => {
-    const token = getStoredGiftToken();
+    const token = getGiftAccessToken(cart);
     if (!token) return;
     const items = cart?.orderItems;
     if (!items?.length) return;
@@ -53,6 +54,7 @@ export const Cart = () => {
         // gift token invalid or expired — silently ignore
       });
   }, [cart?.orderItems]);
+
   if (error || localError || emptyCart) {
     return (
       <div>
@@ -174,9 +176,9 @@ export const Cart = () => {
                       <div className="text-sm font-medium mt-1">
                         {giftAdjustments?.[item.id] != null ? (
                           <>
-                            <span className="line-through text-gray-400 mr-1">
+                            {/* <span className="line-through text-gray-400 mr-1">
                               {formatMoney(item.itemPrice)}
-                            </span>
+                            </span> */}
                             <span className="text-green-700">
                               {formatMoney(
                                 Math.max(
@@ -191,7 +193,9 @@ export const Cart = () => {
                           </>
                         ) : (
                           <span className="text-gray-900">
-                            {formatMoney(item.itemPrice)}
+                            {giftAccessToken
+                              ? "Gift"
+                              : formatMoney(item.itemPrice)}
                           </span>
                         )}
                         {item.userContribution
@@ -253,9 +257,9 @@ export const Cart = () => {
               <div className="text-right">
                 {adjustedTotal !== null ? (
                   <>
-                    <div className="line-through text-gray-400 text-xs">
+                    {/* <div className="line-through text-gray-400 text-xs">
                       {formatMoney(orderTotal)}
-                    </div>
+                    </div> */}
                     <div className="font-semibold text-green-700">
                       {formatMoney(adjustedTotal)}
                     </div>

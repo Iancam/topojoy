@@ -6,6 +6,7 @@ import {
   LS,
   normalizeFeatureName,
 } from "@/lib/utils";
+import { GIFT_TOKEN_KEY } from "@/lib/giftToken";
 import { tilesForFeatures } from "@/map/processImage";
 import { getFeatures, getGeoJSONFromOSM } from "@/map/trails";
 import { useEffect, useState } from "react";
@@ -55,69 +56,12 @@ export function useLoadMap({
   const isAdmin = (user?.publicMetadata as any)?.role === "admin";
 
   function mapFromLocalStorage() {
-    console.log("loading data from localStorage");
-    const bbox = JSON.parse(localStorage.getItem(LS.GEOJSON_BBOX) || "{}");
-    const selectedTrails = JSON.parse(
-      localStorage.getItem(LS.GEOJSON_SELECTED_TRAIL_SEGMENTS) || "[]",
-    );
     const configName = localStorage.getItem(LS.CONFIG) || "Original";
     const form = getFormFromLocalStorage(preForm, configName, configs);
-    const downstreamConfig = convertToNestedObject(form, configs[configName]);
-    setBbox(bbox);
-    setSelectedTrails(selectedTrails);
+
     setConfig(configName);
     setForm(form);
-    if (!bbox) {
-      setToast({
-        message: "No bounding box found in localStorage",
-        type: "error",
-      });
-      return;
-    }
-    const { bounds } = tilesForFeatures(bbox, downstreamConfig.zoomLevel);
-
-    // Show loading state while fetching trail data
-    setIsRendering(true);
-
-    getGeoJSONFromOSM(bounds.latLngBox)
-      .then((geoJSON) => {
-        const rawFeats = getFeatures(
-          { box: bounds.box, zoom: downstreamConfig.zoomLevel },
-          geoJSON,
-        );
-        const feats = Object.entries(rawFeats).reduce(
-          (acc, [key, value]) => {
-            // key minus trailing s
-            const type = key.slice(0, -1);
-            acc[type] = Object.keys(value).map(normalizeFeatureName);
-            return acc;
-          },
-          {} as Record<string, string[]>,
-        );
-        setFeatures(feats);
-        renderSketch({
-          config: configName,
-          form,
-          setForm,
-          bbox,
-          selectedTrails,
-          features: feats,
-          setFeatures,
-          setCollisions,
-        })();
-      })
-      .catch((err) => {
-        console.error("Failed to load trail data:", err);
-
-        // Stop showing loader when API fails
-        setIsRendering(false);
-
-        setToast({
-          message:
-            err.message || "Failed to load trail data. Please try again later.",
-          type: "error",
-        });
-      });
+    loadLocationFromLocalStorage(config, form);
   }
 
   function mapFromAPI() {
@@ -188,6 +132,73 @@ export function useLoadMap({
       });
   }
 
+  // Re-pull bbox/trail selection from the standalone Map Editor (geojson.io),
+  // which writes to the same localStorage keys used on initial map creation.
+  // Unlike mapFromLocalStorage, this keeps the currently loaded config/form
+  // intact and only refreshes location-derived data (bbox, trails, features).
+  function loadLocationFromLocalStorage(configName: string, inpForm: any) {
+    const bbox = JSON.parse(localStorage.getItem(LS.GEOJSON_BBOX) || "{}");
+    const selectedTrails = JSON.parse(
+      localStorage.getItem(LS.GEOJSON_SELECTED_TRAIL_SEGMENTS) || "[]",
+    );
+
+    if (!bbox || Object.keys(bbox).length === 0) {
+      setToast({
+        message:
+          "No bounding box found. Draw one in the Map Editor first, then try again.",
+        type: "error",
+      });
+      return;
+    }
+
+    setBbox(bbox);
+    setSelectedTrails(selectedTrails);
+
+    const downstreamConfig = convertToNestedObject(
+      inpForm ?? form,
+      configs[configName ?? config],
+    );
+    const { bounds } = tilesForFeatures(bbox, downstreamConfig.zoomLevel);
+
+    setIsRendering(true);
+
+    getGeoJSONFromOSM(bounds.latLngBox)
+      .then((geoJSON) => {
+        const rawFeats = getFeatures(
+          { box: bounds.box, zoom: downstreamConfig.zoomLevel },
+          geoJSON,
+        );
+        const feats = Object.entries(rawFeats).reduce(
+          (acc, [key, value]) => {
+            const type = key.slice(0, -1);
+            acc[type] = Object.keys(value).map(normalizeFeatureName);
+            return acc;
+          },
+          {} as Record<string, string[]>,
+        );
+        setFeatures(feats);
+        renderSketch({
+          config: configName ?? config,
+          form: inpForm ?? form,
+          setForm,
+          bbox,
+          selectedTrails,
+          features: feats,
+          setFeatures,
+          setCollisions,
+        })();
+      })
+      .catch((err) => {
+        console.error("Failed to load trail data:", err);
+        setIsRendering(false);
+        setToast({
+          message:
+            err.message || "Failed to load trail data. Please try again later.",
+          type: "error",
+        });
+      });
+  }
+
   useEffect(() => {
     if (configId || (username && filename)) {
       mapFromAPI();
@@ -210,5 +221,6 @@ export function useLoadMap({
     setConfig,
     collisions,
     setCollisions,
+    loadLocationFromLocalStorage,
   };
 }

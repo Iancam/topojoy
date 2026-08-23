@@ -19,6 +19,7 @@ import { MethodStep, type ShippingOption } from "./MethodStep";
 import { PaymentStep } from "./PaymentStep";
 import { ConfirmStep } from "./ConfirmStep";
 import { CheckoutSummary } from "./CheckoutSummary";
+import { getGiftAccessToken } from "./utils";
 
 const CHECKOUT_STEPS = ["shipping", "method", "payment", "confirm"] as const;
 type CheckoutStep = (typeof CHECKOUT_STEPS)[number];
@@ -75,7 +76,7 @@ export const Checkout = () => {
 
   // Load gift token on mount
   useEffect(() => {
-    const token = getStoredGiftToken();
+    const token = getGiftAccessToken(cart);
     if (!token) return;
     setGiftToken(token);
   }, []);
@@ -429,6 +430,7 @@ export const Checkout = () => {
             amountOwedCents={amountOwedCents}
             grandTotalCents={grandTotalCents}
             totalAmount={totalAmount}
+            giftAccessToken={giftToken}
           />
         </div>
       </div>

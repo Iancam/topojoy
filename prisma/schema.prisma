@@ -74,6 +74,11 @@ model MapConfig {
   user  User @relation(fields: [userId], references: [id])
   userId String
   
+  // Raw flat form data. This is the source of truth for all user-facing
+  // form fields going forward; the explicit columns below are kept only
+  // for metadata/queries and legacy compatibility.
+  formJson Json?
+
   filename String @db.VarChar(255) @default(dbgenerated("gen_random_uuid()"))
   title String @db.VarChar(128)
   config String @db.VarChar(64)
@@ -85,17 +90,27 @@ model MapConfig {
   selectedTrails Json? 
 
   backgroundText String?
-  backgroundTextElevationRange0 Float
-  backgroundTextElevationRange1 Float
-  backgroundTextHighContrast Boolean
+  backgroundTextElevationRange0 Float?
+  backgroundTextElevationRange1 Float?
+  backgroundTextHighContrast Boolean?
+  backgroundTextContrast Float @default(7.5)
 
   annotations Annotation[]
 
-  crossHatch Boolean
-  colorPlan String @db.VarChar(255)
+  crossHatch Boolean?
+  colorPlan String? @db.VarChar(255)
+
+  eleVis String @default("original")
+  textSizeMultiplier Float @default(0)
+  legendEnabled Boolean @default(false)
+  forceCollisionDetection Boolean @default(true)
 
   imageUrl String?
   s3Key String?
+
+  // Access token of a DonationAllocation, assigned by an admin so the
+  // submitter's gift code is already applied when they reach checkout.
+  giftAccessToken String?
 
   // Array of Clerk user IDs who can edit this map
   collaborators String[] @default([])

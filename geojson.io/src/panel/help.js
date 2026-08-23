@@ -229,17 +229,17 @@ export default function (context) {
 
       // configure buttons per state
       if (state === interfaceStates.BBOX) {
-        backBtn.attr('disabled', true);
+        backBtn.property('disabled', true);
         nextBtn.on('click', onToSelectTrails);
         if (store.bbox) {
-          nextBtn.attr('disabled', false);
+          nextBtn.property('disabled', false);
           nextBtn.attr(
             'class',
             'bg-teal-500 hover:bg-teal-400 text-[#071e25] text-xs font-bold py-1 px-4 rounded'
           );
         } else {
           nextBtn
-            .attr('disabled', true)
+            .property('disabled', true)
             .attr(
               'class',
               'bg-gray-200 text-gray-800 text-xs font-bold py-1 px-4 rounded disabled:opacity-50'

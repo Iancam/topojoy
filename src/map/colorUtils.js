@@ -161,7 +161,7 @@ export function mixWeightedPlans(plan1, plan2, weight = 1) {
       colors: () => {
         const color = weightedRandom(
           rule1.colors.concat(rule2.colors),
-          rule1ColorWeights.concat(rule2ColorWeights)
+          rule1ColorWeights.concat(rule2ColorWeights),
         );
         if (typeof color === "function") return color();
         return color;
@@ -196,7 +196,7 @@ export function mixWeightedPlans(plan1, plan2, weight = 1) {
 const randsFactory = (topo) => (percentOfHeight, gaussDistTightness) => () =>
   randomGaussian(
     topo.min + percentOfHeight * topo.magnitude,
-    topo.magnitude / gaussDistTightness
+    topo.magnitude / gaussDistTightness,
   );
 
 export const res = (c) => c._rgb.slice(0, 3);
@@ -255,6 +255,9 @@ export const colorAtFactory = (colorPlanData, topo) => {
         return color;
       }
     }
-    console.log("no color found", { height, colorPlan });
+    console.log("no color found", {
+      height,
+      colorPlan: colorPlan.map(([h, c]) => ({ height: h(), color: c })),
+    });
   };
 };

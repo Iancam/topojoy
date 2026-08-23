@@ -2,7 +2,7 @@ import { z } from "zod";
 import prisma from "../lib/prisma";
 import { getAWSKey, putAWSImage } from "../lib/aws";
 import { S3Client } from "@aws-sdk/client-s3";
-import { filenameSchema, slugify } from "../lib/validation";
+import { slugify } from "../lib/validation";
 import { success, error, auth } from "../lib";
 import { createClerkClient } from "@clerk/backend";
 
@@ -47,27 +47,17 @@ export const handler = async (event: any) => {
   const configSchema = z.object({
     id: z.string().optional(),
     userId: z.string(),
-    title: z.string(),
     config: z.string(),
-    filename: filenameSchema.optional(),
-    zoomLevel: z.number(),
-    curveDensity: z.number(),
-    features: z.array(featuresSchema),
+    formJson: z.record(z.any()),
+    features: z.array(featuresSchema).default([]),
+    annotations: z.array(annotationSchema).default([]),
     bbox: z.any(),
     selectedTrails: z.any(),
-    backgroundText: z.string(),
-    backgroundTextElevationRange0: z.number(),
-    backgroundTextElevationRange1: z.number(),
-    backgroundTextHighContrast: z.boolean(),
-    crossHatch: z.boolean(),
-    s3Key: z.string().optional(),
-    imageUrl: z.string().optional(),
-    // num array converted to csv string
-    colorPlan: z.string(),
-    annotations: z.array(annotationSchema).optional().default([]),
-    reflections: z.array(reflectionSchema).optional().default([]),
+    reflections: z.array(reflectionSchema).default([]),
     parentId: z.string().optional(),
     status: z.string().optional(),
+    imageUrl: z.string().optional(),
+    s3Key: z.string().optional(),
   });
 
   const clerkClient = createClerkClient({
@@ -78,20 +68,29 @@ export const handler = async (event: any) => {
   const { userId, clerkUserId } = await auth(event, clerkClient);
 
   const clerkUser = await clerkClient.users.getUser(clerkUserId);
-  const isAdmin = (clerkUser.publicMetadata as any)?.role !== "admin";
+  const isAdmin = (clerkUser.publicMetadata as any)?.role === "admin";
 
   try {
     const validatedBody = configSchema.parse(body);
-    const { annotations, reflections, ...mapConfigData } = validatedBody;
-
-    // Slugify filename to ensure URL-friendly format
-    if (mapConfigData.filename) {
-      mapConfigData.filename = slugify(mapConfigData.filename);
-    }
+    const {
+      id: bodyId,
+      userId,
+      config,
+      formJson,
+      features,
+      annotations,
+      reflections,
+      bbox,
+      selectedTrails,
+      imageUrl,
+      s3Key,
+      parentId,
+      status,
+    } = validatedBody;
 
     // Convert userId from Clerk ID to internal database ID
     const user = await prisma.user.findUnique({
-      where: { clerkId: mapConfigData.userId },
+      where: { clerkId: userId },
       select: { id: true },
     });
 
@@ -99,28 +98,33 @@ export const handler = async (event: any) => {
       return error("User not found", 404);
     }
 
-    // Replace Clerk ID with internal database ID
-    mapConfigData.userId = user.id;
+    const mapUserId = user.id;
 
-    const uuid = mapConfigData.id || crypto.randomUUID();
-    const s3Key = getAWSKey(uuid);
+    const uuid = bodyId || crypto.randomUUID();
 
-    const [url, config] = await Promise.all([
+    const title = (formJson["title.text"] as string) || "";
+    let filename = (formJson["filename"] as string)?.trim() || undefined;
+    if (filename) {
+      filename = slugify(filename);
+    }
+    const zoomLevel = (formJson["zoomLevel"] as number) || 13;
+    const curveDensity = (formJson["curve.density"] as number) || 3;
+
+    const [url, configRecord] = await Promise.all([
       putAWSImage(uuid, s3),
       prisma.$transaction(async (tx) => {
         // If updating an existing map, check permissions
-        if (mapConfigData.id) {
+        if (bodyId) {
           const existingMap = await tx.mapConfig.findUnique({
-            where: { id: mapConfigData.id },
+            where: { id: bodyId },
             select: { userId: true, collaborators: true },
           });
 
           if (existingMap) {
             // Check if user is owner or collaborator
-            const isOwner = existingMap.userId === mapConfigData.userId;
-            const isCollaborator = existingMap.collaborators.includes(
-              mapConfigData.userId,
-            );
+            const isOwner = existingMap.userId === mapUserId;
+            const isCollaborator =
+              existingMap.collaborators.includes(mapUserId);
 
             if (!isOwner && !isCollaborator && !isAdmin) {
               throw new Error(
@@ -130,34 +134,38 @@ export const handler = async (event: any) => {
           }
         }
 
-        const {
-          reflections: _reflections,
-          parentId,
-          status,
-          ...upsertData
-        } = mapConfigData;
         const cfg = await tx.mapConfig.upsert({
           where: {
             id: uuid,
           },
           update: {
-            ...upsertData,
-            id: undefined,
-            features: {},
-            bbox: mapConfigData.bbox,
-            selectedTrails: mapConfigData.selectedTrails,
+            userId: mapUserId,
+            formJson: formJson as any,
+            title,
+            filename,
+            zoomLevel,
+            curveDensity,
+            config,
+            bbox,
+            selectedTrails,
+            imageUrl,
             ...(parentId !== undefined && { parentId }),
             ...(status !== undefined && { status }),
+            ...(s3Key && { s3Key }),
           },
           create: {
-            ...upsertData,
-            s3Key,
             id: uuid,
-            features: {
-              create: [],
-            },
-            bbox: mapConfigData.bbox,
-            selectedTrails: mapConfigData.selectedTrails,
+            userId: mapUserId,
+            formJson: formJson as any,
+            title,
+            filename,
+            zoomLevel,
+            curveDensity,
+            config,
+            bbox,
+            selectedTrails,
+            imageUrl,
+            s3Key: getAWSKey(uuid),
             ...(parentId !== undefined && { parentId }),
             ...(status !== undefined && { status }),
           },
@@ -171,13 +179,13 @@ export const handler = async (event: any) => {
         ]);
         await Promise.all([
           tx.feature.createMany({
-            data: validatedBody.features.map((feature) => ({
+            data: features.map((feature) => ({
               ...feature,
               mapConfigId: cfg.id,
             })),
           }),
           tx.annotation.createMany({
-            data: validatedBody.annotations.map((ann) => ({
+            data: annotations.map((ann) => ({
               text: ann.text,
               fontSize: ann.fontSize,
               color: ann.color,
@@ -202,7 +210,7 @@ export const handler = async (event: any) => {
       }),
     ]);
 
-    return success({ ...config, AWSPutURL: url });
+    return success({ ...configRecord, AWSPutURL: url });
   } catch (err: any) {
     // Check for unauthorized access
     if (err.message?.includes("UNAUTHORIZED")) {

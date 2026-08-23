@@ -124,7 +124,6 @@ export function useRenderSketch({
       // Destroy previous p5 instance and free its GPU buffers before re-rendering
       if (p5InstanceRef.current) {
         const prev = layersRef.current;
-        console.log(prev);
         if (prev) {
           prev.curvesBack.remove();
           prev.text.remove();

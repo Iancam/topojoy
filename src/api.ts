@@ -1,6 +1,5 @@
 import { flow, mapValues } from "lodash";
 import { MapConfig } from "./configs/schema";
-import { convertToNestedObject } from "./lib/utils";
 
 /**
  * The app is small, and will likely remain small. A layer between
@@ -12,31 +11,25 @@ export type MapConfigDTO = {
   userId: string;
   id?: string;
   filename?: string;
-  title: string;
+  title?: string;
   config: string;
-  zoomLevel: number;
-  curveDensity: number;
+  formJson: Record<string, any>;
 
   features: { selected: boolean; name: string; type: string }[];
 
   bbox: any;
   selectedTrails: any;
 
-  backgroundText: string;
-  backgroundTextElevationRange0: number;
-  backgroundTextElevationRange1: number;
-  backgroundTextHighContrast: boolean;
-
-  crossHatch: boolean;
-  colorPlan: string;
-  annotations?: {
-    id?: string;
-    text: string;
-    fontSize: number;
-    color: string;
-    xRatio: number;
-    yRatio: number;
-  }[];
+  annotations: any[];
+  reflections: any[];
+  createdAt?: string;
+  updatedAt?: string;
+  canEdit?: boolean;
+  parentId?: string;
+  giftAccessToken?: string | null;
+  imageUrl?: string | null;
+  s3Key?: string | null;
+  AWSPutURL?: string;
 };
 
 export type CartOrder = {
@@ -171,14 +164,30 @@ const formToDTO = ({
   parentId?: string;
   status?: string;
 }) => {
-  const nestedForm = convertToNestedObject(form, defaultConfig);
+  const {
+    id: formId,
+    s3Key: _s3KeyInForm,
+    AWSPutURL,
+    canEdit,
+    createdAt,
+    updatedAt,
+    userId,
+    parentId: _parentIdInForm,
+    giftAccessToken,
+    config,
+    bbox: _bboxInForm,
+    selectedTrails: _selectedTrailsInForm,
+    features: _featuresInForm,
+    ...formJson
+  } = form;
+
   const featuresData = {
     lake: [form["lake.keepList"] || [], givenFeatures.lake || []],
     mountain: [form["mountain.keepList"] || [], givenFeatures.mountain || []],
     river: [form["river.keepList"] || [], givenFeatures.river || []],
     trail: [form["trail.keepList"] || [], givenFeatures.trail || []],
   };
-  // create a list of all features, with their selected state, name, and type
+
   const features = Object.entries(featuresData).flatMap(
     ([key, [keepList, list]]) => {
       return list.map((name: string) => ({
@@ -190,51 +199,25 @@ const formToDTO = ({
   );
 
   return {
-    id: form.id,
+    id: formId,
     userId: user?.id!,
-    title: nestedForm.title.text,
     config: configName,
-    zoomLevel: nestedForm.zoomLevel,
-    curveDensity: nestedForm.curve.density,
-    filename: nestedForm.filename,
-    bbox: bbox,
-    selectedTrails,
+    formJson,
     features,
-    backgroundText: nestedForm.backgroundText.text,
-    backgroundTextElevationRange0: nestedForm.backgroundText.elevationRange[0],
-    backgroundTextElevationRange1: nestedForm.backgroundText.elevationRange[1],
-    backgroundTextHighContrast: nestedForm.backgroundText.highContrast,
-    crossHatch: nestedForm.crossHatch,
-    colorPlan: nestedForm.colorPlan
-      .map((c: { height: number }) => c.height)
-      .join(","),
+    annotations: form.annotations ?? [],
+    bbox,
+    selectedTrails,
+    reflections: reflections ?? [],
+    parentId,
+    status,
     imageUrl,
     s3Key,
-    annotations: (form.annotations ?? []).map(
-      (ann: {
-        id?: string;
-        text: string;
-        fontSize: number;
-        color: string;
-        xRatio: number;
-        yRatio: number;
-      }) => ({
-        text: ann.text,
-        fontSize: ann.fontSize,
-        color: ann.color,
-        xRatio: ann.xRatio,
-        yRatio: ann.yRatio,
-      }),
-    ),
-    reflections: reflections ?? [],
-    ...(parentId !== undefined && { parentId }),
-    ...(status !== undefined && { status }),
   };
 };
 
 const DTOToForm = (mapConfig: MapConfigDTO & { AWSPutURL?: string }) => {
   const data = mapConfig;
-  const keeplists = ["lake", "mountain", "river", "trail"].reduce(
+  const keepLists = ["lake", "mountain", "river", "trail"].reduce(
     (acc, type) => {
       const features = data.features || [];
       acc[`${type}.keepList`] = features
@@ -245,51 +228,39 @@ const DTOToForm = (mapConfig: MapConfigDTO & { AWSPutURL?: string }) => {
     {} as { [key: string]: string[] },
   );
 
-  const ret = {
-    ...data.colorPlan
-      .split(",")
-      .map((c: string, i: number) => ({
-        key: `colorPlan.${i}.height`,
-        value: Number(c),
-      }))
-      .reduce(
-        (
-          obj: { [key: string]: number },
-          { key, value }: { key: string; value: number },
-        ) => {
-          obj[key] = value;
-          return obj;
-        },
-        {},
-      ),
+  const formJson: Record<string, any> = { ...(data.formJson || {}) };
+  // JSON.stringify(Infinity) === null, so the top color plan band's height
+  // (which is stored as Infinity) comes back from the DB/localStorage as
+  // null. Restore it so colorAtFactory's `height === Infinity` check works.
+  Object.keys(formJson).forEach((k) => {
+    if (
+      k.startsWith("colorPlan") &&
+      k.endsWith("height") &&
+      formJson[k] === null
+    ) {
+      formJson[k] = Infinity;
+    }
+  });
 
-    "backgroundText.text": data.backgroundText,
-    "backgroundText.elevationRange": [
-      data.backgroundTextElevationRange0 as number,
-      data.backgroundTextElevationRange1 as number,
-    ],
-    "backgroundText.highContrast": data.backgroundTextHighContrast as boolean,
-    crossHatch: data.crossHatch as boolean,
-    "curve.density": data.curveDensity as number,
-    "title.text": data.title as string,
-    ...keeplists,
-    // hand translate data fields to avoid polluting the form
-    zoomLevel: data.zoomLevel as number,
+  return {
+    ...formJson,
+    ...keepLists,
+    config: data.config,
     bbox: data.bbox,
     selectedTrails: data.selectedTrails,
     features: data.features,
-    config: data.config,
-    createdAt: data.createdAt,
-    updatedAt: data.updatedAt,
-    userId: data.userId,
+    annotations: formJson.annotations ?? data.annotations ?? [],
     id: data.id,
     filename: data.filename,
-    annotations: data.annotations ?? [],
+    s3Key: data.s3Key,
+    imageUrl: data.imageUrl,
     canEdit: data.canEdit,
     parentId: data.parentId,
+    giftAccessToken: data.giftAccessToken,
+    createdAt: data.createdAt,
+    updatedAt: data.updatedAt,
+    AWSPutURL: mapConfig.AWSPutURL,
   };
-
-  return { ...ret, AWSPutURL: mapConfig.AWSPutURL };
 };
 
 const mapsAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
@@ -374,6 +345,11 @@ const adminAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
     "admin-variants-notify",
     "POST",
     "Failed to notify submitter",
+  ],
+  setGiftToken: [
+    "admin-map-set-gift-token",
+    "POST",
+    "Failed to set gift token",
   ],
 });
 

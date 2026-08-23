@@ -1,5 +1,6 @@
 import { admin, netlifyImageUrl } from "@/api";
 import { MapThumbnail } from "../../components/MapThumbnail";
+import { Input } from "@/components/ui/input";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 
@@ -8,6 +9,7 @@ const BASE_URL = "https://topojoy.studio";
 export type AdminVariant = {
   id: string;
   title: string;
+  filename?: string | null;
   imageUrl?: string | null;
   s3Key?: string | null;
   status?: string | null;
@@ -26,6 +28,7 @@ export type AdminMapItem = {
   userId: string;
   status?: string | null;
   ownerEmail?: string | null;
+  giftAccessToken?: string | null;
   variants: AdminVariant[];
 };
 
@@ -141,6 +144,61 @@ function NotifyVariantsReadyButton({
   );
 }
 
+function GiftTokenField({
+  mapId,
+  initialValue,
+}: {
+  mapId: string;
+  initialValue?: string | null;
+}) {
+  const [value, setValue] = useState(initialValue ?? "");
+  const [saved, setSaved] = useState(initialValue ?? "");
+  const [state, setState] = useState<"idle" | "saving" | "error">("idle");
+
+  const dirty = value.trim() !== (saved ?? "").trim();
+
+  const handleSave = async () => {
+    setState("saving");
+    try {
+      const result = await admin.setGiftToken({
+        mapId,
+        giftAccessToken: value.trim(),
+      });
+      setSaved(result.giftAccessToken ?? "");
+      setValue(result.giftAccessToken ?? "");
+      setState("idle");
+    } catch (e: any) {
+      setState("error");
+      setTimeout(() => setState("idle"), 3000);
+    }
+  };
+
+  return (
+    <div className="mt-1.5 flex items-center gap-1.5">
+      <Input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && dirty && handleSave()}
+        placeholder="Paste gift code…"
+        className="h-6 text-[10px] px-1.5 py-0.5 flex-1"
+      />
+      <button
+        type="button"
+        onClick={handleSave}
+        disabled={!dirty || state === "saving"}
+        title="Assign this gift code to the submitter"
+        className="shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700 transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:border-gray-200 disabled:hover:text-gray-500"
+      >
+        {state === "saving" ? "saving…" : state === "error" ? "failed" : "save"}
+      </button>
+      {saved && !dirty && state === "idle" && (
+        <span className="text-[10px] text-teal-600 shrink-0">✓ applied</span>
+      )}
+    </div>
+  );
+}
+
 function SubmissionCard({ m }: { m: AdminMapItem }) {
   const [open, setOpen] = useState(false);
 
@@ -171,6 +229,8 @@ function SubmissionCard({ m }: { m: AdminMapItem }) {
           {new Date(m.updatedAt).toLocaleString()}
         </div>
 
+        <GiftTokenField mapId={m.id} initialValue={m.giftAccessToken} />
+
         {m.variants.length > 0 && (
           <div className="mt-2">
             <button
@@ -200,7 +260,7 @@ function SubmissionCard({ m }: { m: AdminMapItem }) {
                     </div>
                     <div className="px-1.5 py-1">
                       <p className="text-[10px] text-gray-700 truncate">
-                        {v.title}
+                        {v.filename || v.title}
                       </p>
                     </div>
                   </Link>
@@ -246,7 +306,9 @@ export function MapsSection({
         m.filename?.toLowerCase().includes(q) ||
         m.userId.toLowerCase().includes(q) ||
         m.ownerEmail?.toLowerCase().includes(q) ||
-        m.variants.some((v) => v.title.toLowerCase().includes(q))
+        m.variants.some((v) =>
+          (v.filename || v.title).toLowerCase().includes(q),
+        )
       );
     };
     const filtered = maps.filter(matchesSearch);

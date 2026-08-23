@@ -29,7 +29,13 @@ export type AdminDonation = {
   donor: { id: string; email: string | null } | null;
 };
 
-function CopyButton({ text }: { text: string }) {
+function CopyButton({
+  text,
+  label = "copy",
+}: {
+  text: string;
+  label?: string;
+}) {
   const [copied, setCopied] = useState(false);
   return (
     <button
@@ -39,10 +45,10 @@ function CopyButton({ text }: { text: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
-      className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
-      title="Copy"
+      className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors whitespace-nowrap"
+      title={`Copy ${label === "copy code" ? "gift code" : "link"}`}
     >
-      {copied ? "✓" : "copy"}
+      {copied ? "✓" : label}
     </button>
   );
 }
@@ -237,9 +243,7 @@ function DonationRow({
                         >
                           {window.location.host}/gift/{a.accessToken}
                         </a>
-                        <CopyButton
-                          text={`${window.location.origin}/gift/${a.accessToken}`}
-                        />
+                        <CopyButton text={a.accessToken} label="copy code" />
                       </>
                     ) : (
                       <span className="text-xs text-gray-400">—</span>

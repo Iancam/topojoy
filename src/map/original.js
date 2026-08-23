@@ -30,12 +30,13 @@ export const genCurve = (sketch, config, topo) => () => {
     },
   );
 };
-export const colorAndDrawCurve = (sketch, colorAt) => (c) => {
-  if (!c) return;
-  const col1 = colorAt(c[0]);
+export const colorAndDrawCurve = (sketch, colorAt) => (curve) => {
+  if (!curve) return;
+  console.log(curve);
+  const col1 = colorAt(curve[0]);
   const col = sketch.color(col1);
   col.setAlpha(128);
   sketch.stroke(col);
 
-  drawCurve(sketch, c, 1.8);
+  drawCurve(sketch, curve, 1.8);
 };

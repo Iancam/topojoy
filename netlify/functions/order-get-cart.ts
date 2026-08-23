@@ -27,7 +27,18 @@ export const handler = async (event: any) => {
         orderItems: {
           include: {
             mapConfig: {
-              select: { id: true, title: true, filename: true, s3Key: true },
+              select: {
+                id: true,
+                title: true,
+                filename: true,
+                s3Key: true,
+                giftAccessToken: true,
+                parent: {
+                  select: {
+                    giftAccessToken: true,
+                  },
+                },
+              },
             },
           },
         },

@@ -35,8 +35,17 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
     number | null
   >(null);
   const [currentGiftToken, setCurrentGiftToken] = useState<string | null>(
-    getStoredGiftToken(),
+    form["giftAccessToken"] || getStoredGiftToken(),
   );
+
+  // `form` is loaded asynchronously (see useLoadMap), so giftAccessToken may
+  // not be present yet on first render when currentGiftToken is initialized
+  // above. Sync it once it arrives.
+  useEffect(() => {
+    if (form["giftAccessToken"] && !currentGiftToken) {
+      setCurrentGiftToken(form["giftAccessToken"]);
+    }
+  }, [form["giftAccessToken"]]);
 
   const [isChipInEnabled, setIsChipInEnabled] = useState(false);
   const [isPurchaseWithoutGiftEnabled, setPurchaseWithoutGiftEnabled] =
@@ -58,6 +67,7 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
 
   const { allRecommendedPrices, isLoadingPrices } = usePrintPrices({
     recommendedSizes,
+    giftAccessToken: currentGiftToken || undefined,
     orderId: form["cart.orderId"],
     imgW,
     imgH,
@@ -123,7 +133,6 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
     setGiftTokenInput("");
     window.location.reload();
   };
-  console.log(isChipInEnabled);
   return (
     <div className="space-y-4">
       {/* Gift token entry — shown when no token is active */}

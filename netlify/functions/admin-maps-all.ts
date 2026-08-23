@@ -34,6 +34,7 @@ export const handler = async (event: any) => {
         s3Key: true,
         userId: true,
         status: true,
+        giftAccessToken: true,
         user: {
           select: { email: true },
         },
@@ -42,6 +43,7 @@ export const handler = async (event: any) => {
           select: {
             id: true,
             title: true,
+            filename: true,
             imageUrl: true,
             s3Key: true,
             status: true,
@@ -62,6 +64,7 @@ export const handler = async (event: any) => {
       s3Key: m.s3Key,
       userId: m.userId,
       status: m.status,
+      giftAccessToken: m.giftAccessToken,
       ownerEmail: m.user?.email ?? null,
       variants: m.variants,
     }));

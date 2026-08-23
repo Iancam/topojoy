@@ -87,7 +87,7 @@ const RenderFormElement = ({
     text: (
       <Input
         type="text"
-        value={value}
+        value={value ?? ""}
         onChange={(e) => onFormChange(id, e.target.value)}
       />
     ),
@@ -96,14 +96,14 @@ const RenderFormElement = ({
         className="border border-gray-300 rounded p-2 w-full"
         rows={5}
         cols={20}
-        value={value}
+        value={value ?? ""}
         onChange={(e) => onFormChange(id, e.target.value)}
       />
     ),
     number: (
       <Input
         type="number"
-        value={value}
+        value={value ?? ""}
         {...props}
         onChange={(e) => onFormChange(id, Number(e.target.value))}
       />

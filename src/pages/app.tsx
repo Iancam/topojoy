@@ -91,6 +91,7 @@ export const App = () => {
     setConfig,
     collisions,
     setCollisions,
+    loadLocationFromLocalStorage,
   } = useLoadMap({
     user,
     setIsRendering,
@@ -241,8 +242,15 @@ export const App = () => {
         id: undefined,
         // filename: variantLabel.replace(/\s+/g, "-").toLowerCase(),
       };
-      console.log("variantForm", variantForm);
-      await maps.upsert({
+      const blob = await captureImage();
+      if (!blob) {
+        setToast({
+          message: "Failed to capture map image. Variant not saved.",
+          type: "error",
+        });
+        return;
+      }
+      const newMapConfig = await maps.upsert({
         form: variantForm,
         givenFeatures: features,
         bbox,
@@ -255,6 +263,10 @@ export const App = () => {
         parentId: variantForm.parentId ?? configId,
         status: "variant",
         reflections: [],
+      });
+      await saveImageToAws({
+        blob,
+        AWSPutURL: newMapConfig.AWSPutURL,
       });
       setToast({
         message: `Variant "${form.filename}" saved`,
@@ -341,6 +353,27 @@ export const App = () => {
           />
           {isAdmin && configId && (
             <div className="border-t border-gray-200 mt-4 pt-4 px-1">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2">
+                Location &amp; Trails
+              </p>
+              <div className="flex gap-2 mb-4">
+                <a
+                  href="/geojson.io/index.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 py-1.5 text-center bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-xs font-semibold rounded transition-colors"
+                >
+                  Open Map Editor
+                </a>
+                <button
+                  type="button"
+                  onClick={loadLocationFromLocalStorage}
+                  className="flex-1 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-xs font-semibold rounded transition-colors"
+                  title="Pull the bbox/trails last drawn in the Map Editor into this map"
+                >
+                  Reload from Map Editor
+                </button>
+              </div>
               <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2">
                 Save as Variant
               </p>
