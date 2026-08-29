@@ -45,7 +45,12 @@ export const handler = async (event: any) => {
       const allocation = await prisma.donationAllocation.findUnique({
         where: { accessToken: giftAccessToken },
       });
-      if (!allocation) {
+
+      const giftToken = await prisma.giftToken.findUnique({
+        where: { accessToken: giftAccessToken },
+      });
+
+      if (!allocation && !giftToken) {
         return error("No donation allocation found for that gift code", 400);
       }
     }
@@ -55,7 +60,10 @@ export const handler = async (event: any) => {
       data: { giftAccessToken },
     });
 
-    return success({ id: updated.id, giftAccessToken: updated.giftAccessToken });
+    return success({
+      id: updated.id,
+      giftAccessToken: updated.giftAccessToken,
+    });
   } catch (err: any) {
     console.error("[admin-map-set-gift-token] Error:", err);
     return error(err.message || "Failed to set gift token", 500);

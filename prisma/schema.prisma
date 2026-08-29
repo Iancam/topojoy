@@ -170,6 +170,7 @@ model Order {
 
   giftedMap GiftedMap?
   donationAllocations DonationAllocation[]
+  giftTokens GiftToken[]
 
   submittedAt DateTime?
   paidAt DateTime?
@@ -259,11 +260,32 @@ model DonationAllocation {
   donation       Donation @relation(fields: [donationId], references: [id])
   orderId        String?
   order          Order?    @relation(fields: [orderId], references: [id])
+  // Deprecated: standalone allocations still use this directly, but once an
+  // allocation is grouped into a GiftToken, redemption goes through
+  // GiftToken.accessToken instead and this is left null.
   accessToken    String?   @unique
   maxAmountDrawn Int?
   // useFullAmount  Boolean  @default(false)
-  
+
+  giftTokenId    String?
+  giftToken      GiftToken? @relation(fields: [giftTokenId], references: [id])
+
   amountDrawn    Int      // in cents
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+// A single redeemable gift code that can pool the balances of one or more
+// DonationAllocations (e.g. combining several donors' contributions into one
+// gift link). Restricted donations may never be part of a multi-allocation
+// GiftToken.
+model GiftToken {
+  id          String               @id @default(cuid())
+  accessToken String               @unique
+  label       String?
+  orderId     String?
+  order       Order?               @relation(fields: [orderId], references: [id])
+  allocations DonationAllocation[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
 }

@@ -41,6 +41,7 @@ export type CartOrder = {
     mapConfigId: string | null;
     mapConfig: {
       s3Key: string | null;
+      filename: string;
     } | null;
     filename: string;
     imageUrl: string;
@@ -340,6 +341,27 @@ const adminAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
     "admin-donationAllocation-delete",
     "POST",
     "Failed to delete donation allocation",
+  ],
+  giftTokensList: [
+    "admin-giftTokens-list",
+    "GET",
+    "Failed to list gift tokens",
+  ],
+  giftTokenCreate: [
+    "admin-giftToken-create",
+    "POST",
+    "Failed to create gift token",
+  ],
+  giftTokenDelete: [
+    "admin-giftToken-delete",
+    "POST",
+    "Failed to delete gift token",
+  ],
+  ordersList: ["admin-orders-list", "GET", "Failed to list orders"],
+  orderRetrySubmission: [
+    "admin-order-retry-submission",
+    "POST",
+    "Failed to retry order submission",
   ],
   notifyVariantsReady: [
     "admin-variants-notify",

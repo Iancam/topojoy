@@ -5,6 +5,7 @@ import { auth, error, getShippingPrice, success } from "../lib";
 import prisma from "../lib/prisma";
 import { submitOrderToLumaprints } from "../lib/lumaprints";
 import { createGiftedMapIfApplicable } from "../lib/giftedMap";
+import { resolveGiftCode, drawDownGiftCode } from "../lib/donation";
 import { initStripe } from "../lib/stripe";
 import { sendEmail } from "../lib/email";
 import React from "react";
@@ -80,26 +81,36 @@ export const handler = async (event: any) => {
     }
 
     finalAmntToPay = giftTokenResult.finalAmntToPay;
-    const donationAllocation = giftTokenResult.donationAllocation;
+    const resolvedGiftCode = giftTokenResult.resolved;
     const amountDrawn = giftTokenResult.amountDrawn;
 
-    if (finalAmntToPay === 0 && donationAllocation) {
+    if (finalAmntToPay === 0 && resolvedGiftCode) {
       await prisma.order.update({
         where: { id: order.id },
         data: { status: "paid", paidAt: new Date() },
       });
 
-      await prisma.donationAllocation.update({
-        where: { id: donationAllocation.id },
-        data: {
-          orderId: order.id,
-          amountDrawn,
-        },
-      });
+      // Draw the paid amount down across the allocation(s) backing this gift
+      // code — oldest funding source first when several are pooled together.
+      const draws = await drawDownGiftCode(
+        prisma,
+        resolvedGiftCode,
+        amountDrawn,
+        order.id,
+      );
 
-      if (donationAllocation.donorId) {
+      // Attribute the "gifted map" to the donor whose contribution was drawn
+      // from first, if any.
+      const primaryAllocation = draws[0]
+        ? await prisma.donationAllocation.findUnique({
+            where: { id: draws[0].id },
+            include: { donation: { select: { donorId: true } } },
+          })
+        : null;
+
+      if (primaryAllocation?.donation.donorId) {
         await createGiftedMapIfApplicable({
-          donorId: donationAllocation.donation.donorId,
+          donorId: primaryAllocation.donation.donorId,
           orderId: order.id,
           orderItems: order.orderItems,
           totalCost: order.totalPrice,
@@ -156,13 +167,20 @@ export const handler = async (event: any) => {
       });
     }
 
-    if (donationAllocation.donation && donationAllocation.donation.donorId) {
-      await createGiftedMapIfApplicable({
-        donorId: donationAllocation.donation.donorId,
-        orderId: order.id,
-        orderItems: order.orderItems,
-        totalCost: order.totalPrice,
+    if (resolvedGiftCode) {
+      const primaryAllocation = await prisma.donationAllocation.findFirst({
+        where: { id: { in: resolvedGiftCode.allocationIds } },
+        orderBy: { createdAt: "asc" },
+        include: { donation: { select: { donorId: true } } },
       });
+      if (primaryAllocation?.donation.donorId) {
+        await createGiftedMapIfApplicable({
+          donorId: primaryAllocation.donation.donorId,
+          orderId: order.id,
+          orderItems: order.orderItems,
+          totalCost: order.totalPrice,
+        });
+      }
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
@@ -193,78 +211,43 @@ async function processGiftToken(
 ) {
   const errorVal = {
     finalAmntToPay: amntToPay,
-    donation: null,
+    resolved: null as Awaited<ReturnType<typeof resolveGiftCode>>,
     amountDrawn: 0,
   };
   if (!giftToken) {
     return errorVal;
   }
 
-  const donationAllocation = await prisma.donationAllocation.findUnique({
-    where: { accessToken: giftToken },
-    select: {
-      id: true,
-      maxAmountDrawn: true,
-      donation: {
-        select: {
-          id: true,
-          amount: true,
-          expiryDate: true,
-          status: true,
-          donorId: true,
-          allocations: { select: { amountDrawn: true } },
-        },
-      },
-    },
-  });
+  const resolved = await resolveGiftCode(prisma, giftToken);
 
-  if (!donationAllocation) {
+  if (!resolved) {
     return { ...errorVal, message: "Invalid gift token" };
   }
-  const donation = donationAllocation?.donation;
-  if (donation.expiryDate <= new Date()) {
+  if (resolved.expiryDate <= new Date()) {
     return { ...errorVal, message: "Gift token has expired" };
   }
-  if (donation.status !== "paid") {
+  if (resolved.status !== "paid") {
     return {
       ...errorVal,
-      message: `Gift token status is invalid. Status: ${donation.status}`,
+      message: `Gift token status is invalid. Status: ${resolved.status}`,
     };
   }
 
-  const alreadyDrawnCents = donation.allocations.reduce(
-    (sum, a) => sum + a.amountDrawn,
-    0,
-  );
-  const availableAmountCents = donation.amount - alreadyDrawnCents;
   // you should have an error if the user thinks they're redeeming a gift but
   // actually there's no more left to redeem
-  if (availableAmountCents <= 0) {
+  if (resolved.availableAmountCents <= 0) {
     return {
       ...errorVal,
       message: "Donation has already been fully redeemed",
     };
   }
 
-  if (
-    donationAllocation.maxAmountDrawn !== null &&
-    donationAllocation.maxAmountDrawn < amntToPay
-  ) {
-    return {
-      ...errorVal,
-      message: "Amount to pay exceeds maximum allowed",
-    };
-  }
-
-  const amountDrawn = Math.min(
-    donationAllocation.maxAmountDrawn ?? availableAmountCents,
-    amntToPay,
-  );
+  const amountDrawn = Math.min(resolved.availableAmountCents, amntToPay);
   const finalAmntToPay = Math.max(0, amntToPay - amountDrawn);
 
   return {
     finalAmntToPay,
-    donationAllocation,
+    resolved,
     amountDrawn,
   };
 }
