@@ -33,31 +33,14 @@ export default function AdminPage() {
   const [maps, setMaps] = useState<AdminMapItem[] | null>(null);
   const [flags, setFlags] = useState<AdminFeatureFlag[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [flagsError, setFlagsError] = useState<string | null>(null);
-  const [updatingFlagKey, setUpdatingFlagKey] = useState<string | null>(null);
-  const [creatingFlag, setCreatingFlag] = useState(false);
-  const [createFlagKey, setCreateFlagKey] = useState("");
-  const [createFlagEnabled, setCreateFlagEnabled] = useState(false);
+
   const [activeSection, setActiveSection] = useState<string>("maps");
   const [donations, setDonations] = useState<AdminDonation[] | null>(null);
-  const [donationsError, setDonationsError] = useState<string | null>(null);
   const [giftTokens, setGiftTokens] = useState<AdminGiftToken[] | null>(null);
   const [orders, setOrders] = useState<AdminOrder[] | null>(null);
   const [ordersError, setOrdersError] = useState<string | null>(null);
 
   const isAdmin = isLoaded && (user?.publicMetadata as any)?.role === "admin";
-
-  const refreshDonationsAndGiftTokens = () => {
-    admin
-      .donationsList()
-      .then(setDonations)
-      .catch((e: any) => setDonationsError(e.message));
-
-    admin
-      .giftTokensList()
-      .then(setGiftTokens)
-      .catch((e: any) => setDonationsError(e.message));
-  };
 
   const refreshOrders = () => {
     admin
@@ -77,81 +60,8 @@ export default function AdminPage() {
         setError(e.message);
       });
 
-    admin
-      .featureFlagsList()
-      .then(setFlags)
-      .catch((e: any) => setFlagsError(e.message));
-
-    refreshDonationsAndGiftTokens();
     refreshOrders();
   }, [isLoaded, isAdmin]);
-
-  const handleToggleFlag = async (key: string, enabled: boolean) => {
-    setFlagsError(null);
-    setUpdatingFlagKey(key);
-
-    const prev = flags;
-    if (prev) {
-      setFlags(
-        prev.map((f) =>
-          f.key === key
-            ? { ...f, enabled, updatedAt: new Date().toISOString() }
-            : f,
-        ),
-      );
-    }
-
-    try {
-      const updated = await admin.featureFlagsUpdate({ key, enabled });
-      setFlags((curr) =>
-        (curr ?? []).map((f) => (f.key === key ? updated : f)),
-      );
-    } catch (e: any) {
-      if (prev) setFlags(prev);
-      setFlagsError(e?.message || "Failed to update flag");
-    } finally {
-      setUpdatingFlagKey(null);
-    }
-  };
-
-  const handleCreateFlag = async () => {
-    setFlagsError(null);
-
-    const key = createFlagKey.trim().toLowerCase();
-    if (!key) {
-      setFlagsError("Flag key is required");
-      return;
-    }
-
-    if (!/^[a-z0-9_\-.]{1,128}$/.test(key)) {
-      setFlagsError(
-        "Flag key may contain lowercase letters, numbers, underscore, dash, and dot",
-      );
-      return;
-    }
-
-    setCreatingFlag(true);
-    try {
-      const updated = await admin.featureFlagsUpdate({
-        key,
-        enabled: createFlagEnabled,
-      });
-
-      setFlags((curr) => {
-        const next = [
-          ...(curr ?? []).filter((f) => f.key !== updated.key),
-          updated,
-        ];
-        return next.sort((a, b) => a.key.localeCompare(b.key));
-      });
-      setCreateFlagKey("");
-      setCreateFlagEnabled(false);
-    } catch (e: any) {
-      setFlagsError(e?.message || "Failed to create flag");
-    } finally {
-      setCreatingFlag(false);
-    }
-  };
 
   const sections = [
     {
@@ -166,20 +76,7 @@ export default function AdminPage() {
       items: flags,
       label: "Feature Flags",
       icon: "🚩",
-      component: (
-        <FeatureFlagsSection
-          flags={flags}
-          error={flagsError}
-          updatingKey={updatingFlagKey}
-          creating={creatingFlag}
-          createKey={createFlagKey}
-          createEnabled={createFlagEnabled}
-          onCreateKeyChange={setCreateFlagKey}
-          onCreateEnabledChange={setCreateFlagEnabled}
-          onCreate={handleCreateFlag}
-          onToggle={handleToggleFlag}
-        />
-      ),
+      component: <FeatureFlagsSection flags={flags} setFlags={setFlags} />,
     },
     {
       id: "donations",
@@ -190,45 +87,8 @@ export default function AdminPage() {
         <DonationsSection
           donations={donations}
           giftTokens={giftTokens}
-          error={donationsError}
-          onGiftTokensChanged={refreshDonationsAndGiftTokens}
-          onAllocationCreated={(donationId, allocation) => {
-            setDonations((curr) =>
-              (curr ?? []).map((d) =>
-                d.id === donationId
-                  ? {
-                      ...d,
-                      allocations: [...d.allocations, allocation],
-                      totalAmountDrawn:
-                        d.totalAmountDrawn + allocation.amountDrawn,
-                      effectiveAmountDrawn:
-                        d.effectiveAmountDrawn +
-                        (allocation.amountDrawn > 0
-                          ? allocation.amountDrawn
-                          : (allocation.maxAmountDrawn ?? 0)),
-                    }
-                  : d,
-              ),
-            );
-          }}
-          onAllocationDeleted={(donationId, allocationId) => {
-            setDonations((curr) =>
-              (curr ?? []).map((d) => {
-                if (d.id !== donationId) return d;
-                const removed = d.allocations.find(
-                  (a) => a.id === allocationId,
-                );
-                return {
-                  ...d,
-                  allocations: d.allocations.filter(
-                    (a) => a.id !== allocationId,
-                  ),
-                  effectiveAmountDrawn:
-                    d.effectiveAmountDrawn - (removed?.maxAmountDrawn ?? 0),
-                };
-              }),
-            );
-          }}
+          setDonations={setDonations}
+          setGiftTokens={setGiftTokens}
         />
       ),
     },

@@ -1,3 +1,6 @@
+import { admin } from "@/api";
+import { useEffect, useState } from "react";
+
 type AdminFeatureFlag = {
   id: string;
   key: string;
@@ -7,27 +10,91 @@ type AdminFeatureFlag = {
 
 export function FeatureFlagsSection({
   flags,
-  error,
-  updatingKey,
-  creating,
-  createKey,
-  createEnabled,
-  onCreateKeyChange,
-  onCreateEnabledChange,
-  onCreate,
-  onToggle,
+  setFlags,
 }: {
   flags: AdminFeatureFlag[] | null;
-  error: string | null;
-  updatingKey: string | null;
-  creating: boolean;
-  createKey: string;
-  createEnabled: boolean;
-  onCreateKeyChange: (value: string) => void;
-  onCreateEnabledChange: (value: boolean) => void;
-  onCreate: () => Promise<void>;
-  onToggle: (key: string, enabled: boolean) => Promise<void>;
+  setFlags: (flags: AdminFeatureFlag[] | null) => void;
 }) {
+  const [error, setError] = useState<string | null>(null);
+  const [updatingKey, setUpdatingKey] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [createKey, setCreateKey] = useState("");
+  const [createEnabled, setCreateEnabled] = useState(false);
+
+  useEffect(() => {
+    admin
+      .featureFlagsList()
+      .then(setFlags)
+      .catch((e: any) => setError(e.message));
+  });
+
+  const onToggle = async (key: string, enabled: boolean) => {
+    setError(null);
+    setUpdatingKey(key);
+
+    const prev = flags;
+    if (prev) {
+      setFlags(
+        prev.map((f) =>
+          f.key === key
+            ? { ...f, enabled, updatedAt: new Date().toISOString() }
+            : f,
+        ),
+      );
+    }
+
+    try {
+      const updated = await admin.featureFlagsUpdate({ key, enabled });
+      setFlags((curr: AdminFeatureFlag[] | null) =>
+        (curr ?? []).map((f) => (f.key === key ? updated : f)),
+      );
+    } catch (e: any) {
+      if (prev) setFlags(prev);
+      setError(e?.message || "Failed to update flag");
+    } finally {
+      setUpdatingKey(null);
+    }
+  };
+
+  const onCreate = async () => {
+    setError(null);
+
+    const key = createKey.trim().toLowerCase();
+    if (!key) {
+      setError("Flag key is required");
+      return;
+    }
+
+    if (!/^[a-z0-9_\-.]{1,128}$/.test(key)) {
+      setError(
+        "Flag key may contain lowercase letters, numbers, underscore, dash, and dot",
+      );
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const updated = await admin.featureFlagsUpdate({
+        key,
+        enabled: createEnabled,
+      });
+
+      setFlags((curr: AdminFeatureFlag[] | null) => {
+        const next = [
+          ...(curr ?? []).filter((f) => f.key !== updated.key),
+          updated,
+        ];
+        return next.sort((a, b) => a.key.localeCompare(b.key));
+      });
+      setCreateKey("");
+      setCreateEnabled(false);
+    } catch (e: any) {
+      setError(e?.message || "Failed to create flag");
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -45,7 +112,7 @@ export function FeatureFlagsSection({
           <input
             type="text"
             value={createKey}
-            onChange={(e) => onCreateKeyChange(e.target.value)}
+            onChange={(e) => setCreateKey(e.target.value)}
             placeholder="example_flag_key"
             className="w-72 text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
@@ -53,7 +120,7 @@ export function FeatureFlagsSection({
             <input
               type="checkbox"
               checked={createEnabled}
-              onChange={(e) => onCreateEnabledChange(e.target.checked)}
+              onChange={(e) => setCreateEnabled(e.target.checked)}
             />
             Enabled
           </label>
