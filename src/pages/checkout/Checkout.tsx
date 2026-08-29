@@ -7,7 +7,7 @@ import { formatMoney } from "../../lib/utils";
 import { getStripePublishableKey } from "../../lib/env";
 import { useCartContext } from "../../cartContext";
 import { MapThumbnail } from "../../components/MapThumbnail";
-import { getStoredGiftToken } from "../../lib/giftToken";
+import { clearStoredGiftToken } from "../../lib/giftToken";
 import {
   getAmountOwedCents,
   getStepAfterGiftPaymentIntent,
@@ -186,6 +186,7 @@ export const Checkout = () => {
 
   useEffect(() => {
     if (step !== "confirm") return;
+    clearStoredGiftToken();
     const orderId = searchParams.get("orderId");
     if (!orderId) return;
     setLatestLoading(true);

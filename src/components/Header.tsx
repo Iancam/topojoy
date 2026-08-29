@@ -134,7 +134,7 @@ export const Header = () => {
                     </div>
                   </UserButton.UserProfilePage>
 
-                  <UserButton.UserProfilePage
+                  {/* <UserButton.UserProfilePage
                     label="Gifts Received"
                     labelIcon={<span>🎁</span>}
                     url="gifts-received"
@@ -142,7 +142,7 @@ export const Header = () => {
                     <div className="p-6">
                       <GiftsReceived />
                     </div>
-                  </UserButton.UserProfilePage>
+                  </UserButton.UserProfilePage> */}
 
                   <UserButton.UserProfilePage
                     label="Username"

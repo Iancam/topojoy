@@ -23,6 +23,8 @@ export const Cart = () => {
     refresh();
   }, []);
 
+  const giftAccessToken = getGiftAccessToken(cart);
+
   useEffect(() => {
     const token = getGiftAccessToken(cart);
     if (!token) return;
@@ -167,7 +169,7 @@ export const Cart = () => {
                     </div>
                     <div className="flex-1 space-y-1 text-sm">
                       <div className="font-medium text-gray-900 truncate">
-                        {item.filename || "Untitled map"}
+                        {item.mapConfig?.filename || "Untitled map"}
                       </div>
                       <div className="text-gray-600 text-xs">
                         {item.printType} · {item.width}&quot; × {item.height}
