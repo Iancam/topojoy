@@ -16,6 +16,7 @@ import {
   isFeatureEnabled,
 } from "@/lib/featureFlags";
 import { GiftIndicatorBanner } from "./GiftIndicatorBanner";
+import { useConfigForm } from "./configFormContext";
 import { usePrintPrices } from "@/hooks/usePrintPrices";
 import { SizeButton } from "./SizeButton";
 import { getRecommendedSizes, printTypes } from "@/lib/printSIzeHelpers";
@@ -34,6 +35,8 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
   const [availableAmountCents, setAvailableAmountCents] = React.useState<
     number | null
   >(null);
+  const { imageIsStale } = useConfigForm();
+
   const [currentGiftToken, setCurrentGiftToken] = useState<string | null>(
     form["giftAccessToken"] || getStoredGiftToken(),
   );
@@ -171,6 +174,15 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
           setNetGiftAmountCents={setNetGiftAmountCents}
         />
       )}
+
+      {imageIsStale && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          The map preview is out of date because the map settings have changed.
+          Click <strong>Render</strong> to update the preview before choosing a
+          print size.
+        </div>
+      )}
+
       <div>
         <h3 className="text-sm font-medium mb-2">Print Type</h3>
         <div className="flex gap-2 flex-wrap">

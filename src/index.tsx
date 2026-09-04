@@ -20,6 +20,8 @@ import { Terms } from "./Terms";
 import { OriginStory } from "./pages/OriginStory";
 import SubmitPage from "./pages/SubmitPage";
 import ChooseVariantPage from "./pages/ChooseVariantPage";
+import { Blog } from "./pages/Blog";
+import { BlogPost } from "./pages/BlogPost";
 import { Privacy } from "./Privacy";
 const AppError = () => {
   const error = useRouteError() as Error | string | null | undefined;
@@ -113,6 +115,14 @@ const router = createBrowserRouter([
         element: <OriginStory />,
       },
       {
+        path: "/blog",
+        element: <Blog />,
+      },
+      {
+        path: "/blog/:slug",
+        element: <BlogPost />,
+      },
+      {
         path: "/:username/:filename",
         element: <App />,
         errorElement: <AppError />,
@@ -122,6 +132,7 @@ const router = createBrowserRouter([
 ]);
 
 const root = document.getElementById("app");
+if (!root) throw new Error("Root element not found");
 
 createRoot(root).render(
   <CartProvider>

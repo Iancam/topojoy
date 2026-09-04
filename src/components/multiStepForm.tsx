@@ -25,6 +25,7 @@ export type MultiStepFormProps = {
   isPurchasing?: boolean;
   isUploading?: boolean;
   canEdit?: boolean;
+  imageIsStale?: boolean;
 };
 
 export const MultiStepForm: React.FC<MultiStepFormProps> = ({
@@ -42,6 +43,7 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
   isPurchasing,
   isUploading,
   canEdit = true,
+  imageIsStale = false,
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -164,9 +166,14 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
                   <button
                     type="button"
                     onClick={onSave}
-                    className="px-2 py-1.5 rounded-md border text-xs font-medium bg-white text-gray-700 border-gray-300 hover:bg-gray-50 transition-colors inline-flex items-center justify-center"
+                    disabled={imageIsStale}
+                    className="px-2 py-1.5 rounded-md border text-xs font-medium bg-white text-gray-700 border-gray-300 hover:bg-gray-50 transition-colors inline-flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Download image"
-                    title="download image"
+                    title={
+                      imageIsStale
+                        ? "Re-render the map before downloading"
+                        : "download image"
+                    }
                   >
                     <Download className="h-4 w-4" aria-hidden="true" />
                     <span className="sr-only">Download image</span>
@@ -176,9 +183,13 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
                       type="button"
                       onClick={onUpload}
                       className="px-2 py-1.5 rounded-md border text-xs font-medium bg-white text-gray-700 border-gray-300 hover:bg-gray-50 transition-colors inline-flex items-center justify-center disabled:opacity-60"
-                      disabled={isUploading}
+                      disabled={isUploading || imageIsStale}
                       aria-label="Upload image"
-                      title="save to server"
+                      title={
+                        imageIsStale
+                          ? "Re-render the map before uploading"
+                          : "save to server"
+                      }
                     >
                       {isUploading ? (
                         <span className="inline-block w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
@@ -194,9 +205,15 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
                 <button
                   type="button"
                   onClick={onAddToOrder}
+                  disabled={isPurchasing || imageIsStale}
+                  title={
+                    imageIsStale
+                      ? "Re-render the map before adding to order"
+                      : undefined
+                  }
                   className={cn(
                     "px-3 py-1.5 rounded-md text-xs font-medium",
-                    isPurchasing
+                    isPurchasing || imageIsStale
                       ? "bg-green-300 text-white cursor-not-allowed"
                       : "bg-green-600 text-white hover:bg-green-700",
                   )}

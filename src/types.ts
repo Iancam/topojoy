@@ -45,19 +45,3 @@ export interface Config {
 export interface Configs {
   [key: string]: Config;
 }
-
-declare module "*.css" {
-  const content: { [className: string]: string };
-  export default content;
-}
-
-declare module "*.js" {
-  const content: any;
-  export default content;
-}
-
-declare module "*.md" {
-  export const html: string;
-  const value: { html: string };
-  export default value;
-}

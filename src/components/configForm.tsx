@@ -40,6 +40,7 @@ interface ConfigFormProps {
   annotationsMode?: boolean;
   onAnnotationsModeToggle?: () => void;
   canEdit?: boolean;
+  imageIsStale?: boolean;
 }
 
 const RenderFormElement = ({
@@ -244,6 +245,7 @@ export const ConfigForm = ({
   annotationsMode = false,
   onAnnotationsModeToggle,
   canEdit = true,
+  imageIsStale = false,
 }: ConfigFormProps) => {
   const steps = formJourney.map((step) => ({
     title: step.title,
@@ -280,6 +282,7 @@ export const ConfigForm = ({
     renderFormElement: RenderFormElement,
     annotationsMode: annotationsMode ?? false,
     onAnnotationsModeToggle: onAnnotationsModeToggle ?? (() => {}),
+    imageIsStale,
   };
 
   return (
@@ -299,6 +302,7 @@ export const ConfigForm = ({
         isPurchasing={isPurchasing}
         isUploading={isUploading}
         canEdit={canEdit}
+        imageIsStale={imageIsStale}
       />
     </ConfigFormContext.Provider>
   );

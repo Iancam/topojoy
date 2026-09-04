@@ -1,4 +1,4 @@
-import { maps } from "@/api";
+import { getImageUrlFromAws, maps } from "@/api";
 import { formElements } from "@/components/configFormData";
 import {
   convertToNestedObject,
@@ -20,11 +20,16 @@ export function useLoadMap({
   setIsRendering,
   setToast,
   renderSketch,
+  loadSavedImage,
 }: {
   user?: any;
   setIsRendering: (value: boolean) => void;
   setToast: (toast: ToastState) => void;
   renderSketch: (params: RenderSketchParams) => () => void;
+  loadSavedImage: (params: {
+    imageUrl: string;
+    setForm: (form: any) => void;
+  }) => () => void;
 }) {
   const [mapNotFoundError, setMapNotFoundError] = useState<string | null>(null);
   const [canEdit, setCanEdit] = useState(true);
@@ -72,7 +77,7 @@ export function useLoadMap({
 
     maps
       .get(queryParams)
-      .then((config: any) => {
+      .then(async (config: any) => {
         console.log("retrieved config from database");
         // Clear any previous error
         setMapNotFoundError(null);
@@ -107,16 +112,41 @@ export function useLoadMap({
           });
         }
 
-        renderSketch({
-          config: config.config,
-          form: { ...preForm, ...config },
-          bbox: config.bbox,
-          selectedTrails: config.selectedTrails,
-          features: feats,
-          setForm,
-          setFeatures,
-          setCollisions,
-        })();
+        if (config.s3Key) {
+          try {
+            const imageUrl = await getImageUrlFromAws(config.s3Key);
+            loadSavedImage({
+              imageUrl,
+              setForm,
+            })();
+          } catch (err) {
+            console.error(
+              "Failed to load saved image from S3, falling back to render",
+              err,
+            );
+            renderSketch({
+              config: config.config,
+              form: { ...preForm, ...config },
+              bbox: config.bbox,
+              selectedTrails: config.selectedTrails,
+              features: feats,
+              setForm,
+              setFeatures,
+              setCollisions,
+            })();
+          }
+        } else {
+          renderSketch({
+            config: config.config,
+            form: { ...preForm, ...config },
+            bbox: config.bbox,
+            selectedTrails: config.selectedTrails,
+            features: feats,
+            setForm,
+            setFeatures,
+            setCollisions,
+          })();
+        }
       })
       .catch((error: Error) => {
         console.error("Failed to load map:", error);

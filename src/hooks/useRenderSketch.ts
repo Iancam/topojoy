@@ -35,8 +35,10 @@ export type SketchRedrawFns = {
 
 export function useRenderSketch({
   setIsRendering,
+  onImageReady,
 }: {
   setIsRendering: (isRendering: boolean) => void;
+  onImageReady?: () => void;
 }) {
   const [isInitialRun, setIsInitialRun] = useState(() => {
     const isInitialRun = JSON.parse(
@@ -250,6 +252,7 @@ export function useRenderSketch({
 
           // hide loading once image is ready
           setIsRendering(false);
+          onImageReady?.();
         },
       );
 
@@ -259,8 +262,73 @@ export function useRenderSketch({
       return myp5;
     };
 
+  const loadSavedImage =
+    ({
+      imageUrl,
+      setForm,
+    }: {
+      imageUrl: string;
+      setForm: (form: any) => void;
+    }) =>
+    () => {
+      const mountNode = p5MountRef.current;
+      if (!mountNode) return;
+
+      setIsRendering(true);
+
+      // Clean up any existing p5 instance
+      if (p5InstanceRef.current) {
+        const prev = layersRef.current;
+        if (prev) {
+          prev.curvesBack.remove();
+          prev.text.remove();
+          prev.curvesFront.remove();
+          prev.overlay.remove();
+        }
+        p5InstanceRef.current.remove();
+        p5InstanceRef.current = null;
+        layersRef.current = null;
+        redrawFnsRef.current = null;
+        displayImgRef.current = null;
+      }
+
+      while (mountNode.firstChild) {
+        mountNode.removeChild(mountNode.firstChild);
+      }
+
+      const img = document.createElement("img");
+      img.src = imageUrl;
+      img.crossOrigin = "anonymous";
+      img.style.position = "absolute";
+      img.style.top = "0";
+      img.style.left = "0";
+      img.style.width = "100%";
+      img.style.height = "100%";
+      img.style.objectFit = "contain";
+
+      img.onload = () => {
+        const width = img.naturalWidth;
+        const height = img.naturalHeight;
+        setSketchDims({ width, height });
+        setForm((prev: any) => ({
+          ...prev,
+          "print.imageWidth": width,
+          "print.imageHeight": height,
+        }));
+        setIsRendering(false);
+        onImageReady?.();
+      };
+
+      img.onerror = () => {
+        setIsRendering(false);
+      };
+
+      mountNode.appendChild(img);
+    };
+
   return {
     renderSketch,
+    loadSavedImage,
     dimensions,
     sketchDims,
     p5MountRef,

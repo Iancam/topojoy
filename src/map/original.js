@@ -32,7 +32,6 @@ export const genCurve = (sketch, config, topo) => () => {
 };
 export const colorAndDrawCurve = (sketch, colorAt) => (curve) => {
   if (!curve) return;
-  console.log(curve);
   const col1 = colorAt(curve[0]);
   const col = sketch.color(col1);
   col.setAlpha(128);
