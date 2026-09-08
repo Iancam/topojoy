@@ -5,7 +5,7 @@ import type { ReactElement } from "react";
 const FROM = "TopoJoy <noreply@topojoy.studio>";
 
 let _resend: Resend | null = null;
-function getResend(): Resend {
+export function getResend(): Resend {
   if (!_resend) {
     const key = process.env.RESEND_API_KEY;
     if (!key) throw new Error("RESEND_API_KEY env var is not set");
@@ -24,7 +24,9 @@ export async function sendEmail({
   template: ReactElement;
 }): Promise<void> {
   if (!to) {
-    console.warn(`[email] Skipping send — no recipient address. Subject: "${subject}"`);
+    console.warn(
+      `[email] Skipping send — no recipient address. Subject: "${subject}"`,
+    );
     return;
   }
 
