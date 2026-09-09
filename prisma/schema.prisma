@@ -289,3 +289,9 @@ model GiftToken {
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt
 }
+
+model StripeWebhookEvent {
+  id          String   @id
+  type        String
+  processedAt DateTime @default(now())
+}
