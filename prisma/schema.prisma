@@ -74,6 +74,11 @@ model MapConfig {
   user  User @relation(fields: [userId], references: [id])
   userId String
   
+  // Raw flat form data. This is the source of truth for all user-facing
+  // form fields going forward; the explicit columns below are kept only
+  // for metadata/queries and legacy compatibility.
+  formJson Json?
+
   filename String @db.VarChar(255) @default(dbgenerated("gen_random_uuid()"))
   title String @db.VarChar(128)
   config String @db.VarChar(64)
@@ -85,17 +90,27 @@ model MapConfig {
   selectedTrails Json? 
 
   backgroundText String?
-  backgroundTextElevationRange0 Float
-  backgroundTextElevationRange1 Float
-  backgroundTextHighContrast Boolean
+  backgroundTextElevationRange0 Float?
+  backgroundTextElevationRange1 Float?
+  backgroundTextHighContrast Boolean?
+  backgroundTextContrast Float @default(7.5)
 
   annotations Annotation[]
 
-  crossHatch Boolean
-  colorPlan String @db.VarChar(255)
+  crossHatch Boolean?
+  colorPlan String? @db.VarChar(255)
+
+  eleVis String @default("original")
+  textSizeMultiplier Float @default(0)
+  legendEnabled Boolean @default(false)
+  forceCollisionDetection Boolean @default(true)
 
   imageUrl String?
   s3Key String?
+
+  // Access token of a DonationAllocation, assigned by an admin so the
+  // submitter's gift code is already applied when they reach checkout.
+  giftAccessToken String?
 
   // Array of Clerk user IDs who can edit this map
   collaborators String[] @default([])
@@ -155,6 +170,7 @@ model Order {
 
   giftedMap GiftedMap?
   donationAllocations DonationAllocation[]
+  giftTokens GiftToken[]
 
   submittedAt DateTime?
   paidAt DateTime?
@@ -244,11 +260,38 @@ model DonationAllocation {
   donation       Donation @relation(fields: [donationId], references: [id])
   orderId        String?
   order          Order?    @relation(fields: [orderId], references: [id])
+  // Deprecated: standalone allocations still use this directly, but once an
+  // allocation is grouped into a GiftToken, redemption goes through
+  // GiftToken.accessToken instead and this is left null.
   accessToken    String?   @unique
   maxAmountDrawn Int?
   // useFullAmount  Boolean  @default(false)
-  
+
+  giftTokenId    String?
+  giftToken      GiftToken? @relation(fields: [giftTokenId], references: [id])
+
   amountDrawn    Int      // in cents
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+// A single redeemable gift code that can pool the balances of one or more
+// DonationAllocations (e.g. combining several donors' contributions into one
+// gift link). Restricted donations may never be part of a multi-allocation
+// GiftToken.
+model GiftToken {
+  id          String               @id @default(cuid())
+  accessToken String               @unique
+  label       String?
+  orderId     String?
+  order       Order?               @relation(fields: [orderId], references: [id])
+  allocations DonationAllocation[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+}
+
+model StripeWebhookEvent {
+  id          String   @id
+  type        String
+  processedAt DateTime @default(now())
 }

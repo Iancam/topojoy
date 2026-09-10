@@ -78,11 +78,12 @@ export const P5Canvas = ({
     if (!container) return;
 
     const update = () => {
-      const img = container.querySelector("canvas");
-      if (img) {
+      const el =
+        container.querySelector("canvas") || container.querySelector("img");
+      if (el) {
         setContainerSize({
-          width: img.offsetWidth || img.width,
-          height: img.offsetHeight || img.height,
+          width: el.offsetWidth || (el as HTMLImageElement).width,
+          height: el.offsetHeight || (el as HTMLImageElement).height,
         });
       }
     };

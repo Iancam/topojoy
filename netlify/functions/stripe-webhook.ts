@@ -40,8 +40,19 @@ export const handler = async (
     const donationId = paymentIntent.metadata?.donationId;
 
     if (stripeEvent.type === "payment_intent.succeeded") {
+      const existing = await prisma.stripeWebhookEvent.findUnique({
+        where: { id: stripeEvent.id },
+      });
+      if (existing) {
+        return success({ received: true, alreadyProcessed: true });
+      }
+
       await handleOrder(orderId, paymentIntent);
       await handleDonation(donationId, paymentIntent);
+
+      await prisma.stripeWebhookEvent.create({
+        data: { id: stripeEvent.id, type: stripeEvent.type },
+      });
     } else if (stripeEvent.type === "payment_intent.payment_failed") {
       await handleOrderFailed(orderId, paymentIntent);
       await handleDonationFailed(donationId, paymentIntent);
@@ -198,19 +209,19 @@ async function handleDonation(
 
     const ian = process.env.IAN_EMAIL ?? "hello@topojoy.studio";
 
-      await sendEmail({
-        to: ian,
-        subject: `New donation: ${amountFormatted} from ${donorName}`,
-        template: React.createElement(AdminDonationNotification, {
-          donorName,
-          donorEmail: updatedDonation.donor?.email ?? "",
-          amountFormatted,
-          giftLinkUrl,
-          message: updatedDonation.message ?? undefined,
-        }),
-      }).catch((e) =>
-        console.error("[email] Admin donation notification failed:", e),
-      );
+    await sendEmail({
+      to: ian,
+      subject: `New donation: ${amountFormatted} from ${donorName}`,
+      template: React.createElement(AdminDonationNotification, {
+        donorName,
+        donorEmail: updatedDonation.donor?.email ?? "",
+        amountFormatted,
+        giftLinkUrl,
+        message: updatedDonation.message ?? undefined,
+      }),
+    }).catch((e) =>
+      console.error("[email] Admin donation notification failed:", e),
+    );
   }
 }
 

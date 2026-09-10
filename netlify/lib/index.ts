@@ -180,9 +180,9 @@ export function createSecureRandomString(length: number, charSet: string) {
   return result;
 }
 
-export function createRandomAccessToken() {
-  return createSecureRandomString(
-    12,
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
-  );
-}
+// export function createRandomAccessToken() {
+//   return createSecureRandomString(
+//     12,
+//     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+//   );
+// }

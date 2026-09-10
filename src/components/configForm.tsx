@@ -40,6 +40,7 @@ interface ConfigFormProps {
   annotationsMode?: boolean;
   onAnnotationsModeToggle?: () => void;
   canEdit?: boolean;
+  imageIsStale?: boolean;
 }
 
 const RenderFormElement = ({
@@ -87,7 +88,7 @@ const RenderFormElement = ({
     text: (
       <Input
         type="text"
-        value={value}
+        value={value ?? ""}
         onChange={(e) => onFormChange(id, e.target.value)}
       />
     ),
@@ -96,14 +97,14 @@ const RenderFormElement = ({
         className="border border-gray-300 rounded p-2 w-full"
         rows={5}
         cols={20}
-        value={value}
+        value={value ?? ""}
         onChange={(e) => onFormChange(id, e.target.value)}
       />
     ),
     number: (
       <Input
         type="number"
-        value={value}
+        value={value ?? ""}
         {...props}
         onChange={(e) => onFormChange(id, Number(e.target.value))}
       />
@@ -244,6 +245,7 @@ export const ConfigForm = ({
   annotationsMode = false,
   onAnnotationsModeToggle,
   canEdit = true,
+  imageIsStale = false,
 }: ConfigFormProps) => {
   const steps = formJourney.map((step) => ({
     title: step.title,
@@ -280,6 +282,7 @@ export const ConfigForm = ({
     renderFormElement: RenderFormElement,
     annotationsMode: annotationsMode ?? false,
     onAnnotationsModeToggle: onAnnotationsModeToggle ?? (() => {}),
+    imageIsStale,
   };
 
   return (
@@ -299,6 +302,7 @@ export const ConfigForm = ({
         isPurchasing={isPurchasing}
         isUploading={isUploading}
         canEdit={canEdit}
+        imageIsStale={imageIsStale}
       />
     </ConfigFormContext.Provider>
   );

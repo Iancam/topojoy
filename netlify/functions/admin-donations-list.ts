@@ -36,6 +36,8 @@ export const handler = async (event: any) => {
             amountDrawn: true,
             orderId: true,
             createdAt: true,
+            giftTokenId: true,
+            giftToken: { select: { accessToken: true } },
           },
         },
         donor: {

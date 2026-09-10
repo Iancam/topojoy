@@ -10,6 +10,7 @@ export type ConfigFormContextValue = {
   renderFormElement: (props: any) => React.ReactNode;
   annotationsMode: boolean;
   onAnnotationsModeToggle: () => void;
+  imageIsStale: boolean;
 };
 
 export const ConfigFormContext =

@@ -5,6 +5,7 @@ import prisma from "../lib/prisma";
 import { auth, error, success } from "../lib";
 import { sendEmail } from "../lib/email";
 import { MapSubmissionNotification } from "../emails/MapSubmissionNotification";
+import { MapSubmissionConfirmation } from "../emails/MapSubmissionConfirmation";
 import { isProduction } from "../lib/env";
 
 const clerkClient = createClerkClient({
@@ -118,6 +119,30 @@ export const handler = async (event: any) => {
         "[submission] Email failed (map was still saved):",
         emailErr,
       );
+    }
+
+    if (userEmail) {
+      const adviceUrl = `${baseUrl}/blog/giving-advice`;
+      console.log(
+        `[submission] Sending confirmation to ${userEmail} for map ${mapConfig.id}`,
+      );
+      try {
+        await sendEmail({
+          to: userEmail,
+          subject: `We received your map submission: "${validated.title}"`,
+          template: React.createElement(MapSubmissionConfirmation, {
+            userName,
+            mapTitle: validated.title,
+            adviceUrl,
+          }),
+        });
+        console.log(`[submission] Confirmation email sent successfully`);
+      } catch (emailErr: any) {
+        console.error(
+          "[submission] Confirmation email failed (map was still saved):",
+          emailErr,
+        );
+      }
     }
 
     return success({ id: mapConfig.id });

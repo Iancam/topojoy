@@ -71,6 +71,7 @@
         "npm:clsx@^2.1.1",
         "npm:cmdk@^1.1.1",
         "npm:cookie@^1.1.1",
+        "npm:dotenv-cli@11",
         "npm:eslint-plugin-react-hooks@5",
         "npm:eslint-plugin-react-refresh@~0.4.18",
         "npm:eslint-plugin-react@^7.37.4",

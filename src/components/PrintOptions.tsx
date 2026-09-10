@@ -16,6 +16,7 @@ import {
   isFeatureEnabled,
 } from "@/lib/featureFlags";
 import { GiftIndicatorBanner } from "./GiftIndicatorBanner";
+import { useConfigForm } from "./configFormContext";
 import { usePrintPrices } from "@/hooks/usePrintPrices";
 import { SizeButton } from "./SizeButton";
 import { getRecommendedSizes, printTypes } from "@/lib/printSIzeHelpers";
@@ -34,9 +35,20 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
   const [availableAmountCents, setAvailableAmountCents] = React.useState<
     number | null
   >(null);
+  const { imageIsStale } = useConfigForm();
+
   const [currentGiftToken, setCurrentGiftToken] = useState<string | null>(
-    getStoredGiftToken(),
+    form["giftAccessToken"] || getStoredGiftToken(),
   );
+
+  // `form` is loaded asynchronously (see useLoadMap), so giftAccessToken may
+  // not be present yet on first render when currentGiftToken is initialized
+  // above. Sync it once it arrives.
+  useEffect(() => {
+    if (form["giftAccessToken"] && !currentGiftToken) {
+      setCurrentGiftToken(form["giftAccessToken"]);
+    }
+  }, [form["giftAccessToken"]]);
 
   const [isChipInEnabled, setIsChipInEnabled] = useState(false);
   const [isPurchaseWithoutGiftEnabled, setPurchaseWithoutGiftEnabled] =
@@ -58,6 +70,7 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
 
   const { allRecommendedPrices, isLoadingPrices } = usePrintPrices({
     recommendedSizes,
+    giftAccessToken: currentGiftToken || undefined,
     orderId: form["cart.orderId"],
     imgW,
     imgH,
@@ -123,7 +136,6 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
     setGiftTokenInput("");
     window.location.reload();
   };
-  console.log(isChipInEnabled);
   return (
     <div className="space-y-4">
       {/* Gift token entry — shown when no token is active */}
@@ -162,6 +174,15 @@ export const PrintOptions: React.FC<AdvancedFormElementProps> = ({
           setNetGiftAmountCents={setNetGiftAmountCents}
         />
       )}
+
+      {imageIsStale && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          The map preview is out of date because the map settings have changed.
+          Click <strong>Render</strong> to update the preview before choosing a
+          print size.
+        </div>
+      )}
+
       <div>
         <h3 className="text-sm font-medium mb-2">Print Type</h3>
         <div className="flex gap-2 flex-wrap">

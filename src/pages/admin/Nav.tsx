@@ -1,34 +1,18 @@
-type Section = "maps" | "flags" | "donations";
+// type Section = "maps" | "flags" | "donations" | "orders";
 
-const NAV_ITEMS: { id: Section; label: string; icon: string }[] = [
-  { id: "maps", label: "All Maps", icon: "🗺️" },
-  { id: "flags", label: "Feature Flags", icon: "🚩" },
-  { id: "donations", label: "Donations", icon: "💰" },
-];
+import { Section } from "./AdminPage";
 
 const NavItem = ({
   item,
   activeSection,
   setActiveSection,
-  maps,
-  flags,
-  donations,
+  sections,
 }: {
   item: { id: string; label: string; icon: React.ReactNode };
   activeSection: string;
   setActiveSection: React.Dispatch<React.SetStateAction<Section>>;
-  maps?: any[] | null;
-  flags?: any[] | null;
-  donations?: any[] | null;
+  sections: Section[];
 }) => {
-  const length =
-    item.id === "maps"
-      ? maps?.length
-      : item.id === "flags"
-        ? flags?.length
-        : item.id === "donations"
-          ? donations?.length
-          : 0;
   return (
     <button
       key={item.id}
@@ -42,21 +26,9 @@ const NavItem = ({
     >
       <span>{item.icon}</span>
       <span>{item.label}</span>
-      {item.id === "maps" && maps && (
-        <span className="ml-auto text-[10px] bg-teal-800 text-teal-200 rounded-full px-1.5 py-0.5 font-mono">
-          {maps.length}
-        </span>
-      )}
-      {item.id === "flags" && flags && (
-        <span className="ml-auto text-[10px] bg-teal-800 text-teal-200 rounded-full px-1.5 py-0.5 font-mono">
-          {flags.length}
-        </span>
-      )}
-      {item.id === "donations" && donations && (
-        <span className="ml-auto text-[10px] bg-teal-800 text-teal-200 rounded-full px-1.5 py-0.5 font-mono">
-          {donations.length}
-        </span>
-      )}
+      <span className="ml-auto text-[10px] bg-teal-800 text-teal-200 rounded-full px-1.5 py-0.5 font-mono">
+        {sections.find((s) => s.id === item.id)?.items?.length || 0}
+      </span>
     </button>
   );
 };
@@ -65,16 +37,12 @@ export const Nav = ({
   user,
   activeSection,
   setActiveSection,
-  maps,
-  flags,
-  donations,
+  sections,
 }: {
   user: any;
   activeSection: string;
   setActiveSection: React.Dispatch<React.SetStateAction<Section>>;
-  maps?: any[] | null;
-  flags?: any[] | null;
-  donations?: any[] | null;
+  sections: Section[];
 }) => {
   return (
     <aside className="w-52 shrink-0 bg-[#071e25] text-[#d5f7ff] flex flex-col py-6 overflow-y-auto">
@@ -88,15 +56,13 @@ export const Nav = ({
       </div>
 
       <nav className="flex flex-col gap-1 px-2">
-        {NAV_ITEMS.map((item) => (
+        {sections.map((item) => (
           <NavItem
             key={item.id}
             item={item}
             activeSection={activeSection}
             setActiveSection={setActiveSection}
-            maps={maps}
-            flags={flags}
-            donations={donations}
+            sections={sections}
           />
         ))}
       </nav>

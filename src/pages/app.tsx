@@ -56,6 +56,7 @@ export const App = () => {
 
   const [mapImageIsExpanded, setMapImageIsExpanded] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
+  const [imageIsStale, setImageIsStale] = useState(false);
   // const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [annotationsMode, setAnnotationsMode] = useState(false);
 
@@ -67,6 +68,7 @@ export const App = () => {
 
   const {
     renderSketch,
+    loadSavedImage,
     dimensions,
     sketchDims,
     p5MountRef,
@@ -75,6 +77,10 @@ export const App = () => {
     redrawFnsRef,
   } = useRenderSketch({
     setIsRendering,
+    onImageReady: () => {
+      setImageIsStale(false);
+      console.log("Image ready");
+    },
   });
 
   const {
@@ -91,11 +97,13 @@ export const App = () => {
     setConfig,
     collisions,
     setCollisions,
+    loadLocationFromLocalStorage,
   } = useLoadMap({
     user,
     setIsRendering,
     setToast,
     renderSketch,
+    loadSavedImage,
   });
 
   // Admins can always edit any map; non-admins defer to API ownership check
@@ -194,40 +202,50 @@ export const App = () => {
         ...arg1,
       });
     }
+    setImageIsStale(true);
   }
   const onConfigChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setConfig(e.target.value);
     setForm(addHeightsToForm(configs[e.target.value], form));
+    setImageIsStale(true);
   };
 
   const toggleMapImageIsExpanded = () => {
     const expanded = !mapImageIsExpanded;
     setMapImageIsExpanded(expanded);
-    const canvasEl = p5MountRef.current?.querySelector(
+    const mountNode = p5MountRef.current;
+    if (!mountNode) return;
+
+    const canvasEl = mountNode.querySelector(
       "canvas",
     ) as HTMLCanvasElement | null;
-    if (!canvasEl) return;
+    const imgEl = mountNode.querySelector("img") as HTMLImageElement | null;
+    const target = canvasEl ?? imgEl;
+    if (!target) return;
+
     if (expanded) {
-      canvasEl.style.width = `${sketchDims.width}px`;
-      canvasEl.style.height = `${sketchDims.height}px`;
-      canvasEl.style.maxWidth = `${sketchDims.width}px`;
-      canvasEl.style.maxHeight = `${sketchDims.height}px`;
-      canvasEl.style.position = "absolute";
-      canvasEl.style.top = "0";
-      canvasEl.style.left = "0";
-      canvasEl.style.transform = "";
+      target.style.width = `${sketchDims.width}px`;
+      target.style.height = `${sketchDims.height}px`;
+      target.style.maxWidth = `${sketchDims.width}px`;
+      target.style.maxHeight = `${sketchDims.height}px`;
+      target.style.position = "absolute";
+      target.style.top = "0";
+      target.style.left = "0";
+      target.style.transform = "";
+      if (imgEl) imgEl.style.objectFit = "contain";
     } else {
       const pw = dimensions.width;
       const ph = dimensions.height;
       const scale = Math.min(pw / sketchDims.width, ph / sketchDims.height);
-      canvasEl.style.width = `${sketchDims.width * scale}px`;
-      canvasEl.style.height = `${sketchDims.height * scale}px`;
-      canvasEl.style.maxWidth = "";
-      canvasEl.style.maxHeight = "";
-      canvasEl.style.position = "absolute";
-      canvasEl.style.top = "0";
-      canvasEl.style.left = "0";
-      canvasEl.style.transform = "";
+      target.style.width = `${sketchDims.width * scale}px`;
+      target.style.height = `${sketchDims.height * scale}px`;
+      target.style.maxWidth = "";
+      target.style.maxHeight = "";
+      target.style.position = "absolute";
+      target.style.top = "0";
+      target.style.left = "0";
+      target.style.transform = "";
+      if (imgEl) imgEl.style.objectFit = "contain";
     }
   };
 
@@ -241,8 +259,15 @@ export const App = () => {
         id: undefined,
         // filename: variantLabel.replace(/\s+/g, "-").toLowerCase(),
       };
-      console.log("variantForm", variantForm);
-      await maps.upsert({
+      const blob = await captureImage();
+      if (!blob) {
+        setToast({
+          message: "Failed to capture map image. Variant not saved.",
+          type: "error",
+        });
+        return;
+      }
+      const newMapConfig = await maps.upsert({
         form: variantForm,
         givenFeatures: features,
         bbox,
@@ -255,6 +280,10 @@ export const App = () => {
         parentId: variantForm.parentId ?? configId,
         status: "variant",
         reflections: [],
+      });
+      await saveImageToAws({
+        blob,
+        AWSPutURL: newMapConfig.AWSPutURL,
       });
       setToast({
         message: `Variant "${form.filename}" saved`,
@@ -338,9 +367,31 @@ export const App = () => {
             annotationsMode={annotationsMode}
             onAnnotationsModeToggle={() => setAnnotationsMode((m) => !m)}
             canEdit={canEdit}
+            imageIsStale={imageIsStale}
           />
           {isAdmin && configId && (
             <div className="border-t border-gray-200 mt-4 pt-4 px-1">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2">
+                Location &amp; Trails
+              </p>
+              <div className="flex gap-2 mb-4">
+                <a
+                  href="/geojson.io/index.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 py-1.5 text-center bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-xs font-semibold rounded transition-colors"
+                >
+                  Open Map Editor
+                </a>
+                <button
+                  type="button"
+                  onClick={loadLocationFromLocalStorage}
+                  className="flex-1 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-xs font-semibold rounded transition-colors"
+                  title="Pull the bbox/trails last drawn in the Map Editor into this map"
+                >
+                  Reload from Map Editor
+                </button>
+              </div>
               <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2">
                 Save as Variant
               </p>

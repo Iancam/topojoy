@@ -1,5 +1,6 @@
 import { admin, netlifyImageUrl } from "@/api";
 import { MapThumbnail } from "../../components/MapThumbnail";
+import { Input } from "@/components/ui/input";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 
@@ -8,11 +9,13 @@ const BASE_URL = "https://topojoy.studio";
 export type AdminVariant = {
   id: string;
   title: string;
+  filename?: string | null;
   imageUrl?: string | null;
   s3Key?: string | null;
   status?: string | null;
   createdAt: string;
   updatedAt: string;
+  purchased?: boolean;
 };
 
 export type AdminMapItem = {
@@ -24,12 +27,27 @@ export type AdminMapItem = {
   imageUrl?: string | null;
   s3Key?: string | null;
   userId: string;
-  status?: string | null;
+  variantStatus?: string | null;
   ownerEmail?: string | null;
+  giftAccessToken?: string | null;
   variants: AdminVariant[];
+  purchased?: boolean;
+  purchaseStatus?: string | null;
 };
 
-function statusBadge(status: string | null | undefined, variantCount: number) {
+function statusBadge(
+  status: string | null | undefined,
+  variantCount: number,
+  purchaseStatus: string,
+  purchased?: boolean,
+) {
+  if (purchased) {
+    return (
+      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">
+        purchased, {purchaseStatus}
+      </span>
+    );
+  }
   if (status === "submitted") {
     if (variantCount > 0)
       return (
@@ -141,6 +159,61 @@ function NotifyVariantsReadyButton({
   );
 }
 
+function GiftTokenField({
+  mapId,
+  initialValue,
+}: {
+  mapId: string;
+  initialValue?: string | null;
+}) {
+  const [value, setValue] = useState(initialValue ?? "");
+  const [saved, setSaved] = useState(initialValue ?? "");
+  const [state, setState] = useState<"idle" | "saving" | "error">("idle");
+
+  const dirty = value.trim() !== (saved ?? "").trim();
+
+  const handleSave = async () => {
+    setState("saving");
+    try {
+      const result = await admin.setGiftToken({
+        mapId,
+        giftAccessToken: value.trim(),
+      });
+      setSaved(result.giftAccessToken ?? "");
+      setValue(result.giftAccessToken ?? "");
+      setState("idle");
+    } catch (e: any) {
+      setState("error");
+      setTimeout(() => setState("idle"), 3000);
+    }
+  };
+
+  return (
+    <div className="mt-1.5 flex items-center gap-1.5">
+      <Input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && dirty && handleSave()}
+        placeholder="Paste gift code…"
+        className="h-6 text-[10px] px-1.5 py-0.5 flex-1"
+      />
+      <button
+        type="button"
+        onClick={handleSave}
+        disabled={!dirty || state === "saving"}
+        title="Assign this gift code to the submitter"
+        className="shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700 transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:border-gray-200 disabled:hover:text-gray-500"
+      >
+        {state === "saving" ? "saving…" : state === "error" ? "failed" : "save"}
+      </button>
+      {saved && !dirty && state === "idle" && (
+        <span className="text-[10px] text-teal-600 shrink-0">✓ applied</span>
+      )}
+    </div>
+  );
+}
+
 function SubmissionCard({ m }: { m: AdminMapItem }) {
   const [open, setOpen] = useState(false);
 
@@ -159,7 +232,12 @@ function SubmissionCard({ m }: { m: AdminMapItem }) {
           >
             {m.title}
           </Link>
-          {statusBadge(m.status, m.variants.length)}
+          {statusBadge(
+            m.variantStatus,
+            m.variants.length,
+            m.purchaseStatus || "unknown",
+            m.purchased,
+          )}
         </div>
         {m.ownerEmail && (
           <div className="text-xs text-blue-500 truncate">{m.ownerEmail}</div>
@@ -170,6 +248,8 @@ function SubmissionCard({ m }: { m: AdminMapItem }) {
         <div className="text-xs text-gray-400">
           {new Date(m.updatedAt).toLocaleString()}
         </div>
+
+        <GiftTokenField mapId={m.id} initialValue={m.giftAccessToken} />
 
         {m.variants.length > 0 && (
           <div className="mt-2">
@@ -189,18 +269,27 @@ function SubmissionCard({ m }: { m: AdminMapItem }) {
                   <Link
                     key={v.id}
                     to={`/app/?configId=${v.id}`}
-                    className="shrink-0 w-28 rounded border border-gray-200 overflow-hidden hover:border-teal-400 transition-colors"
+                    className={`shrink-0 w-28 rounded border overflow-hidden transition-colors ${
+                      v.purchased
+                        ? "border-green-400 hover:border-green-500"
+                        : "border-gray-200 hover:border-teal-400"
+                    }`}
                   >
-                    <div className="aspect-video bg-gray-100 flex items-center justify-center">
+                    <div className="aspect-video bg-gray-100 flex items-center justify-center relative">
                       <MapThumbBox
                         title={v.title}
                         s3Key={v.s3Key}
                         imageUrl={v.imageUrl}
                       />
+                      {v.purchased && (
+                        <span className="absolute top-1 right-1 text-[9px] font-medium px-1 py-0.5 rounded-full bg-green-100 text-green-700">
+                          purchased
+                        </span>
+                      )}
                     </div>
                     <div className="px-1.5 py-1">
                       <p className="text-[10px] text-gray-700 truncate">
-                        {v.title}
+                        {v.filename || v.title}
                       </p>
                     </div>
                   </Link>
@@ -236,8 +325,8 @@ export function MapsSection({
   const [search, setSearch] = useState("");
   const [showStandalones, setShowStandalones] = useState(false);
 
-  const { submissions, standalones } = useMemo(() => {
-    if (!maps) return { submissions: [], standalones: [] };
+  const { purchased, submissions, standalones } = useMemo(() => {
+    if (!maps) return { purchased: [], submissions: [], standalones: [] };
     const q = search.toLowerCase();
     const matchesSearch = (m: AdminMapItem) => {
       if (!q) return true;
@@ -246,13 +335,20 @@ export function MapsSection({
         m.filename?.toLowerCase().includes(q) ||
         m.userId.toLowerCase().includes(q) ||
         m.ownerEmail?.toLowerCase().includes(q) ||
-        m.variants.some((v) => v.title.toLowerCase().includes(q))
+        m.variants.some((v) =>
+          (v.filename || v.title).toLowerCase().includes(q),
+        )
       );
     };
     const filtered = maps.filter(matchesSearch);
     return {
-      submissions: filtered.filter((m) => m.status === "submitted"),
-      standalones: filtered.filter((m) => m.status !== "submitted"),
+      purchased: filtered.filter((m) => m.purchased),
+      submissions: filtered.filter(
+        (m) => !m.purchased && m.variantStatus === "submitted",
+      ),
+      standalones: filtered.filter(
+        (m) => !m.purchased && m.variantStatus !== "submitted",
+      ),
     };
   }, [maps, search]);
 
@@ -263,6 +359,7 @@ export function MapsSection({
           <h2 className="text-xl font-semibold text-gray-900">All Maps</h2>
           <p className="text-xs text-gray-400 mt-0.5">
             {submissions.length} submission{submissions.length !== 1 ? "s" : ""}
+            {purchased.length > 0 && `, ${purchased.length} purchased`}
             {standalones.length > 0 &&
               `, ${standalones.length} standalone${standalones.length !== 1 ? "s" : ""}`}
           </p>
@@ -286,10 +383,23 @@ export function MapsSection({
         <div className="text-gray-400 text-sm">Loading…</div>
       ) : (
         <>
-          {submissions.length === 0 && !search && (
+          {purchased.length > 0 && (
+            <section>
+              <h3 className="text-xs font-semibold uppercase tracking-widest text-green-600 mb-3">
+                Purchased
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {purchased.map((m) => (
+                  <SubmissionCard key={m.id} m={m} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {submissions.length === 0 && purchased.length === 0 && !search && (
             <div className="text-gray-400 text-sm">No submissions yet.</div>
           )}
-          {submissions.length === 0 && search && (
+          {submissions.length === 0 && purchased.length === 0 && search && (
             <div className="text-gray-400 text-sm">No submissions match.</div>
           )}
           {submissions.length > 0 && (
