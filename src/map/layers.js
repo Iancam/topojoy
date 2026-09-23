@@ -34,7 +34,7 @@ export function makeCurve(
   length,
   step_length,
   topo,
-  options = { angleTransform: (a) => a }
+  options = { angleTransform: (a) => a },
 ) {
   let curvePoints = [[x, y, topo.pixels[y][x][2]]];
   let last = (array) => array[array.length - 1];
@@ -50,8 +50,8 @@ export function makeCurve(
       lerpAngle(
         lastAspect,
         options.angleTransform(aspect1, [height, slope, aspect1]),
-        0.9
-      )
+        0.9,
+      ),
     );
     if (!aspect1) {
       break;
@@ -171,61 +171,69 @@ export function textsLayer(
     elevationRange,
     contrast,
     backgroundColor,
-  }
+  },
 ) {
-  bbox = bbox || [0, 0, topo.width, topo.height];
-  /**
-   * Determines whether a word should be placed at a given position. Allows wrapping
-   * around terrain. Checks that the height at the word is within elevationRange,
-   * and that the x position is not too close to the right edge of the image.
-   * @param {Object} topo - The topographic data containing pixel information as well as summary info on the map.
-   * @param {number} x - The x coordinate of the word.
-   * @param {number} y - The y coordinate of the word.
-   * @param {number} wordWidth - The width of the word.
-   * @returns {boolean} - Whether the word is visible or not.
-   */
-  const predicate = (topo, textBoxes, x, y, wordWidth, wordHeight) => {
-    const translate = (percentOfHeight) =>
-      topo.min + percentOfHeight * topo.magnitude;
-    const pix1 = topo.pixels[y]?.[x];
-    const pix2 = topo.pixels[y]?.[Math.floor(x + wordWidth)];
-    if (
-      x + wordWidth + margin > bbox[2] ||
-      y + margin > bbox[3] ||
-      x < bbox[0] ||
-      y < bbox[1]
-    )
-      return false;
-    if (!pix1 || !pix2) return false;
-    for (const { bbox: box } of textBoxes) {
-      if (collision(box, { x, y, w: wordWidth, h: wordHeight })) {
+  const groups = Array.isArray(text) ? text : [{ text, elevationRange, bbox }];
+
+  for (const group of groups) {
+    const groupBbox = group.bbox || [0, 0, topo.width, topo.height];
+    const groupElevationRange = group.elevationRange || [0, 1];
+    const groupText = group.text || "";
+
+    /**
+     * Determines whether a word should be placed at a given position. Allows wrapping
+     * around terrain. Checks that the height at the word is within elevationRange,
+     * and that the x position is not too close to the right edge of the image.
+     * @param {Object} topo - The topographic data containing pixel information as well as summary info on the map.
+     * @param {number} x - The x coordinate of the word.
+     * @param {number} y - The y coordinate of the word.
+     * @param {number} wordWidth - The width of the word.
+     * @returns {boolean} - Whether the word is visible or not.
+     */
+    const predicate = (topo, textBoxes, x, y, wordWidth, wordHeight) => {
+      const translate = (percentOfHeight) =>
+        topo.min + percentOfHeight * topo.magnitude;
+      const pix1 = topo.pixels[y]?.[x];
+      const pix2 = topo.pixels[y]?.[Math.floor(x + wordWidth)];
+      if (
+        x + wordWidth + margin > groupBbox[2] ||
+        y + margin > groupBbox[3] ||
+        x < groupBbox[0] ||
+        y < groupBbox[1]
+      )
         return false;
+      if (!pix1 || !pix2) return false;
+      for (const { bbox: box } of textBoxes) {
+        if (collision(box, { x, y, w: wordWidth, h: wordHeight })) {
+          return false;
+        }
       }
-    }
-    const [h1] = pix1;
-    const [h2] = pix2;
+      const [h1] = pix1;
+      const [h2] = pix2;
 
-    const [hmin, hmax] = elevationRange.map(translate);
-    const test = h1 < hmax && h1 > hmin && h2 < hmax && h2 > hmin;
+      const [hmin, hmax] = groupElevationRange.map(translate);
+      const test = h1 < hmax && h1 > hmin && h2 < hmax && h2 > hmin;
 
-    return test;
-  };
+      return test;
+    };
 
-  sketch.textFont(font);
-  sketch.textAlign(sketch.CENTER, sketch.CENTER);
-  fillText(
-    sketch,
-    topo,
-    textBoxes,
-    text,
-    alpha,
-    textSize,
-    colorAt,
-    contrast,
-    backgroundColor,
-    predicate,
-    bbox
-  );
+    sketch.textFont(font);
+    sketch.textAlign(sketch.CENTER, sketch.CENTER);
+    fillText(
+      sketch,
+      topo,
+      textBoxes,
+      groupText,
+      alpha,
+      textSize,
+      colorAt,
+      contrast,
+      backgroundColor,
+      predicate,
+      groupBbox,
+      margin,
+    );
+  }
 }
 
 function fillText(
@@ -240,7 +248,7 @@ function fillText(
   backgroundColor,
   predicate = () => true,
   bbox = [0, 0, width, height],
-  margin = 40
+  margin = 40,
 ) {
   sketch.textSize(size);
   sketch.noStroke();
@@ -297,7 +305,7 @@ export function lakesLabels(
   lakes,
   keepList,
   { font, textSize, textColor, drop } = {},
-  addLabels
+  addLabels,
 ) {
   const addedNames = [];
   const labels = {};
@@ -321,7 +329,7 @@ export function lakesLabels(
           acc[1] += y;
           return acc;
         },
-        [0, 0]
+        [0, 0],
       );
       const [cx, cy] = [x / externalRing.length, y / externalRing.length];
       labels[name] = { pt: [cx, cy], displayName: name.split(" ").join("\n") };
@@ -371,7 +379,7 @@ export function mountainLayer(
     keepList: [],
     drop: false,
   },
-  addLabels
+  addLabels,
 ) {
   const peaksObj = Object.entries(peaks)
     .map(([name, [[pt]]]) => {
@@ -423,7 +431,7 @@ export function namedLines(
   keepList,
   category,
   { textSize, textColor, font, drop },
-  addLabels
+  addLabels,
 ) {
   let addedNames = [];
   let labels = {};

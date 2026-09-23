@@ -127,10 +127,16 @@ export const EmeraldLakesConfig: MapConfig = {
   backgroundText: {
     font: "Courier",
     textSize: 2.5 * 10,
-    bbox: [0, 0, 0, 0],
     alpha: 200,
-    text: "",
-    elevationRange: [0.7, 1],
+    highContrast: false,
+    contrast: 7.5,
+    groups: [
+      {
+        text: "",
+        bbox: [0, 0, 0, 0],
+        elevationRange: [0.7, 1],
+      },
+    ],
   },
   colorPlan: [
     // lower elevations
@@ -148,7 +154,7 @@ export const EmeraldLakesConfig: MapConfig = {
       height: 1 - 0.3,
       colors: darken(
         [p.JuniperBark4, p.JuniperBark5, p.JuniperBark6, p.JuniperBark7],
-        0.5
+        0.5,
       ),
     },
     // higher elevations

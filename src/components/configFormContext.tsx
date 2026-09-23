@@ -11,6 +11,7 @@ export type ConfigFormContextValue = {
   annotationsMode: boolean;
   onAnnotationsModeToggle: () => void;
   imageIsStale: boolean;
+  sketchDims?: { width: number; height: number };
 };
 
 export const ConfigFormContext =

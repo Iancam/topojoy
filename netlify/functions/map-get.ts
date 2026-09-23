@@ -24,16 +24,26 @@ const buildLegacyFormJson = (map: any) => {
     .split(",")
     .filter((v: string) => v !== "")
     .map(Number);
+  const backgroundTextGroups = Array.isArray(map.backgroundTextGroups)
+    ? map.backgroundTextGroups
+    : map.backgroundText
+      ? [
+          {
+            text: map.backgroundText || "",
+            elevationRange: [
+              map.backgroundTextElevationRange0 ?? 0.7,
+              map.backgroundTextElevationRange1 ?? 1,
+            ],
+            bbox: [0, 0, 0, 0],
+          },
+        ]
+      : [];
   return {
     "title.text": map.title || "",
     filename: map.filename,
     zoomLevel: map.zoomLevel,
     "curve.density": map.curveDensity,
-    "backgroundText.text": map.backgroundText || "",
-    "backgroundText.elevationRange": [
-      map.backgroundTextElevationRange0,
-      map.backgroundTextElevationRange1,
-    ],
+    "backgroundText.groups": backgroundTextGroups,
     "backgroundText.highContrast": map.backgroundTextHighContrast,
     "backgroundText.contrast": map.backgroundTextContrast,
     crossHatch: map.crossHatch,
@@ -78,9 +88,7 @@ export const handler = async (
       formJson: true,
       bbox: true,
       selectedTrails: true,
-      backgroundText: true,
-      backgroundTextElevationRange0: true,
-      backgroundTextElevationRange1: true,
+      backgroundTextGroups: true,
       backgroundTextHighContrast: true,
       backgroundTextContrast: true,
       crossHatch: true,

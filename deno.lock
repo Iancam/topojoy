@@ -94,7 +94,7 @@
         "npm:react-dom@19",
         "npm:react-router@^7.9.3",
         "npm:react@19",
-        "npm:resend@^6.12.4",
+        "npm:resend@^6.26.0",
         "npm:rollup-plugin-copy@^3.5.0",
         "npm:shepherd.js@^14.5.0",
         "npm:statistics.js@1",

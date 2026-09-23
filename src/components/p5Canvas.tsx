@@ -112,6 +112,7 @@ export const P5Canvas = ({
       </button>
       <div
         ref={p5Ref}
+        data-map-preview="true"
         className={`relative inset-0 w-[calc(100vw-20rem)] h-full`}
       >
         <div ref={p5MountRef} className="absolute inset-0"></div>

@@ -272,11 +272,16 @@ export const SnowMesaConfig: MapConfig = {
   backgroundText: {
     font: "Courier",
     textSize: 1.8 * 8.001,
-    bbox: [0, 0, 0, 0],
     alpha: 200,
     highContrast: false,
-    text: [texts.HalfMountain, texts.netherlands].join("\n"),
-    elevationRange: [0.7, 1],
+    contrast: 7.5,
+    groups: [
+      {
+        text: [texts.HalfMountain, texts.netherlands].join("\n"),
+        bbox: [0, 0, 0, 0],
+        elevationRange: [0.7, 1],
+      },
+    ],
   },
   colorPlan: [
     { height: 1 - 1.1, colors: [p.orange, p.aquamarine] },

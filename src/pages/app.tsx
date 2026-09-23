@@ -24,9 +24,7 @@ import { useSaveMap } from "@/hooks/useSaveMap.ts";
 import { usePersistHook } from "@/hooks/persistHook.ts";
 
 const TEXT_KEYS = [
-  "backgroundText.text",
-  "backgroundText.elevationRange",
-  "backgroundText.highContrast",
+  "backgroundText.groups",
   "backgroundText.contrast",
   "textSizeMultiplier",
 ];
@@ -368,6 +366,7 @@ export const App = () => {
             onAnnotationsModeToggle={() => setAnnotationsMode((m) => !m)}
             canEdit={canEdit}
             imageIsStale={imageIsStale}
+            sketchDims={sketchDims}
           />
           {isAdmin && configId && (
             <div className="border-t border-gray-200 mt-4 pt-4 px-1">

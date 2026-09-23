@@ -60,14 +60,19 @@ const LakeConfigSchema = z.object({
   drop: z.boolean(),
 });
 
+const BackgroundTextGroupSchema = z.object({
+  text: z.string(),
+  elevationRange: z.array(z.number().min(0).max(1)).min(2).max(2),
+  bbox: z.array(z.number().min(0)).min(4).max(4),
+});
+
 const BackgroundTextConfigSchema = z.object({
   font: z.string(),
   textSize: z.number().positive(),
-  bbox: z.array(z.number().positive()).min(4).max(4),
   alpha: z.number().positive(),
-  text: z.string(),
   highContrast: z.boolean(),
-  elevationRange: z.array(z.number().min(0).max(1)).min(2).max(2),
+  contrast: z.number().min(0).max(10).optional(),
+  groups: z.array(BackgroundTextGroupSchema),
 });
 
 // Complete map configuration schema
@@ -93,7 +98,7 @@ export const MapConfigSchema = z.object({
       ]),
       weight: z.number().optional(),
       spread: z.number().optional(),
-    })
+    }),
   ),
   background: ColorSchema,
   crossHatch: z.boolean(),

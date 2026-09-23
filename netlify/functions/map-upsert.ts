@@ -109,6 +109,7 @@ export const handler = async (event: any) => {
     }
     const zoomLevel = (formJson["zoomLevel"] as number) || 13;
     const curveDensity = (formJson["curve.density"] as number) || 3;
+    const backgroundTextGroups = formJson["backgroundText.groups"] || [];
 
     const [url, configRecord] = await Promise.all([
       putAWSImage(uuid, s3),
@@ -148,6 +149,7 @@ export const handler = async (event: any) => {
             config,
             bbox,
             selectedTrails,
+            backgroundTextGroups,
             imageUrl,
             ...(parentId !== undefined && { parentId }),
             ...(status !== undefined && { status }),
@@ -164,6 +166,7 @@ export const handler = async (event: any) => {
             config,
             bbox,
             selectedTrails,
+            backgroundTextGroups,
             imageUrl,
             s3Key: getAWSKey(uuid),
             ...(parentId !== undefined && { parentId }),

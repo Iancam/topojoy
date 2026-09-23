@@ -89,11 +89,13 @@ model MapConfig {
   bbox Json 
   selectedTrails Json? 
 
+  backgroundTextGroups Json?
+  backgroundTextHighContrast Boolean?
+  backgroundTextContrast Float @default(7.5)
+  // Deprecated: kept for legacy reads only; use backgroundTextGroups for new data.
   backgroundText String?
   backgroundTextElevationRange0 Float?
   backgroundTextElevationRange1 Float?
-  backgroundTextHighContrast Boolean?
-  backgroundTextContrast Float @default(7.5)
 
   annotations Annotation[]
 

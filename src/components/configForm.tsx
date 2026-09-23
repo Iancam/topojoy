@@ -36,6 +36,7 @@ interface ConfigFormProps {
   onFormChange: (key: string, value: any) => void;
   renderSketch: () => any;
   onSubmitSave?: () => void;
+  sketchDims?: { width: number; height: number };
 
   annotationsMode?: boolean;
   onAnnotationsModeToggle?: () => void;
@@ -242,6 +243,7 @@ export const ConfigForm = ({
   onFormChange,
   renderSketch,
   onSubmitSave,
+  sketchDims,
   annotationsMode = false,
   onAnnotationsModeToggle,
   canEdit = true,
@@ -283,6 +285,7 @@ export const ConfigForm = ({
     annotationsMode: annotationsMode ?? false,
     onAnnotationsModeToggle: onAnnotationsModeToggle ?? (() => {}),
     imageIsStale,
+    sketchDims,
   };
 
   return (

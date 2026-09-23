@@ -32,12 +32,16 @@ export interface Config {
     show: boolean;
   };
   backgroundText: {
-    text: string;
-    bbox: number[];
-    elevationRange: number[];
+    groups: {
+      text: string;
+      bbox: number[];
+      elevationRange: number[];
+    }[];
     font: string;
     textSize: number;
     alpha: number;
+    highContrast: boolean;
+    contrast?: number;
   };
   crossHatch: boolean;
 }

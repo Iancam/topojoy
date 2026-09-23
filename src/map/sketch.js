@@ -58,11 +58,13 @@ export const sketchFactory = (
         // this is significantly simpler, and still easy to reason about
         const baseConfigTransforms = {
           backgroundTextBBox: (config) => {
-            config.backgroundText.bbox =
-              config.backgroundText.bbox &&
-              config.backgroundText.bbox.reduce((a, b) => a + b)
-                ? config.backgroundText.bbox
-                : [0, 0, canvas.width, canvas.height];
+            const groups = config.backgroundText.groups || [];
+            groups.forEach((group) => {
+              group.bbox =
+                group.bbox && group.bbox.reduce((a, b) => a + b)
+                  ? group.bbox
+                  : [0, 0, canvas.width, canvas.height];
+            });
           },
         };
         // console.log({
@@ -206,8 +208,20 @@ export const sketchFactory = (
         const redrawTextLayer = (newConfig) => {
           newConfig.textSizeMultiplier =
             newConfig.textSizeMultiplier || config.textSizeMultiplier;
-          // bbox is set once in setup() via baseConfigTransforms — raw form has [0,0,0,0]
-          newConfig.backgroundText.bbox = config.backgroundText.bbox;
+          // bboxes are set once in setup() via baseConfigTransforms — raw form has [0,0,0,0]
+          newConfig.backgroundText.groups = newConfig.backgroundText.groups.map(
+            (group, index) => ({
+              ...group,
+              bbox: group.bbox?.some(Boolean)
+                ? group.bbox
+                : config.backgroundText.groups[index]?.bbox || [
+                    0,
+                    0,
+                    layers.text.width,
+                    layers.text.height,
+                  ],
+            }),
+          );
           layers.text.clear();
           layers.text.noStroke();
           layers.text.noFill();
@@ -216,6 +230,7 @@ export const sketchFactory = (
             textSize:
               newConfig.backgroundText.textSize * newConfig.textSizeMultiplier,
             backgroundColor: newConfig.background,
+            text: newConfig.backgroundText.groups,
           });
           recompose();
         };
@@ -406,6 +421,7 @@ export const sketchFactory = (
           ...config.backgroundText,
           textSize: config.backgroundText.textSize * config.textSizeMultiplier,
           backgroundColor: config.background,
+          text: config.backgroundText.groups,
         });
 
         labelManager.drawLabels();

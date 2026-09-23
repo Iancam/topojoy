@@ -4,6 +4,7 @@ import { ConfigSelect } from "./ConfigSelect";
 import { PrintOptions } from "./PrintOptions";
 import type { MapConfig } from "@/configs/schema";
 import { AnnotationsControl } from "./AnnotationsControl";
+import { BackgroundTextGroupsControl } from "./BackgroundTextGroupsControl";
 import { CollisionMultiSelect } from "./CollisionMultiSelect";
 import { filenameSchema } from "../../netlify/lib/validation";
 // Props passed to advanced form components (e.g., ColorPlan)
@@ -69,9 +70,9 @@ export const formJourney: {
      lyrics, or poetry. Choose the elevation band that the text will
       be visible in, and choose whether to display it in high contrast.`,
     formElements: [
-      "backgroundText.text",
-      "backgroundText.elevationRange",
+      BackgroundTextGroupsControl,
       "backgroundText.contrast",
+      "backgroundText.highContrast",
       AnnotationsControl,
     ],
   },
@@ -108,25 +109,18 @@ export const basicFormElements: FormElements = {
     },
   ],
   "legend.enabled": ["boolean", "show/hide legend", false, "Show Legend"],
-  "backgroundText.text": ["textarea", "the text in the background", "", "Text"],
-  "backgroundText.elevationRange": [
-    "range",
-    "the elevations where the background text will be visible",
-    [0.7, 1],
-    "Elevation Range",
-  ],
-  "backgroundText.highContrast": [
-    "boolean",
-    "display background text in high contrast",
-    false,
-    "High Contrast",
-  ],
   "backgroundText.contrast": [
     "number",
     "the contrast of the background text",
     7.5,
     "Contrast",
     { min: 0, max: 10 },
+  ],
+  "backgroundText.highContrast": [
+    "boolean",
+    "display background text in high contrast",
+    false,
+    "High Contrast",
   ],
   "title.text": ["text", "the text of the title", "", "Title"],
 

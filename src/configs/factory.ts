@@ -63,10 +63,16 @@ const baseDefaults: Omit<MapConfig, "name" | "background" | "colorPlan"> = {
   backgroundText: {
     font: "Courier",
     textSize: 1.8 * 8.001,
-    bbox: [0, 0, 0, 0],
     alpha: 200,
-    text: "",
-    elevationRange: [0.7, 1],
+    highContrast: false,
+    contrast: 7.5,
+    groups: [
+      {
+        text: "",
+        bbox: [0, 0, 0, 0],
+        elevationRange: [0.7, 1],
+      },
+    ],
   },
   crossHatch: false,
 };

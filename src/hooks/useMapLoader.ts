@@ -82,7 +82,23 @@ export function useLoadMap({
         // Clear any previous error
         setMapNotFoundError(null);
         setConfig(config.config);
-        setForm({ ...preForm, ...config });
+        const mergedForm = { ...preForm, ...config };
+        // Backfill legacy maps that only have a single text value.
+        if (
+          config["backgroundText.text"] &&
+          !mergedForm["backgroundText.groups"]
+        ) {
+          mergedForm["backgroundText.groups"] = [
+            {
+              text: config["backgroundText.text"] || "",
+              elevationRange: config["backgroundText.elevationRange"] || [
+                0.7, 1,
+              ],
+              bbox: [0, 0, 0, 0],
+            },
+          ];
+        }
+        setForm(mergedForm);
         setSelectedTrails(config.selectedTrails);
         setBbox(config.bbox);
         // set fealures
@@ -126,7 +142,7 @@ export function useLoadMap({
             );
             renderSketch({
               config: config.config,
-              form: { ...preForm, ...config },
+              form: mergedForm,
               bbox: config.bbox,
               selectedTrails: config.selectedTrails,
               features: feats,
@@ -138,7 +154,7 @@ export function useLoadMap({
         } else {
           renderSketch({
             config: config.config,
-            form: { ...preForm, ...config },
+            form: mergedForm,
             bbox: config.bbox,
             selectedTrails: config.selectedTrails,
             features: feats,
