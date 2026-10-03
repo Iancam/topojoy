@@ -19,7 +19,7 @@ const steps = [
   },
   {
     title: "Choose a design",
-    description: "I'll make several interpretations for you to review.",
+    description: "I make several interpretations and send them to you.",
     icon: Palette,
   },
   {
@@ -74,6 +74,10 @@ export const FrontPage = () => {
               Choose a special place in the wilderness. Together, we'll turn it
               into a custom map they can keep.
             </p>
+            <p className="mt-5 max-w-md border-l border-teal-300/40 pl-4 text-sm leading-6 text-[#79b7c4]">
+              I'm Ian. TopoJoy is just me: I design each map, send you the
+              options, and pack the finished print myself.
+            </p>
             <div className="mt-10">
               {!formOpen ? (
                 <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
@@ -114,9 +118,13 @@ export const FrontPage = () => {
                 className="w-full"
               />
             </div>
-            <p className="mt-5 text-right text-[11px] uppercase tracking-[0.22em] text-[#6ab3c2]">
-              A place remembered, made tangible
-            </p>
+            <div className="ml-auto mt-[-18px] w-fit max-w-[260px] rotate-1 bg-[#efe8da] px-5 py-4 text-[#29484c] shadow-lg shadow-black/30">
+              <p className="font-serif text-base italic leading-6">
+                I make these one at a time, with you and a particular person in
+                mind.
+              </p>
+              <p className="mt-2 text-right text-xs text-[#8b613d]">— Ian</p>
+            </div>
           </div>
         </div>
       </section>
@@ -178,11 +186,15 @@ export const FrontPage = () => {
         <div className="mx-auto w-full max-w-6xl px-6 lg:px-10">
           <div className="max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#8b613d]">
-              How the gift moves
+              How it works
             </p>
             <h2 className="mt-5 font-serif text-4xl font-light leading-tight md:text-5xl">
-              You bring the memory. I'll help give it form.
+              You bring the memory. I do the mapmaking.
             </h2>
+            <p className="mt-6 max-w-xl leading-7 text-[#607577]">
+              There isn't a team or an automated design service behind this. We
+              start with your place, then I work through the details with you.
+            </p>
           </div>
           <div className="relative mt-16 grid gap-10 md:grid-cols-4 md:gap-6">
             <div className="absolute left-[8%] right-[8%] top-6 hidden border-t border-dashed border-[#9c8c73] md:block" />
@@ -246,40 +258,39 @@ export const FrontPage = () => {
             </div>
           </div>
 
-          <div className="self-center rounded-sm border border-[#2b5961] bg-[#071e25]/70 p-7 sm:p-10">
-            <div className="space-y-0">
-              {[
-                ["A donor", "makes this possible"],
-                ["TopoJoy", "makes the map with you"],
-                ["You", "give it to"],
-                ["Someone you care about", "receives a place remembered"],
-              ].map(([name, action], index, items) => (
-                <div key={name} className="relative flex gap-5 pb-10 last:pb-0">
-                  {index < items.length - 1 && (
-                    <div className="absolute bottom-0 left-[15px] top-8 border-l border-dashed border-teal-500/40" />
-                  )}
-                  <div className="relative z-10 mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-teal-400/50 bg-[#071e25] text-xs text-teal-300">
-                    {index + 1}
-                  </div>
-                  <div>
-                    <p className="font-serif text-2xl text-[#e9f8f7]">{name}</p>
-                    <p className="mt-1 text-sm text-[#6ab3c2]">{action}</p>
-                  </div>
-                </div>
-              ))}
+          <div className="self-center rotate-1 bg-[#efe8da] p-8 text-[#29484c] shadow-2xl shadow-black/25 sm:p-11">
+            <p className="font-serif text-2xl italic">
+              The chain, as I see it:
+            </p>
+            <div className="mt-8 space-y-6 border-l border-[#b89061]/50 pl-6">
+              <p className="leading-7">
+                Someone else's generosity pays for the materials and gives me
+                the time to work.
+              </p>
+              <p className="leading-7">
+                You tell me about a person and a place. I make the map, revise
+                it with you, print it, and pack it.
+              </p>
+              <p className="leading-7">
+                You give it. Whatever happens after that belongs to you and the
+                person receiving it.
+              </p>
             </div>
+            <p className="mt-8 text-right font-serif italic text-[#8b613d]">
+              That's the whole operation. — Ian
+            </p>
           </div>
         </div>
       </section>
 
       {/* Why TopoJoy */}
       <section className="bg-[#efe8da] py-24 text-[#17373c] lg:py-32">
-        <div className="mx-auto grid w-full max-w-6xl gap-14 px-6 lg:grid-cols-[0.75fr_1.25fr] lg:px-10">
-          <div className="font-serif text-7xl leading-none text-[#b89061]/40 md:text-8xl">
-            01
-            <span className="mt-3 block font-sans text-xs font-semibold uppercase tracking-[0.26em] text-[#8b613d]">
-              The first map
-            </span>
+        <div className="mx-auto grid w-full max-w-6xl gap-10 px-6 lg:grid-cols-[0.75fr_1.25fr] lg:px-10">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.26em] text-[#8b613d]">
+              A note from me
+            </p>
+            <div className="mt-5 h-px w-24 bg-[#b89061]/50" />
           </div>
           <div className="max-w-2xl">
             <h2 className="font-serif text-4xl font-light leading-tight md:text-5xl">
@@ -317,8 +328,8 @@ export const FrontPage = () => {
           </h2>
           <p className="mx-auto mt-7 max-w-2xl text-lg leading-8 text-[#8fc8d3]">
             A trail you walked together. A lake they return to. A landscape tied
-            to someone you miss. Begin with the place, and we'll make the gift
-            from there.
+            to someone you miss. Begin with the place, and I'll make the gift
+            with you from there.
           </p>
           <button
             type="button"
