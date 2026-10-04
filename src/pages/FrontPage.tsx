@@ -24,7 +24,7 @@ const steps = [
   },
   {
     title: "Give the map",
-    description: "I'll print your favorite and mail it to the recipient.",
+    description: "I send the finished print from my shop to the recipient.",
     icon: Gift,
   },
 ];
@@ -75,8 +75,9 @@ export const FrontPage = () => {
               into a custom map they can keep.
             </p>
             <p className="mt-5 max-w-md border-l border-teal-300/40 pl-4 text-sm leading-6 text-[#79b7c4]">
-              I'm Ian. TopoJoy is just me: I design each map, send you the
-              options, and pack the finished print myself.
+              I'm Ian. TopoJoy is just you and me: you select the place and
+              personalize it, I design the map and send you options to choose
+              from.
             </p>
             <div className="mt-10">
               {!formOpen ? (
@@ -259,17 +260,16 @@ export const FrontPage = () => {
           </div>
 
           <div className="self-center rotate-1 bg-[#efe8da] p-8 text-[#29484c] shadow-2xl shadow-black/25 sm:p-11">
-            <p className="font-serif text-2xl italic">
-              The chain, as I see it:
-            </p>
+            <p className="font-serif text-2xl italic">The chain:</p>
             <div className="mt-8 space-y-6 border-l border-[#b89061]/50 pl-6">
               <p className="leading-7">
                 Someone else's generosity pays for the materials and gives me
                 the time to work.
               </p>
               <p className="leading-7">
-                You tell me about a person and a place. I make the map, revise
-                it with you, print it, and pack it.
+                You tell me about a person, select a place, and personalize the
+                text. I make the map, revise it with you, and mail the finished
+                print.
               </p>
               <p className="leading-7">
                 You give it. Whatever happens after that belongs to you and the

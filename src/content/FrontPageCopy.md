@@ -10,7 +10,7 @@ This is an economy of gifts; I'm not charging anything. The ability to make a ma
 
 # How it works
 
-You select the location and trails. Optionally, add some background text, like poetry or a personal message. I'll make several designs for you to choose from, then I'll print and mail your favorite. Afterwards, I'll ask how the gift affected you and the recipient.
+You select the location and trails. Optionally, add some background text, like poetry or a personal message. I'll make several designs for you to choose from, then send the finished print from my shop. Afterwards, I'll ask how the gift affected you and the recipient.
 
 # Why
 
