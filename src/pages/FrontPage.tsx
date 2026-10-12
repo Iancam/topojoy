@@ -263,8 +263,8 @@ export const FrontPage = () => {
             <p className="font-serif text-2xl italic">The chain:</p>
             <div className="mt-8 space-y-6 border-l border-[#b89061]/50 pl-6">
               <p className="leading-7">
-                Someone else's generosity pays for the materials and gives me
-                the time to work.
+                A donor's generosity pays for the materials and gives me the
+                time to work.
               </p>
               <p className="leading-7">
                 You tell me about a person, select a place, and personalize the
@@ -276,9 +276,6 @@ export const FrontPage = () => {
                 person receiving it.
               </p>
             </div>
-            <p className="mt-8 text-right font-serif italic text-[#8b613d]">
-              That's the whole operation. — Ian
-            </p>
           </div>
         </div>
       </section>
@@ -297,14 +294,13 @@ export const FrontPage = () => {
               It started with one map.
             </h2>
             <p className="mt-7 text-lg leading-8 text-[#405d60]">
-              I made a topographic map of my sister's favorite trail in her
-              favorite colors, with songs she used to sing worked into the
-              landscape. It was not a product. It was a way of showing her that
-              her memories mattered.
+              In 2020, I made a topographic map of my sister's favorite trail in
+              her favorite colors, with songs she used to sing worked into the
+              landscape. It was born from my gratitude to her, and the desire to
+              strengthen our connection.
             </p>
             <p className="mt-5 leading-7 text-[#607577]">
-              Everything since has been an experiment in what generosity can set
-              in motion.
+              Everything since has been an experiment in generosity.
             </p>
             <Link
               to="/origin-story"
