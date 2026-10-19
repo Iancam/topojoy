@@ -33,6 +33,7 @@ export const handler = async (
         updatedAt: true,
         imageUrl: true,
         s3Key: true,
+        visibility: true,
         // Placeholder for future image field
       },
     });

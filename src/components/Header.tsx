@@ -53,6 +53,13 @@ export const Header = () => {
             </Link>
           </div>
           <div className="flex items-center ml-auto">
+            <Link to="/browse">
+              <span className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
+                Browse
+              </span>
+            </Link>
+          </div>
+          <div className="flex items-center ml-auto">
             <Link to="/app">
               <span className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
                 App

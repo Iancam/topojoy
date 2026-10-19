@@ -4,6 +4,7 @@ import { Link } from "react-router";
 import { Header } from "../components/Header";
 import { maps as mapAPI, netlifyImageUrl } from "../api";
 import { MapThumbnail } from "../components/MapThumbnail";
+import { TagEditor } from "../components/TagEditor";
 export type MapListItem = {
   id: string;
   title: string;
@@ -12,6 +13,7 @@ export type MapListItem = {
   updatedAt: string;
   imageUrl?: string | null;
   s3Key?: string | null;
+  visibility?: string;
 };
 
 export default function MyMaps() {
@@ -21,6 +23,7 @@ export default function MyMaps() {
   const [loading, setLoading] = React.useState<boolean>(true);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
   const [removingIds, setRemovingIds] = React.useState<string[]>([]);
+  const [taggingMapId, setTaggingMapId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let mounted = true;
@@ -36,6 +39,20 @@ export default function MyMaps() {
       mounted = false;
     };
   }, [userId]);
+
+  const toggleVisibility = async (m: MapListItem) => {
+    const visibility = m.visibility === "private" ? "public" : "private";
+    try {
+      await (mapAPI as any).setVisibility({ id: m.id, visibility });
+      setMaps((prev) =>
+        prev
+          ? prev.map((x) => (x.id === m.id ? { ...x, visibility } : x))
+          : prev,
+      );
+    } catch (e: any) {
+      setError(e.message || "Failed to change visibility");
+    }
+  };
 
   const handleDelete = async (id: string) => {
     if (!userId) return;
@@ -131,7 +148,31 @@ export default function MyMaps() {
                         {new Date(m.createdAt).toLocaleString()}
                       </div>
                     </div>
-                    <div className="flex justify-end">
+                    <div className="flex justify-between">
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setTaggingMapId(m.id);
+                          }}
+                          className="text-sm text-teal-600 hover:text-teal-800"
+                        >
+                          Tag
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleVisibility(m);
+                          }}
+                          className="text-sm text-gray-500 hover:text-gray-700"
+                        >
+                          {m.visibility === "private" ? "Private" : "Public"}
+                        </button>
+                      </div>
                       <button
                         type="button"
                         onClick={(e) => {
@@ -152,6 +193,12 @@ export default function MyMaps() {
           </div>
         )}
       </div>
+      {taggingMapId && (
+        <TagEditor
+          mapConfigId={taggingMapId}
+          onClose={() => setTaggingMapId(null)}
+        />
+      )}
     </div>
   );
 }

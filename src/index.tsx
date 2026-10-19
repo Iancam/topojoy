@@ -23,6 +23,7 @@ import ChooseVariantPage from "./pages/ChooseVariantPage";
 import { Blog } from "./pages/Blog";
 import { BlogPost } from "./pages/BlogPost";
 import { Privacy } from "./Privacy";
+import BrowsePage from "./pages/BrowsePage";
 const AppError = () => {
   const error = useRouteError() as Error | string | null | undefined;
   console.log(error);
@@ -113,6 +114,10 @@ const router = createBrowserRouter([
       {
         path: "/origin-story",
         element: <OriginStory />,
+      },
+      {
+        path: "/browse",
+        element: <BrowsePage />,
       },
       {
         path: "/blog",

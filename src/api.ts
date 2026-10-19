@@ -63,6 +63,7 @@ export type MapListItem = {
   createdAt: string;
   updatedAt: string;
   imageUrl?: string | null;
+  visibility?: string;
 };
 
 // the netlify functions always return json, even if it's an error
@@ -286,6 +287,11 @@ const mapsAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
   ],
   get: ["map-get", "GET", "Failed to load map", fromDTO(DTOToForm)],
   delete: ["map-delete", "POST", "Failed to delete map"],
+  setVisibility: [
+    "map-set-visibility",
+    "POST",
+    "Failed to change map visibility",
+  ],
 });
 
 const orderAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
@@ -405,6 +411,46 @@ const submissionAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
   sendMessage: ["variant-message-send", "POST", "Failed to send message"],
 });
 
+export type TagNodeDTO = {
+  id: string;
+  key: string;
+  name: string;
+  kind: string | null;
+};
+
+export type TagPathDTO = {
+  id: string;
+  mine: boolean;
+  taggedBy: string | null;
+  path: TagNodeDTO[];
+  createdAt: string;
+};
+
+export type BrowseMapDTO = {
+  id: string;
+  title: string;
+  filename: string;
+  imageUrl: string | null;
+  s3Key: string | null;
+  updatedAt: string;
+  user: { username: string | null };
+  nodes: TagNodeDTO[];
+};
+
+export type BrowseResultDTO = {
+  maps: BrowseMapDTO[];
+  facets: { key: string; name: string; kind: string | null; count: number }[];
+  untaggedCount: number;
+};
+
+const tagAPIData = (<T extends Record<string, APIEntry>>(x: T) => x)({
+  suggest: ["tag-suggest", "GET", "Failed to suggest tags"],
+  assign: ["tag-assign", "POST", "Failed to tag map"],
+  deleteAssignment: ["tag-assignment-delete", "POST", "Failed to remove tag"],
+  mapTags: ["map-tags", "GET", "Failed to load map tags"],
+  browse: ["tag-browse", "GET", "Failed to browse maps"],
+});
+
 export const maps = Object.fromEntries(
   Object.entries(mapsAPIData).map(([key, value]) => [
     key,
@@ -447,6 +493,25 @@ export const submission = Object.fromEntries(
     APIDataToAPIFN(value),
   ]),
 );
+export const tags = Object.fromEntries(
+  Object.entries(tagAPIData).map(([key, value]) => [
+    key,
+    APIDataToAPIFN(value),
+  ]),
+) as {
+  suggest: (body: { q: string }) => Promise<TagNodeDTO[]>;
+  assign: (body: {
+    mapConfigId: string;
+    path: { name: string; kind?: string }[];
+  }) => Promise<{ id: string; path: string[] }>;
+  deleteAssignment: (body: { id: string }) => Promise<{ deleted: boolean }>;
+  mapTags: (body: { mapConfigId: string }) => Promise<TagPathDTO[]>;
+  browse: (body: {
+    nodes?: string;
+    untagged?: string;
+    q?: string;
+  }) => Promise<BrowseResultDTO>;
+};
 
 export const saveImageToAws = async (body: {
   blob: Blob;

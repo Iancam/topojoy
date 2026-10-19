@@ -25,6 +25,8 @@ model User {
   donations Donation[]
   giftedMapsGiven    GiftedMap[] @relation("GiftGiver")
   giftedMapsReceived GiftedMap[] @relation("GiftRecipient")
+  tagAssignments     TagAssignment[]
+  tagNodesCreated    TagNode[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -120,11 +122,16 @@ model MapConfig {
   orderItems  OrderItem[]
   giftedMaps  GiftedMap[]
   reflections Reflection[]
+  tagAssignments TagAssignment[]
 
   parentId  String?
   parent    MapConfig?  @relation("Variants", fields: [parentId], references: [id])
   variants  MapConfig[] @relation("Variants")
   status    String?
+
+  // "public" maps may appear in tag browse and be tagged by anyone;
+  // "private" maps are only visible to the owner/collaborators.
+  visibility String @default("public")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -296,4 +303,38 @@ model StripeWebhookEvent {
   id          String   @id
   type        String
   processedAt DateTime @default(now())
+}
+
+// A canonical, shared tag node. Nodes have no inherent hierarchy — users file
+// maps under ordered "paths" made of these nodes, and browsing is faceted over
+// the set of nodes attached to a map. `kind` is a soft label (first writer
+// wins); divergent kind suggestions from other users land in suggestedKinds.
+model TagNode {
+  id             String   @id @default(cuid())
+  key            String   @unique @db.VarChar(128)
+  name           String   @db.VarChar(128)
+  kind           String?  @db.VarChar(64)
+  suggestedKinds String[] @default([])
+  createdById    String?
+  createdBy      User?    @relation(fields: [createdById], references: [id])
+  createdAt      DateTime @default(now())
+  assignments    TagAssignment[]
+}
+
+// One user's filing of a map under an ordered path of tag nodes. A map may be
+// filed under multiple paths (by one or many users); the browse index is the
+// union of `nodes` across all of a map's assignments.
+model TagAssignment {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  mapConfigId String
+  mapConfig   MapConfig @relation(fields: [mapConfigId], references: [id], onDelete: Cascade)
+  path        String[]
+  nodes       TagNode[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([mapConfigId])
+  @@index([userId])
 }
