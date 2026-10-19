@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { X } from "lucide-react";
 import { tags as tagsAPI, TagPathDTO, TagNodeDTO } from "../api";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
 
 type Segment = { name: string; kind?: string; existing?: TagNodeDTO };
 
@@ -193,7 +195,7 @@ export function TagEditor({
                       </span>
                     </React.Fragment>
                   ))}
-                  <input
+                  <Input
                     ref={inputRef}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
@@ -203,7 +205,7 @@ export function TagEditor({
                         ? "next segment…"
                         : "e.g. colvig / spruce / 2026 — type a tag, / or Enter to nest"
                     }
-                    className="min-w-[140px] flex-1 border-none bg-transparent p-1 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none"
+                    className="h-auto min-w-[140px] flex-1 border-none bg-transparent p-1 text-sm shadow-none focus-visible:ring-0"
                   />
                 </div>
                 {suggestions.length > 0 && (

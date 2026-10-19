@@ -111,7 +111,7 @@ function Lightbox({
         <button
           type="button"
           onClick={() => onSelect(variant)}
-          className="px-8 py-2.5 bg-teal-500 hover:bg-teal-400 text-[#071e25] font-semibold text-sm rounded-lg transition-colors"
+          className="px-8 py-2.5 bg-teal-500 hover:bg-teal-400 text-action-foreground font-semibold text-sm rounded-lg transition-colors"
         >
           Select this style →
         </button>
@@ -155,7 +155,7 @@ function MessagePanel({
     return (
       <div className="rounded-xl border border-teal-700/40 bg-teal-900/20 p-6 flex flex-col gap-3 text-center">
         <p className="text-teal-300 font-medium">Message sent!</p>
-        <p className="text-sm text-[#6ab3c2]">
+        <p className="text-sm text-action">
           Ian will be in touch with updated variations soon.
         </p>
         <button
@@ -173,7 +173,7 @@ function MessagePanel({
     <div className="rounded-xl border border-white/10 bg-white/5 p-6 flex flex-col gap-4">
       <div>
         <p className="text-sm font-medium text-white mb-1">Request changes</p>
-        <p className="text-xs text-[#6ab3c2] leading-5">
+        <p className="text-xs text-action leading-5">
           Not quite right? Describe what you'd like adjusted — colours, style,
           area — and Ian will prepare new variations.
         </p>
@@ -235,7 +235,7 @@ export default function ChooseVariantPage() {
   if (!isLoaded || !isSignedIn) return null;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#071e25] text-[#d5f7ff]">
+    <div className="min-h-screen flex flex-col theme-topojoy-dark bg-canvas text-text">
       <Header />
 
       {expanded && (
@@ -253,14 +253,14 @@ export default function ChooseVariantPage() {
         <h1 className="text-2xl md:text-3xl font-light tracking-wide text-white mb-2">
           Choose your style
         </h1>
-        <p className="text-sm text-[#6ab3c2] mb-10 leading-6">
+        <p className="text-sm text-action mb-10 leading-6">
           Ian has prepared a few variations for you. Click any to view it full
           size, then select the one that feels right — or send a message if
           you'd like something adjusted.
         </p>
 
         {loading && (
-          <p className="text-sm text-[#6ab3c2] animate-pulse">
+          <p className="text-sm text-action animate-pulse">
             Loading variations…
           </p>
         )}
@@ -272,7 +272,7 @@ export default function ChooseVariantPage() {
         )}
 
         {!loading && !error && variants.length === 0 && (
-          <p className="text-sm text-[#6ab3c2]">
+          <p className="text-sm text-action">
             No variations available yet. Ian will be in touch soon!
           </p>
         )}
@@ -286,7 +286,7 @@ export default function ChooseVariantPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center mb-6">
-              <p className="text-xs text-[#6ab3c2]">
+              <p className="text-xs text-action">
                 Like one but want small tweaks?
               </p>
               {!showMessage && (

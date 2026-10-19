@@ -14,7 +14,7 @@ export const Header = () => {
   const [isUsernameModalOpen, setIsUsernameModalOpen] = useState(false);
 
   return (
-    <div className="text-[#d5f7ff] bg-[#071e25] font-sans px-4 flex justify-between h-15 fixed top-0 left-0 right-0 z-40 border-b border-[#0e3942]/80 shadow-md shadow-black/40">
+    <div className="theme-topojoy-dark bg-canvas text-text font-sans px-4 flex justify-between h-15 fixed top-0 left-0 right-0 z-40 border-b border-border/80 shadow-md shadow-black/40">
       <div className="font-extrabold flex items-center tracking-wide text-base">
         <Link
           to="/"

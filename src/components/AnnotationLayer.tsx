@@ -182,7 +182,7 @@ export const AnnotationLayer: React.FC<Props> = ({
                     style={{
                       background: "none",
                       border: "none",
-                      color: "#f87171",
+                      color: "var(--destructive)",
                       cursor: "pointer",
                       padding: "0 2px",
                       fontSize: 12,

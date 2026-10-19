@@ -8,9 +8,9 @@ const NavItem = ({
   setActiveSection,
   sections,
 }: {
-  item: { id: string; label: string; icon: React.ReactNode };
+  item: Section;
   activeSection: string;
-  setActiveSection: React.Dispatch<React.SetStateAction<Section>>;
+  setActiveSection: React.Dispatch<React.SetStateAction<string>>;
   sections: Section[];
 }) => {
   return (
@@ -21,7 +21,7 @@ const NavItem = ({
       className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-left transition-colors ${
         activeSection === item.id
           ? "bg-teal-700/50 text-white"
-          : "text-[#a0ccd6] hover:bg-white/10 hover:text-white"
+          : "text-text-muted hover:bg-white/10 hover:text-white"
       }`}
     >
       <span>{item.icon}</span>
@@ -41,11 +41,11 @@ export const Nav = ({
 }: {
   user: any;
   activeSection: string;
-  setActiveSection: React.Dispatch<React.SetStateAction<Section>>;
+  setActiveSection: React.Dispatch<React.SetStateAction<string>>;
   sections: Section[];
 }) => {
   return (
-    <aside className="w-52 shrink-0 bg-[#071e25] text-[#d5f7ff] flex flex-col py-6 overflow-y-auto">
+    <aside className="w-52 shrink-0 theme-topojoy-dark bg-canvas text-text flex flex-col py-6 overflow-y-auto">
       <div className="px-4 mb-6">
         <div className="text-[10px] font-bold uppercase tracking-widest text-teal-400 mb-1">
           Admin

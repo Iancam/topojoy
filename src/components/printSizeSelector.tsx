@@ -6,16 +6,28 @@ type PrintSizeSelectorProps = {
   imageElement?: HTMLImageElement;
 };
 
+type PrintSize = {
+  width: number;
+  height: number;
+  landscape: boolean;
+  score?: number;
+};
+
 const PrintSizeSelector = ({
   imageSrc,
   imageElement,
 }: PrintSizeSelectorProps) => {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
-  const [selectedSize, setSelectedSize] = useState(null);
+  const [selectedSize, setSelectedSize] = useState<PrintSize | null>(null);
   const [cropPosition, setCropPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [dragStart, setDragStart] = useState({
+    x: 0,
+    y: 0,
+    cropX: 0,
+    cropY: 0,
+  });
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -49,7 +61,7 @@ const PrintSizeSelector = ({
     printW: number,
     printH: number,
     imgW: number,
-    imgH: number
+    imgH: number,
   ) => {
     const printRatio = printW / printH;
     const imageRatio = imgW / imgH;
@@ -68,7 +80,7 @@ const PrintSizeSelector = ({
           size.width,
           size.height,
           imageSize.width,
-          imageSize.height
+          imageSize.height,
         ),
       }))
       .sort((a, b) => b.score - a.score)
@@ -80,6 +92,8 @@ const PrintSizeSelector = ({
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
+        const result = event.target?.result;
+        if (typeof result !== "string") return;
         const img = new Image();
         img.onload = () => {
           setImage(img);
@@ -92,14 +106,14 @@ const PrintSizeSelector = ({
                 size.width,
                 size.height,
                 img.width,
-                img.height
+                img.height,
               ),
             }))
             .sort((a, b) => b.score - a.score)[0];
           setSelectedSize(recommended);
           setCropPosition({ x: 0, y: 0 });
         };
-        img.src = event.target.result;
+        img.src = result;
       };
       reader.readAsDataURL(file);
     }
@@ -111,6 +125,12 @@ const PrintSizeSelector = ({
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const styles = getComputedStyle(canvas);
+    const previewBackdrop = styles
+      .getPropertyValue("--preview-backdrop")
+      .trim();
+    const selection = styles.getPropertyValue("--selection").trim();
     const canvasWidth = 600;
     const canvasHeight = 400;
 
@@ -118,13 +138,13 @@ const PrintSizeSelector = ({
     canvas.height = canvasHeight;
 
     // Clear canvas
-    ctx.fillStyle = "#1f2937";
+    ctx.fillStyle = previewBackdrop;
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
     // Calculate image display size (fit to canvas)
     const scale = Math.min(
       canvasWidth / imageSize.width,
-      canvasHeight / imageSize.height
+      canvasHeight / imageSize.height,
     );
     const displayWidth = imageSize.width * scale;
     const displayHeight = imageSize.height * scale;
@@ -172,22 +192,22 @@ const PrintSizeSelector = ({
       cropDisplayX,
       cropDisplayY,
       cropDisplayWidth,
-      cropDisplayHeight
+      cropDisplayHeight,
     );
 
     // Draw crop frame
-    ctx.strokeStyle = "#3b82f6";
+    ctx.strokeStyle = selection;
     ctx.lineWidth = 3;
     ctx.strokeRect(
       cropDisplayX,
       cropDisplayY,
       cropDisplayWidth,
-      cropDisplayHeight
+      cropDisplayHeight,
     );
 
     // Draw corner handles
     const handleSize = 12;
-    ctx.fillStyle = "#3b82f6";
+    ctx.fillStyle = selection;
     [
       [cropDisplayX, cropDisplayY],
       [cropDisplayX + cropDisplayWidth, cropDisplayY],
@@ -198,21 +218,21 @@ const PrintSizeSelector = ({
         x - handleSize / 2,
         y - handleSize / 2,
         handleSize,
-        handleSize
+        handleSize,
       );
     });
 
     // Draw dimensions
-    ctx.fillStyle = "#3b82f6";
+    ctx.fillStyle = selection;
     ctx.font = "14px sans-serif";
     ctx.fillText(
       `${selectedSize.width}" × ${selectedSize.height}"`,
       cropDisplayX + 10,
-      cropDisplayY + 25
+      cropDisplayY + 25,
     );
   }, [image, selectedSize, cropPosition, imageSize]);
 
-  const handleMouseDown = (e) => {
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
     setIsDragging(true);
@@ -224,14 +244,14 @@ const PrintSizeSelector = ({
     });
   };
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDragging || !canvasRef.current) return;
 
     const rect = canvasRef.current.getBoundingClientRect();
     const canvas = canvasRef.current;
     const scale = Math.min(
       canvas.width / imageSize.width,
-      canvas.height / imageSize.height
+      canvas.height / imageSize.height,
     );
 
     const deltaX = (e.clientX - rect.left - dragStart.x) / scale;
@@ -272,7 +292,7 @@ const PrintSizeSelector = ({
 
     const dpi = Math.min(
       imageSize.width / selectedSize.width,
-      imageSize.height / selectedSize.height
+      imageSize.height / selectedSize.height,
     );
 
     if (dpi < 150)
@@ -287,6 +307,8 @@ const PrintSizeSelector = ({
       };
     return { level: "success", text: "High quality - excellent for printing" };
   };
+
+  const qualityWarning = getQualityWarning();
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 p-8">
@@ -312,17 +334,17 @@ const PrintSizeSelector = ({
                   <span className="text-gray-400">Image visible:</span>
                   <span className="font-semibold">{getCropPercentage()}%</span>
                 </div>
-                {getQualityWarning() && (
+                {qualityWarning && (
                   <div
                     className={`text-sm px-3 py-2 rounded ${
-                      getQualityWarning().level === "error"
+                      qualityWarning.level === "error"
                         ? "bg-red-900/30 text-red-400"
-                        : getQualityWarning().level === "warning"
+                        : qualityWarning.level === "warning"
                           ? "bg-yellow-900/30 text-yellow-400"
                           : "bg-green-900/30 text-green-400"
                     }`}
                   >
-                    {getQualityWarning().text}
+                    {qualityWarning.text}
                   </div>
                 )}
                 <p className="text-xs text-gray-500 mt-2">

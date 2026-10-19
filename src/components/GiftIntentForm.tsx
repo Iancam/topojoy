@@ -154,7 +154,7 @@ export function GiftIntentForm({
           type="button"
           onClick={handleNext}
           disabled={current.noAnswer ? false : !currentAnswer.trim()}
-          className="px-6 py-2.5 bg-teal-500 hover:bg-teal-400 disabled:opacity-30 text-[#071e25] font-semibold rounded transition-colors duration-200 text-sm"
+          className="px-6 py-2.5 bg-teal-500 hover:bg-teal-400 disabled:opacity-30 text-action-foreground font-semibold rounded transition-colors duration-200 text-sm"
         >
           {isLast ? ctaLabel : "Continue →"}
         </button>

@@ -83,7 +83,7 @@ export default function SubmitPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#071e25] text-[#d5f7ff]">
+      <div className="min-h-screen flex flex-col theme-topojoy-dark bg-canvas text-text">
         <Header />
         <div className="flex-1 flex items-center justify-center px-6">
           <div className="max-w-lg text-center">
@@ -91,11 +91,11 @@ export default function SubmitPage() {
             <h1 className="text-2xl md:text-3xl font-light tracking-wide text-white mb-4">
               We've got it.
             </h1>
-            <p className="text-base text-[#a8dde9] leading-7 mb-6">
+            <p className="text-base text-text-muted leading-7 mb-6">
               Ian will review your trails and be in touch within a few days with
               a selection of map styles to choose from.
             </p>
-            <p className="text-sm text-[#6ab3c2]">
+            <p className="text-sm text-action">
               You'll get an email at{" "}
               <span className="font-mono">
                 {user?.primaryEmailAddress?.emailAddress}
@@ -109,14 +109,14 @@ export default function SubmitPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#071e25] text-[#d5f7ff]">
+    <div className="min-h-screen flex flex-col theme-topojoy-dark bg-canvas text-text">
       <Header />
       <div className="flex-1 flex items-start justify-center pt-20 pb-16 px-6">
         <div className="w-full max-w-lg">
           <h1 className="text-2xl md:text-3xl font-light tracking-wide text-white mb-2">
             Hand off your map
           </h1>
-          <p className="text-sm text-[#6ab3c2] mb-8 leading-6">
+          <p className="text-sm text-action mb-8 leading-6">
             Ian will take your trail data and create a few style variations for
             you to choose from. Once you pick one, you'll be able to order a
             print.
@@ -137,7 +137,7 @@ export default function SubmitPage() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-[#6ab3c2] mb-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-action mb-1.5">
                 Map title
               </label>
               <input
@@ -151,7 +151,7 @@ export default function SubmitPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-[#6ab3c2] mb-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-action mb-1.5">
                 Message to Ian{" "}
                 <span className="font-normal normal-case text-white/30">
                   (optional)
@@ -175,7 +175,7 @@ export default function SubmitPage() {
             <button
               type="submit"
               disabled={submitting || !title.trim() || !hasBbox}
-              className="px-8 py-3 bg-teal-500 hover:bg-teal-400 disabled:opacity-30 text-[#071e25] font-bold rounded transition-colors duration-200"
+              className="px-8 py-3 bg-teal-500 hover:bg-teal-400 disabled:opacity-30 text-action-foreground font-bold rounded transition-colors duration-200"
             >
               {submitting ? "Submitting…" : "Submit my map →"}
             </button>

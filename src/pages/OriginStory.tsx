@@ -18,24 +18,24 @@ const paragraphs = [
 ];
 
 export const OriginStory = () => (
-  <div className="min-h-screen flex flex-col bg-[#071e25] text-[#d5f7ff]">
+  <div className="min-h-screen flex flex-col theme-topojoy-dark bg-canvas text-text">
     <Header />
 
     <main className="flex-1 w-full max-w-2xl mx-auto px-6 pt-28 pb-20">
-      <p className="text-xs text-[#4a8a99] tracking-widest uppercase mb-6">
+      <p className="text-xs text-text-faint tracking-widest uppercase mb-6">
         Origin Story
       </p>
       <h1 className="text-3xl md:text-4xl font-light tracking-wide text-white mb-12 leading-tight">
         An experiment in generosity
       </h1>
 
-      <div className="space-y-7 text-[#a8dde9] leading-8 text-base md:text-lg">
+      <div className="space-y-7 text-text-muted leading-8 text-base md:text-lg">
         {paragraphs.map((p, i) => (
           <p key={i}>{p}</p>
         ))}
       </div>
 
-      <div className="mt-16 pt-8 border-t border-[#0e3942]">
+      <div className="mt-16 pt-8 border-t border-border">
         <Link
           to="/"
           className="text-sm text-teal-400 hover:text-teal-300 transition-colors"
@@ -45,7 +45,7 @@ export const OriginStory = () => (
       </div>
     </main>
 
-    <footer className="border-t border-[#0e3942] py-6 text-center text-xs text-[#4a8a99]">
+    <footer className="border-t border-border py-6 text-center text-xs text-text-faint">
       <Link to="/privacy" className="hover:underline">
         Privacy Policy
       </Link>
