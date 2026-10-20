@@ -11,6 +11,7 @@ export const addTrails = (rect, map, store) => {
   // download all the trails within the bbox
   const { bounds } = tilesForFeatures(rect, 13);
   // caches result, so we get all features to save another download
+  select('.map').classed('loading', true);
   getGeoJSONFromOSM(bounds.latLngBox)
     .then((geoJSON) => {
       // load the trails into the map and the store
@@ -22,6 +23,9 @@ export const addTrails = (rect, map, store) => {
         select('body'),
         err.message || 'Failed to load trail data. Please try again later.'
       );
+    })
+    .finally(() => {
+      select('.map').classed('loading', false);
     });
 };
 
@@ -146,11 +150,11 @@ const _addTrails = (geoJSON, map, store) => {
 
   // Filter to likely trails and ensure each feature has a stable id
   const lineFeatures = deduplicateOverlappingTrails(
-    (geoJSON.features || []).filter(trailsFilter).map((f, i) => ({
-      ...f,
-      id: i
-    }))
-  );
+    (geoJSON.features || []).filter(trailsFilter)
+  ).map((f, i) => ({
+    ...f,
+    id: i
+  }));
 
   store.setBBoxTrails(lineFeatures);
 

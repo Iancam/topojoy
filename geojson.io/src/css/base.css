@@ -516,8 +516,9 @@ input[type='text'] {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  opacity: 0.25;
+  opacity: 0.75;
   background: #444 url(spinner.gif) 50% 50% no-repeat;
+  z-index: 11;
 }
 
 /* Mapbox GL Draw – highlight rectangle draw button when active */
