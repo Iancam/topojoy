@@ -112,10 +112,6 @@ const router = createBrowserRouter([
         element: <Privacy />,
       },
       {
-        path: "/origin-story",
-        element: <OriginStory />,
-      },
-      {
         path: "/browse",
         element: <BrowsePage />,
       },

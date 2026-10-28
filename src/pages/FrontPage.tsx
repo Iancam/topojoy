@@ -303,7 +303,7 @@ export const FrontPage = () => {
               Everything since has been an experiment in generosity.
             </p>
             <Link
-              to="/origin-story"
+              to="/blog/origin-story"
               className="mt-8 inline-flex items-center gap-2 font-semibold text-action transition hover:text-action-hover"
             >
               Read the origin story <ArrowRight className="h-4 w-4" />

@@ -121,6 +121,25 @@
   --accent-foreground: var(--text);
 }
 
+.prose-topojoy {
+  --tw-prose-body: var(--text-muted);
+  --tw-prose-headings: var(--text);
+  --tw-prose-lead: var(--text-muted);
+  --tw-prose-links: var(--action);
+  --tw-prose-bold: var(--text);
+  --tw-prose-counters: var(--text-subtle);
+  --tw-prose-bullets: var(--border-strong);
+  --tw-prose-hr: var(--border);
+  --tw-prose-quotes: var(--text);
+  --tw-prose-quote-borders: var(--highlight);
+  --tw-prose-captions: var(--text-subtle);
+  --tw-prose-code: var(--text);
+  --tw-prose-pre-code: var(--text);
+  --tw-prose-pre-bg: var(--surface);
+  --tw-prose-th-borders: var(--border-strong);
+  --tw-prose-td-borders: var(--border);
+}
+
 .dark {
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);

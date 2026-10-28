@@ -1,3 +1,11 @@
+---
+title: Origin Story
+date: 2026-09-04
+excerpt: The story of how TopoJoy started
+---
+
+# Origins
+
 The first map I ever made, the map that kicked off this project, was a gift to my sister. It was a premeditated act of kindness: I figured out her favorite color scheme, the background text was two songs she used to sing to herself on the trail, the location was her favorite trail from summer camp. In the weeks of coding, I found the pleasure of dedicating effort to the happiness of a friend. It was fundamentally an experiment in generosity.
 
 The project grew. I made maps for more friends, and then my sister figured others might want to make maps too; others might _buy_ them. I had to decide the shape of my project. I had a number of influences that warred in my mind over the year of intermittent building. At first, I wanted profit, naively thinking I could sell enough maps to support myself. I thought of the study I found through Austin Kleon, about how telling a compelling story about an item increased its value on eBay. This mercenary bit of knowledge dovetailed with Start With Why, which said that a strong brand and company is built around a strong "Why." Well, my "why" was all about exploring the power of giving. An important part of the "Why" is that you're true to it; it should guide all your relevant decisions.
