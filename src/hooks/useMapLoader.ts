@@ -61,7 +61,8 @@ export function useLoadMap({
   const isAdmin = (user?.publicMetadata as any)?.role === "admin";
 
   function mapFromLocalStorage() {
-    const configName = localStorage.getItem(LS.CONFIG) || "Original";
+    const defaultName = Object.keys(configs)[0];
+    const configName = localStorage.getItem(LS.CONFIG) || defaultName;
     const form = getFormFromLocalStorage(preForm, configName, configs);
 
     setConfig(configName);

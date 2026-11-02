@@ -115,3 +115,58 @@ export const emeraldLakesConfig = createConfig({
     },
   ],
 });
+
+export const amysColors = createConfig({
+  name: "Amy's Colors",
+  background: chroma(p.f3).darken(3).hex(),
+  trail: {
+    colorRange: [p.JuniperBark9, p.ochre],
+    textColor: p.orange,
+    selectedTrailColor: p.magenta,
+  },
+  river: {
+    colorRange: [p.bgBlue, p.aquamarine],
+    streams: false,
+    textColor: p.f7,
+  },
+  mountain: {
+    labelColor: "yellow",
+  },
+  colorPlan: [
+    {
+      height: 0.2,
+      colors: [p.f4, p.f4, p.f4, p.orange, p.ochre, p.yellow],
+    },
+
+    {
+      height: 0.3,
+      colors: [p.JuniperBark7, p.JuniperBark6, p.JuniperBark5],
+    },
+
+    {
+      height: 0.6,
+      colors: [p.f3, chroma(p.f2).mix("yellow", 0.2).hex(), p.Lowland2, p.f3],
+    },
+
+    {
+      height: 0.9,
+      colors: [p.f3, p.f2, p.Lowland2, p.JuniperBark2],
+    },
+
+    {
+      height: Infinity,
+      colors: [
+        p.JuniperBark1,
+        p.JuniperBark2,
+        chroma("purple").brighten(2).hex(),
+        p.JuniperBark4,
+      ],
+    },
+  ],
+});
+
+export const configs = {
+  Original: snowMesaConfig,
+  "Juniper Bark": emeraldLakesConfig,
+  "Amy's Colors": amysColors,
+};

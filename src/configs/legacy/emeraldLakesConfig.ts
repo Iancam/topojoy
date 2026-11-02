@@ -1,5 +1,7 @@
-import { MapConfig } from "./schema";
-import { colorScaleToWeightedPlan, mixWeightedPlans } from "../map/colorUtils";
+import { darken, res } from "../../map/colorUtils";
+import { weightedRandom } from "../../lib/map/utils";
+import chroma from "chroma-js";
+import { MapConfig } from "../schema";
 
 const p = {
   orange: "#ed9228",
@@ -73,8 +75,21 @@ const colorScales = {
   ].reverse(),
 };
 
-export const LHKConfig: MapConfig = {
-  name: "LHK",
+const mountainKeepList = [
+  "Vestal Peak",
+  "Jagged Mountain",
+  "Sunlight Peak",
+  "Arrow Peak",
+  "Trinity Peaks",
+  "Leviathan Peak",
+  "Windom Peak",
+  "Endlich Mesa",
+  "Mount Oso",
+  "Amherst Mountain",
+];
+
+export const EmeraldLakesConfig: MapConfig = {
+  name: "Juniper Bark",
   zoomLevel: 13,
   curve: {
     stepCount: 20,
@@ -82,47 +97,36 @@ export const LHKConfig: MapConfig = {
     density: 0.5,
   },
   trail: {
-    colorRange: [p.f4, p.f5],
+    colorRange: [p.JuniperBark9, p.ochre],
     textColor: p.orange,
-    textSize: 2 * 8.001,
+    textSize: 2 * 10,
     stepLength: 4,
     stepCount: 8,
     weight: 1.5,
     show: true,
   },
   river: {
-    colorRange: [p.f7, p.f6],
+    colorRange: [p.bgBlue, p.aquamarine],
     stepLength: 4,
     stepCount: 8,
     weight: 1.5,
     streams: false,
     textColor: p.f7,
-    textSize: 2 * 8.001,
+    textSize: 2 * 10,
     show: true,
   },
   mountain: {
-    labelSize: 2 * 8.001,
+    labelSize: 2 * 10,
     labelColor: "yellow",
-    iconSize: 4 * 8.001,
+    iconSize: 4 * 10,
     iconColor: "black",
-    keepList: [
-      "Vestal Peak",
-      "Jagged Mountain",
-      "Sunlight Peak",
-      "Arrow Peak",
-      "Trinity Peaks",
-      "Leviathan Peak",
-      "Windom Peak",
-      "Endlich Mesa",
-      "Mount Oso",
-      "Amherst Mountain",
-    ],
+    keepList: [],
     drop: true,
     show: true,
   },
   backgroundText: {
     font: "Courier",
-    textSize: 2.5 * 8.001,
+    textSize: 2.5 * 10,
     alpha: 200,
     highContrast: false,
     contrast: 7.5,
@@ -134,12 +138,32 @@ export const LHKConfig: MapConfig = {
       },
     ],
   },
-  colorPlan: mixWeightedPlans(colorScaleToWeightedPlan(colorScales.mint, 10), [
+  colorPlan: [
+    // lower elevations
     {
-      colors: colorScales.sunset,
-      weight: 1,
+      height: 1 - 0.7,
+      colors: [p.JuniperBark9, p.JuniperBark8, p.JuniperBark10],
     },
-  ]),
-  background: colorScales.mint[0],
+    //  middle elevations
+    {
+      height: 1 - 0.6,
+      colors: () =>
+        res(chroma.scale([p.JuniperBark3, p.JuniperBark9])(Math.random())),
+    },
+    {
+      height: 1 - 0.3,
+      colors: darken(
+        [p.JuniperBark4, p.JuniperBark5, p.JuniperBark6, p.JuniperBark7],
+        0.5,
+      ),
+    },
+    // higher elevations
+    {
+      height: Infinity,
+      colors: () =>
+        weightedRandom([p.JuniperBark1, p.JuniperBark3, "pink"], [5, 5, 1]),
+    },
+  ],
+  background: p.JuniperBark8,
   crossHatch: false,
 };

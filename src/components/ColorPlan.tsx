@@ -24,6 +24,31 @@ export const ColorPlan = ({
               {colorPlan.height.toFixed(2)}
             </span>
           </div>
+          <div className="flex flex-wrap gap-2">
+            {typeof colorPlan.colors === "function" ? (
+              <span className="text-sm text-muted-foreground">
+                Generated colors
+              </span>
+            ) : (
+              (Array.isArray(colorPlan.colors)
+                ? colorPlan.colors
+                : [colorPlan.colors]
+              ).map((color, colorIndex) => (
+                <span
+                  key={`${color}-${colorIndex}`}
+                  className="inline-flex items-center gap-2 rounded border border-border px-2 py-1 text-xs"
+                >
+                  <span
+                    className="h-5 w-5 shrink-0 rounded-sm border border-border"
+                    style={{ backgroundColor: color }}
+                    role="img"
+                    aria-label={`Color swatch: ${color}`}
+                  />
+                  <span className="font-mono">{color}</span>
+                </span>
+              ))
+            )}
+          </div>
           {renderFormElement({
             form,
             onFormChange,
