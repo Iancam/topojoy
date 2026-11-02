@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import { Header } from "../components/Header";
 import { submission } from "../api";
 import { LS } from "../lib/utils";
+import { getUserSelectedTrailsLatLng } from "../map/trails";
 import {
   GIFT_INTENT_KEY,
   getStoredGiftIntent,
@@ -59,9 +60,7 @@ export default function SubmitPage() {
 
     try {
       const bbox = JSON.parse(localStorage.getItem(LS.GEOJSON_BBOX) || "{}");
-      const selectedTrails = JSON.parse(
-        localStorage.getItem(LS.GEOJSON_SELECTED_TRAIL_SEGMENTS) || "[]",
-      );
+      const selectedTrails = getUserSelectedTrailsLatLng();
 
       await submission.create({
         title: title.trim(),

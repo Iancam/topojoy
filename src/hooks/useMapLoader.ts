@@ -8,7 +8,11 @@ import {
 } from "@/lib/utils";
 import { GIFT_TOKEN_KEY } from "@/lib/giftToken";
 import { tilesForFeatures } from "@/map/processImage";
-import { getFeatures, getGeoJSONFromOSM } from "@/map/trails";
+import {
+  getFeatures,
+  getGeoJSONFromOSM,
+  getUserSelectedTrailsLatLng,
+} from "@/map/trails";
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router";
 import { ToastState } from "./useToast";
@@ -185,10 +189,7 @@ export function useLoadMap({
   // intact and only refreshes location-derived data (bbox, trails, features).
   function loadLocationFromLocalStorage(configName: string, inpForm: any) {
     const bbox = JSON.parse(localStorage.getItem(LS.GEOJSON_BBOX) || "{}");
-    const selectedTrails = JSON.parse(
-      localStorage.getItem(LS.GEOJSON_SELECTED_TRAIL_SEGMENTS) || "[]",
-    );
-
+    const selectedTrails = getUserSelectedTrailsLatLng();
     if (!bbox || Object.keys(bbox).length === 0) {
       setToast({
         message:

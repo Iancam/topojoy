@@ -122,9 +122,9 @@ export function getUserSelectedTrailsLatLng() {
   const userSelectedTrails = JSON.parse(
     localStorage.getItem(LS.GEOJSON_SELECTED_TRAIL_SEGMENTS) || "[]",
   );
-  const userDrawnTrails = JSON.parse(
-    localStorage.getItem(LS.GEOJSON_DRAWN_TRAILS),
-  ).features;
+  const userDrawnTrails =
+    JSON.parse(localStorage.getItem(LS.GEOJSON_DRAWN_TRAILS) || "null")
+      ?.features || [];
   // merge userSelectedTrails and userDrawnTrails
   const merged = [...userSelectedTrails, ...userDrawnTrails];
 
