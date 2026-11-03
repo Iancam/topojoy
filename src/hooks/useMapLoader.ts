@@ -71,7 +71,7 @@ export function useLoadMap({
 
     setConfig(configName);
     setForm(form);
-    loadLocationFromLocalStorage(config, form);
+    loadLocationFromLocalStorage(configName, form);
   }
 
   function mapFromAPI() {

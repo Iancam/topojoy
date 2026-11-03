@@ -125,10 +125,10 @@ export const amysColors = createConfig({
     selectedTrailColor: p.magenta,
   },
   river: {
-    colorRange: [p.bgBlue, p.aquamarine],
+    colorRange: [p.f7, p.aquamarine],
     streams: false,
     textColor: p.f7,
-  },
+  },s
   mountain: {
     labelColor: "yellow",
   },
