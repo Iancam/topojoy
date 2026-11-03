@@ -128,7 +128,7 @@ export const amysColors = createConfig({
     colorRange: [p.f7, p.aquamarine],
     streams: false,
     textColor: p.f7,
-  },s
+  },
   mountain: {
     labelColor: "yellow",
   },
