@@ -1,5 +1,5 @@
 import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/clerk-react";
-import { Link, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { useCartContext } from "../cartContext";
 import { UsernameModal } from "./UsernameModal";
 import { GiftsReceived } from "./GiftsReceived";
@@ -10,6 +10,7 @@ export const Header = () => {
   const { itemCount: cartItemCount } = useCartContext();
   const { user } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
   const isAdmin = (user?.publicMetadata as any)?.role === "admin";
   const [isUsernameModalOpen, setIsUsernameModalOpen] = useState(false);
 
@@ -183,6 +184,7 @@ export const Header = () => {
             <SignedOut>
               <Link
                 to="/sign-in"
+                state={{ from: location.pathname + location.search }}
                 className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200"
               >
                 Sign In

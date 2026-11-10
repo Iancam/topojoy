@@ -7,6 +7,7 @@ export type BackgroundTextGroup = {
   text: string;
   elevationRange: [number, number];
   bbox: [number, number, number, number];
+  textSize?: number;
 };
 
 type Props = {
@@ -19,6 +20,7 @@ const EMPTY_GROUP: BackgroundTextGroup = {
   text: "",
   elevationRange: [0.7, 1],
   bbox: [0, 0, 0, 0],
+  textSize: 14,
 };
 
 export const BackgroundTextGroupsControl: React.FC<Props> = ({
@@ -163,7 +165,7 @@ export const BackgroundTextGroupsControl: React.FC<Props> = ({
 
   const rectStyle = (() => {
     if (!drawingState || !drawingState.start || !drawingState.current)
-      return {};
+      return { left: 0, top: 0, width: 0, height: 0 };
     const { start, current } = drawingState;
     const left = Math.min(start.x, current.x);
     const top = Math.min(start.y, current.y);
@@ -248,6 +250,25 @@ export const BackgroundTextGroupsControl: React.FC<Props> = ({
                 placeholder="Enter text to render in the background"
                 onChange={(e) => updateGroup(index, { text: e.target.value })}
               />
+
+              <div className="flex items-center gap-2 text-xs">
+                <label className="text-gray-600">Text size</label>
+                <input
+                  type="number"
+                  min={1}
+                  step={0.5}
+                  value={group.textSize ?? ""}
+                  placeholder="14"
+                  onChange={(e) =>
+                    updateGroup(index, {
+                      textSize: e.target.value
+                        ? Number(e.target.value)
+                        : undefined,
+                    })
+                  }
+                  className="w-20 border border-gray-300 rounded px-1 py-0.5"
+                />
+              </div>
 
               <div>
                 <label className="text-xs text-gray-600 block mb-1">

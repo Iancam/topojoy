@@ -129,6 +129,9 @@ export const amysColors = createConfig({
     streams: false,
     textColor: p.f7,
   },
+  lake: {
+    lakeColor: p.bgBlue,
+  },
   mountain: {
     labelColor: "yellow",
   },
@@ -149,7 +152,7 @@ export const amysColors = createConfig({
     },
 
     {
-      height: 0.9,
+      height: 0.8,
       colors: [p.f3, p.f2, p.Lowland2, p.JuniperBark2],
     },
 

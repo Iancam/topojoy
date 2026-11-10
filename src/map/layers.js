@@ -179,6 +179,7 @@ export function textsLayer(
     const groupBbox = group.bbox || [0, 0, topo.width, topo.height];
     const groupElevationRange = group.elevationRange || [0, 1];
     const groupText = group.text || "";
+    const groupTextSize = group.textSize || textSize;
 
     /**
      * Determines whether a word should be placed at a given position. Allows wrapping
@@ -225,7 +226,7 @@ export function textsLayer(
       textBoxes,
       groupText,
       alpha,
-      textSize,
+      groupTextSize,
       colorAt,
       contrast,
       backgroundColor,

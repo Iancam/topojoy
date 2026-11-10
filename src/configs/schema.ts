@@ -64,6 +64,7 @@ const BackgroundTextGroupSchema = z.object({
   text: z.string(),
   elevationRange: z.array(z.number().min(0).max(1)).min(2).max(2),
   bbox: z.array(z.number().min(0)).min(4).max(4),
+  textSize: z.number().positive().optional(),
 });
 
 const BackgroundTextConfigSchema = z.object({

@@ -100,6 +100,7 @@ export function useLoadMap({
                 0.7, 1,
               ],
               bbox: [0, 0, 0, 0],
+              textSize: 14,
             },
           ];
         }

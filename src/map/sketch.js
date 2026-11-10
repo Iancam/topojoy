@@ -227,8 +227,6 @@ export const sketchFactory = (
           layers.text.noFill();
           textsLayer(layers.text, topo, colorAt, labelManager.textBoxes(), {
             ...newConfig.backgroundText,
-            textSize:
-              newConfig.backgroundText.textSize * newConfig.textSizeMultiplier,
             backgroundColor: newConfig.background,
             text: newConfig.backgroundText.groups,
           });
@@ -414,12 +412,11 @@ export const sketchFactory = (
           },
         );
         drawLakes(layers.overlay, _.pick(features.lakes, keepLists.lake), {
-          color: config.river.colorRange[0],
+          color: config.lake.lakeColor ?? config.river.colorRange[0],
         });
 
         textsLayer(layers.text, topo, colorAt, labelManager.textBoxes(), {
           ...config.backgroundText,
-          textSize: config.backgroundText.textSize * config.textSizeMultiplier,
           backgroundColor: config.background,
           text: config.backgroundText.groups,
         });

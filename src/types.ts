@@ -36,6 +36,7 @@ export interface Config {
       text: string;
       bbox: number[];
       elevationRange: number[];
+      textSize?: number;
     }[];
     font: string;
     textSize: number;
