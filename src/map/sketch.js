@@ -22,6 +22,7 @@ import { createWebGLFlowField } from "../contourExploration/terrainFlowField";
 import { drawTitle } from "./title";
 import chroma from "chroma-js";
 import { drawLegend } from "./legend";
+import { drawScaleBar } from "./drawScaleBar";
 import _ from "lodash";
 import { joyDivision } from "./joyDivision";
 import { dxdy } from "./dxdy";
@@ -422,6 +423,7 @@ export const sketchFactory = (
         });
 
         labelManager.drawLabels();
+        drawScaleBar(layers.overlay, bounds, config.background, courier);
       };
 
       p5.disableFriendlyErrors = true;

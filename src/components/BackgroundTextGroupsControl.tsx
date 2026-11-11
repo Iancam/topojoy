@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Trash2, Plus, MousePointer2 } from "lucide-react";
 import { DualRangeSlider } from "./ui/dual-range-slider";
+import { useConfigForm } from "./configFormContext";
 
 export type BackgroundTextGroup = {
   text: string;
@@ -26,8 +27,10 @@ const EMPTY_GROUP: BackgroundTextGroup = {
 export const BackgroundTextGroupsControl: React.FC<Props> = ({
   form,
   onFormChange,
-  sketchDims,
+  sketchDims: providedSketchDims,
 }) => {
+  const { sketchDims: contextSketchDims } = useConfigForm();
+  const sketchDims = providedSketchDims ?? contextSketchDims;
   const groups: BackgroundTextGroup[] = form["backgroundText.groups"] || [];
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [drawingState, setDrawingState] = useState<{
