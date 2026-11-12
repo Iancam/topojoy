@@ -5,6 +5,12 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { plugin as md } from "vite-plugin-markdown";
 import { reactRouter } from "@react-router/dev/vite";
+import MarkdownIt from "markdown-it";
+import { attrs } from "@mdit/plugin-attrs";
+
+const markdown = new MarkdownIt({ html: true }).use(attrs, {
+  allowed: ["class", "id", "loading"],
+});
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -36,7 +42,7 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    md({ mode: "html" }),
+    md({ mode: "html", markdown: (body) => markdown.render(body) }),
     copy({
       targets: [
         {

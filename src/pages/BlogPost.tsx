@@ -36,7 +36,7 @@ export const BlogPost: React.FC = () => {
           </p>
         )}
         <div
-          className="prose prose-topojoy max-w-none md:prose-lg prose-headings:font-serif prose-headings:font-normal prose-headings:tracking-tight prose-p:leading-relaxed"
+          className="flow-root prose prose-topojoy max-w-none md:prose-lg prose-headings:font-serif prose-headings:font-normal prose-headings:tracking-tight prose-p:leading-relaxed"
           dangerouslySetInnerHTML={{ __html: post.html }}
         />
         <div className="mt-12">

@@ -16,6 +16,22 @@ const modules = import.meta.glob("/src/content/blog/*.md", {
   eager: true,
 }) as Record<string, BlogModule>;
 
+const images = import.meta.glob<string>(
+  "/src/content/blog/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}",
+  { eager: true, query: "?url", import: "default" },
+);
+
+const resolveImages = (html: string, markdownPath: string): string => {
+  const directory = markdownPath.slice(0, markdownPath.lastIndexOf("/") + 1);
+  return html.replace(
+    /(<img\b[^>]*\bsrc=")([^"]+)(")/g,
+    (match, before, src, after) => {
+      const url = images[`${directory}${src.replace(/^\.\//, "")}`];
+      return url ? `${before}${url}${after}` : match;
+    },
+  );
+};
+
 const extractTitle = (html: string): string | undefined => {
   const match = html.match(/<h1[^>]*>(.*?)<\/h1>/);
   if (!match) return undefined;
@@ -32,14 +48,14 @@ export const getBlogPosts = (): BlogPost[] => {
     const title =
       typeof attrs.title === "string"
         ? attrs.title
-        : extractTitle(mod.html) ?? slug;
+        : (extractTitle(mod.html) ?? slug);
 
     return {
       slug,
       title,
       date: typeof attrs.date === "string" ? attrs.date : undefined,
       excerpt: typeof attrs.excerpt === "string" ? attrs.excerpt : undefined,
-      html: mod.html,
+      html: resolveImages(mod.html, path),
       attributes: attrs,
     };
   });

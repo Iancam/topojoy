@@ -47,16 +47,31 @@ export const handler = async (event: any) => {
                 subcategoryId,
               }),
             },
-          ).then((res) => {
-            return res.json().then((json) => ({
-              subcategoryId,
-              width,
-              height,
-              score,
-              options,
-              ...json,
-              price: Number(json.price) * 100, // convert to cents
-            }));
+          ).then(async (res) => {
+            const body = await res.text();
+            try {
+              const json = JSON.parse(body);
+              return {
+                subcategoryId,
+                width,
+                height,
+                score,
+                options,
+                ...json,
+                price: Number(json.price) * 100, // convert to cents
+              };
+            } catch (err) {
+              console.error("Lumaprints pricing response could not be parsed", {
+                status: res.status,
+                contentType: res.headers.get("content-type"),
+                subcategoryId,
+                width,
+                height,
+                body,
+                error: err,
+              });
+              return null;
+            }
           }),
       ),
     );
