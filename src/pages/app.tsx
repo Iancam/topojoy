@@ -22,6 +22,7 @@ import { useLayerRedraw } from "@/hooks/useLayerRedraw.ts";
 import { imageCapture } from "@/lib/imageCapture.ts";
 import { useSaveMap } from "@/hooks/useSaveMap.ts";
 import { usePersistHook } from "@/hooks/persistHook.ts";
+import { isMapPreviewStale } from "@/lib/mapPreview";
 
 const TEXT_KEYS = [
   "backgroundText.groups",
@@ -200,7 +201,7 @@ export const App = () => {
         ...arg1,
       });
     }
-    setImageIsStale(true);
+    setImageIsStale((wasStale) => isMapPreviewStale(wasStale, arg1));
   }
   const onConfigChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setConfig(e.target.value);
