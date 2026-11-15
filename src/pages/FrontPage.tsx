@@ -5,6 +5,7 @@ import { ArrowRight, Feather, Gift, MapPin, Palette } from "lucide-react";
 import { Header } from "../components/Header";
 import { netlifyImageUrl } from "../api";
 import { GiftIntentForm, type GiftIntent } from "../components/GiftIntentForm";
+import joyAndIan from "../content/blog/joy-and-ian.jpg";
 
 const steps = [
   {
@@ -72,12 +73,7 @@ export const FrontPage = () => {
             </h1>
             <p className="mt-7 max-w-lg text-lg leading-8 text-text-muted">
               Choose a special place in the wilderness. Together, we'll turn it
-              into a custom map they can keep.
-            </p>
-            <p className="mt-5 max-w-md border-l border-teal-300/40 pl-4 text-sm leading-6 text-text-subtle">
-              I'm Ian. TopoJoy is just you and me: you select the place and
-              personalize it, I design the map and send you options to choose
-              from.
+              into a custom map they can display.
             </p>
             <div className="mt-10">
               {!formOpen ? (
@@ -118,13 +114,6 @@ export const FrontPage = () => {
                 alt="Bullet Canyon topographic map"
                 className="w-full"
               />
-            </div>
-            <div className="ml-auto mt-[-18px] w-fit max-w-[260px] rotate-1 theme-topojoy-paper bg-canvas px-5 py-4 text-text shadow-lg shadow-black/30">
-              <p className="font-serif text-base italic leading-6">
-                I make these one at a time, with you and a particular person in
-                mind.
-              </p>
-              <p className="mt-2 text-right text-xs text-action">— Ian</p>
             </div>
           </div>
         </div>
@@ -192,10 +181,6 @@ export const FrontPage = () => {
             <h2 className="mt-5 font-serif text-4xl font-light leading-tight md:text-5xl">
               You bring the memory. I do the mapmaking.
             </h2>
-            <p className="mt-6 max-w-xl leading-7 text-text-subtle">
-              There isn't a team or an automated design service behind this. We
-              start with your place, then I work through the details with you.
-            </p>
           </div>
           <div className="relative mt-16 grid gap-10 md:grid-cols-4 md:gap-6">
             <div className="absolute left-[8%] right-[8%] top-6 hidden border-t border-dashed border-border-strong md:block" />
@@ -222,7 +207,7 @@ export const FrontPage = () => {
         <div className="mx-auto grid w-full max-w-6xl gap-16 px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-10">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-highlight">
-              What it costs
+              Cost
             </p>
             <h2 className="mt-5 font-serif text-4xl font-light leading-tight text-white md:text-5xl">
               A map given forward.
@@ -243,18 +228,11 @@ export const FrontPage = () => {
               can only make a limited number at a time.
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-6">
-              <button
-                type="button"
-                onClick={beginGift}
-                className="inline-flex items-center gap-2 font-semibold text-highlight transition hover:text-highlight-hover"
-              >
-                Begin a gift <ArrowRight className="h-4 w-4" />
-              </button>
               <Link
                 to="/donate"
-                className="text-sm text-text-subtle underline decoration-text-subtle/40 underline-offset-8 transition hover:text-white"
+                className="underline underline-offset-8 transition hover:text-white"
               >
-                Make a future map possible
+                Donate here
               </Link>
             </div>
           </div>
@@ -285,9 +263,15 @@ export const FrontPage = () => {
         <div className="mx-auto grid w-full max-w-6xl gap-10 px-6 lg:grid-cols-[0.75fr_1.25fr] lg:px-10">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.26em] text-action">
-              A note from me
+              Why
             </p>
             <div className="mt-5 h-px w-24 bg-highlight/50" />
+            <img
+              src={netlifyImageUrl(joyAndIan, { w: 800, fit: "contain" })}
+              alt="Joy and Ian"
+              loading="lazy"
+              className="mt-8 w-full rounded-lg shadow-2xl shadow-black/25"
+            />
           </div>
           <div className="max-w-2xl">
             <h2 className="font-serif text-4xl font-light leading-tight md:text-5xl">
@@ -320,12 +304,11 @@ export const FrontPage = () => {
             Begin with the place
           </p>
           <h2 className="mt-6 font-serif text-4xl font-light text-white md:text-6xl">
-            Whose place are you thinking of?
+            Where are you thinking of?
           </h2>
           <p className="mx-auto mt-7 max-w-2xl text-lg leading-8 text-text-muted">
-            A trail you walked together. A lake they return to. A landscape tied
-            to someone you miss. Begin with the place, and I'll make the gift
-            with you from there.
+            A trail, a lake, a landscape? Begin with the place, and I'll make
+            the gift with you from there.
           </p>
           <button
             type="button"

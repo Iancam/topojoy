@@ -6,6 +6,27 @@ import { GiftsReceived } from "./GiftsReceived";
 import { GiftsSentReflections } from "./GiftsSentReflections";
 import { useState } from "react";
 
+const NavLink = ({
+  to,
+  children,
+  className = "",
+}: {
+  to: string;
+  children: React.ReactNode;
+  className?: string;
+}) => {
+  return (
+    <div className="flex items-center ml-auto">
+      <Link
+        to={to}
+        className={`text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200 ${className}`}
+      >
+        {children}
+      </Link>
+    </div>
+  );
+};
+
 export const Header = () => {
   const { itemCount: cartItemCount } = useCartContext();
   const { user } = useUser();
@@ -39,35 +60,16 @@ export const Header = () => {
             </a>
           </div>
           <div className="pr-3"></div>
-          <div className="flex items-center ml-auto">
-            <Link to="/donate">
-              <span className="text-teal-400 text-xs font-bold py-1 px-4 rounded transition-all duration-200">
-                Donate
-              </span>
-            </Link>
-          </div>
-          <div className="flex items-center ml-auto">
-            <Link to="/blog">
-              <span className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
-                Blog
-              </span>
-            </Link>
-          </div>
-          <div className="flex items-center ml-auto">
-            <Link to="/browse">
-              <span className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
-                Browse
-              </span>
-            </Link>
-          </div>
-          <div className="flex items-center ml-auto">
-            <Link to="/app">
-              <span className="text-white text-xs font-bold py-1 px-4 rounded transition-all duration-200">
-                App
-              </span>
-            </Link>
-          </div>
 
+          <NavLink to="/donate">Donate</NavLink>
+
+          <NavLink to="/blog">Blog</NavLink>
+
+          <NavLink to="/blog/origin-story">About</NavLink>
+
+          <NavLink to="/browse">Browse</NavLink>
+
+          <NavLink to="/app">App</NavLink>
           <div>
             <SignedIn>
               <div className="flex items-center ml-auto">
